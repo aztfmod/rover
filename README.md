@@ -62,6 +62,8 @@ git clone https://github.com/aztfmod/landingzones.git
 make local
 ```
 
+> Everytime you update the local versions of the landingzones you need to re-execute the command 'make local' and then use the rover to deploy the modifications
+
 ## Install the launchpad
 A launchpad is required by the rover to coordinate the initial and sub-sequent deployments of the landingzones.
 
@@ -77,6 +79,7 @@ az account show
 # Install the launchpad
 ./rover.sh
 ```
+
 
 If you re-execute the rover.sh with no parameters it will display the coordinates of the launchpad and the landingzones that can be deployed
 
