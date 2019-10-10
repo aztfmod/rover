@@ -36,7 +36,7 @@ git clone https://github.com/aztfmod/rover.git
 
 ### Load the rover with the latest public landingzones
 
-you need to the following command from the local shell. Make sure docker engine is running.
+Execute the following command from the local shell. Make sure docker engine is running.
 
 For Linux, macos or Windows wsl / wsl2
 ```bash
@@ -59,6 +59,7 @@ git clone https://github.com/aztfmod/level0.git
 git clone https://github.com/aztfmod/landingzones.git
 
 # Go to the rover folder and load the rover with the local copies
+cd rover
 make local
 ```
 
@@ -69,7 +70,7 @@ A launchpad is required by the rover to coordinate the initial and sub-sequent d
 
 At the moment the public launchpad is using Terraform open source edition.
 
-To initialize the launchpad execute the following command.
+To initialize the launchpad execute the following commands.
 
 ```bash
 # go to the rover subfolder
@@ -79,7 +80,7 @@ az account show
 # Install the launchpad
 ./rover.sh
 ```
-
+> The initial installation of the launchpad take between 5 to 10 minutes and occurs small costs.
 
 If you re-execute the rover.sh with no parameters it will display the coordinates of the launchpad and the landingzones that can be deployed
 
@@ -94,6 +95,9 @@ If you re-execute the rover.sh with no parameters it will display the coordinate
 ./rover.sh landingzones/landingzone_vdc_level1 apply
 
 ```
+
+### Something you want, something not working?
+Open an issue list to report any issues and missing features.
 
 ### Limitations
 
