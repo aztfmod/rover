@@ -25,7 +25,8 @@ local:
 	@echo "rover loaded with local landingzones"
 	@echo "run ./rover.sh"
 
-dev_modules:
-	@sh "$(CURDIR)/scripts/setup_dev_environment.sh"
+setup_dev_gitssh:
+	@sh "$(CURDIR)/scripts/setup_dev_environment.sh" "gitssh"
 
-	
+setup_dev_githttp:
+	@sh "$(CURDIR)/scripts/setup_dev_environment.sh" "githttp"
