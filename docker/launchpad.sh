@@ -15,9 +15,55 @@ echo "tf_action   is : '$(echo ${tf_action})'"
 echo "tf_command  is : '$(echo ${tf_command})'"
 echo "landingzone is : '$(echo ${landingzone_name})'"
 
-export TF_PLUGIN_CACHE_DIR="/root/.terraform.d/plugin-cache"
+error() {
+  local parent_lineno="$1"
+  local message="$2"
+  local code="${3:-1}"
+  if [[ -n "$message" ]] ; then
+    >&2 echo -e "\e[41mError on or near line ${parent_lineno}: ${message}; exiting with status ${code}\e[0m"
+  else
+    >&2 echo -e "\e[41mError on or near line ${parent_lineno}; exiting with status ${code}\e[0m"
+  fi
+  exit "${code}"
+}
+
+function display_instructions {
+        echo ""
+        echo "You can deploy a landingzone with the rover by running ./rover.sh [landingzone_folder_name] [plan|apply|destroy]"
+        echo ""
+        echo "List of the landingzones loaded in the rover:"
+        for i in $(ls -d landingzones/landingzone*); do echo ${i%%/}; done
+        echo ""
+}
+
+function verify_parameters {
+        # Must provide an action when the tf_command is set
+        if [ -z "${tf_action}" ] && [ ! -z "${tf_command}" ]; then
+            display_instructions
+            error ${LINENO} "landingzone and action must be set" 11
+        fi
+}
+
+function verify_landingzone {
+        if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
+                echo "Defaulting to leval0/launchpad_opensource"
+        else
+                echo "Verify the landingzone folder exist in the rover"
+                readlink -f "${landingzone_name}"
+                if [ $? -ne 0 ]; then
+                        display_instructions
+                        error ${LINENO} "landingzone does not exist" 12
+                fi
+        fi
+}
+
+verify_landingzone
+verify_parameters
 
 set -e
+trap 'error ${LINENO}' ERR
+
+export TF_PLUGIN_CACHE_DIR="/root/.terraform.d/plugin-cache"
 
 function initialize_state {
         echo "Installing launchpad from ${landingzone_name}"
@@ -183,20 +229,12 @@ function get_remote_state_details {
         export tf_name="$(basename $(pwd)).tfstate"
 }
 
-function display_instructions {
-        echo "You can deploy a landingzone with the rover by running ./rover.sh [launchpad_folder_name] [plan|apply|destroy]"
-        echo ""
-        echo "List of the landingzones loaded in the rover:"
-        for i in $(ls -d landingzones/landingzone*); do echo ${i%%/}; done
-        echo ""
-}
 
 # Trying to retrieve the terraform state storage account id
 id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
 
 if [ "${id}" == '' ]; then
-        echo "You must login to an Azure subscription first"
-        exit 1
+        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
 fi
 
 # Initialise storage account to store remote terraform state
@@ -215,11 +253,6 @@ else
         echo "Launchpad already installed"
         get_remote_state_details
         echo ""
-
-        if [ -z "${landingzone_name}" ]; then 
-                display_instructions
-                exit 1
-        fi
 fi
 
 if [ "${landingzone_name}" == "level0/level0_launchpad" ]; then
@@ -230,5 +263,9 @@ if [ "${landingzone_name}" == "level0/level0_launchpad" ]; then
 
         display_instructions
 else
-        deploy_landingzone
+        if [ -z "${landingzone_name}" ]; then 
+                display_instructions
+        else
+                deploy_landingzone
+        fi
 fi
