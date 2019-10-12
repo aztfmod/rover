@@ -4,9 +4,11 @@ git_mode=$1
 
 echo ""
 echo "setup the development environment"
+
+set -e
 repos=$(curl https://api.github.com/orgs/aztfmod/repos)
 
-function setup_folder {
+setup_folder () {
     folder=$1
     if [ -d ${folder} ]; then
         echo "${folder} folder exists"
@@ -16,18 +18,27 @@ function setup_folder {
     fi
 }
 
-function clone {
-    folder=$1
-    git_clone_mode=$2
-    name=$3
-    ssh_url=$4
-    clone_url=$5
+clone () {
+
+    name=$1
+    ssh_url=$2
+    clone_url=$3
+    folder=$4
+    git_clone_mode=$5
+
+    echo ""
+    echo "-----------------------------------------------"
+    echo "name:            '${name}'"
+    echo "ssh_url:         '${ssh_url}'"
+    echo "clone_url:       '${clone_url}'"
+    echo "folder:          '${folder}'"
+    echo "git_clone_mode:  '${git_clone_mode}'"
     
     if [ ! -z $name ]; then
         echo "cloning $name"
         # Check if the folder already exist
         if [ ! -d "${folder}${name}" ]; then
-            echo "cloning ${name} into ${folder}${name}"
+            echo "cloning with ${git_clone_mode} - ${name} into ${folder}${name}"
 
             if [ ${git_clone_mode} == "gitssh" ]; then
                 git clone $ssh_url ${folder}${name}
@@ -35,7 +46,7 @@ function clone {
                 git clone $clone_url ${folder}${name}
             fi
         else
-            echo "already cloned"
+            echo "already cloned with ${git_clone_mode}"
         fi
     fi
 }
@@ -45,26 +56,34 @@ repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/t
 
 setup_folder "../modules"
 echo ${repos_to_clone} | while read -d '" "' line; do
-        clone "../modules/" ${git_mode} ${line}
+    if [ ! -z "${line}" ]; then
+        clone ${line} "../modules/" ${git_mode}
+    fi
 done 
 
 # Cloning landingzone_template
 repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/landingzone_template")) | "\(.name) \(.ssh_url) \(.clone_url)"')
 
 echo ${repos_to_clone} | while read -d '" "' line; do
-        clone "../" ${git_mode} ${line}
+    if [ ! -z "${line}" ]; then
+        clone ${line} "../" ${git_mode}
+    fi
 done 
 
 # Cloning landingzones
 repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/landingzones")) | "\(.name) \(.ssh_url) \(.clone_url)"')
 
 echo ${repos_to_clone} | while read -d '" "' line; do
-        clone "../" ${git_mode} ${line}
+    if [ ! -z "${line}" ]; then
+        clone ${line} "../" ${git_mode}
+    fi
 done 
 
 # Cloning level0
 repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/level0")) | "\(.name) \(.ssh_url) \(.clone_url)"')
 
 echo ${repos_to_clone} | while read -d '" "' line; do
-        clone "../" ${git_mode} ${line}
+    if [ ! -z "${line}" ]; then
+        clone ${line} "../" ${git_mode}
+    fi
 done 

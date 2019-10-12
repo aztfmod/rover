@@ -26,7 +26,7 @@ local:
 	@echo "run ./rover.sh"
 
 setup_dev_gitssh:
-	@sh "$(CURDIR)/scripts/setup_dev_environment.sh" "gitssh"
+	@bash "$(CURDIR)/scripts/setup_dev_environment.sh" "gitssh"
 
 setup_dev_githttp:
-	@sh "$(CURDIR)/scripts/setup_dev_environment.sh" "githttp"
+	@bash "$(CURDIR)/scripts/setup_dev_environment.sh" "githttp"

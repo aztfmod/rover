@@ -18,8 +18,8 @@ When fully loaded the rover will deploy the landingzones from the launchpad you 
 ## Create a base folder to host the rover
 
 ```bash
-folder="~/git/github.com/aztfmod"
-alias baseFolder="cd ~/git/github.com/aztfmod"
+folder="${HOME}/git/github.com/aztfmod"
+alias baseFolder="cd ${folder}"
 mkdir -p ${folder}
 baseFolder
 ```
@@ -30,6 +30,7 @@ You have to clone the git repository first on your local machine.
 
 ```bash
 git clone https://github.com/aztfmod/rover.git
+cd rover
 ```
 
 ## Load the rover with landingzones
@@ -51,15 +52,12 @@ To load the rover with the local landingzones you need to prepare your environme
 # Go back to the base folder
 # ~/git/github.com/aztfmod
 baseFolder
-
-# Clone the level0 launchpads
-git clone https://github.com/aztfmod/level0.git
-
-# Clone the public landingzones
-git clone https://github.com/aztfmod/landingzones.git
-
-# Go to the rover folder and load the rover with the local copies
 cd rover
+
+make setup_dev_githttp
+
+# or use make setup_dev_gitssh if you have an ssh key mapped  to your github account
+
 make local
 ```
 
