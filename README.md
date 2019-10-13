@@ -9,12 +9,12 @@ When fully loaded the rover will deploy the landingzones from the launchpad you 
 
 ## Pre-requisites
 * To use the rover you need to have docker engine running on your local machine
-* For Windows users make sure docker is running in Linux mode
+* For Windows users make sure docker is running in Linux mode.
 * Visual Studio Code
 * Azure cli must be installed on your local machine and connected to the default subscription you want to deploy the landingzones
 * jq must be installed if you plan to clone a local copy of the landingzone factory
 
-> For a better experience on Windows 10 it is recommended using the wsl2 and the Visual Studio Code insider build
+> For a better experience on Windows 10 it is recommended using the wsl2, the Visual Studio Code insider build and the Docker Technical Preview for wsl2
 
 ## Create a base folder to host the rover
 
