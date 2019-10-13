@@ -9,7 +9,7 @@ if [ $1 == "local" ]; then
     if [ -d "../level0" ]; then
         echo "development environment already setup"
     else
-        echo "You need to run first 'make setup_dev_gitssh' or 'make setup_dev_githttp'"
+        echo "You need to run first 'make setup_dev_gitssh' or 'make setup_dev_githttp'. Check the README.md"
         exit 1
     fi
 fi
