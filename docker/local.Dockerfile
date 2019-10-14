@@ -14,7 +14,7 @@ RUN echo "Installing terraform ${versionTerraform}..." \
 
 WORKDIR /tf
 
-COPY rover/docker/launchpad.sh .
+COPY rover/scripts/launchpad.sh .
 COPY level0 /tf/level0
 COPY landingzones /tf/landingzones
 

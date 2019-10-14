@@ -15,7 +15,7 @@ RUN echo "Installing terraform ${versionTerraform}..." \
 
 WORKDIR /tf
 
-COPY . .
+COPY rover/scripts/launchpad.sh .
 RUN git clone https://github.com/aztfmod/landingzones.git /tf/landingzones
 RUN git clone https://github.com/aztfmod/level0.git /tf/level0
 

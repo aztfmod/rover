@@ -9,17 +9,18 @@ When fully loaded the rover will deploy the landingzones from the launchpad you 
 
 ## Pre-requisites
 * To use the rover you need to have docker engine running on your local machine
-* For Windows users make sure docker is running in Linux mode
+* For Windows users make sure docker is running in Linux mode.
 * Visual Studio Code
 * Azure cli must be installed on your local machine and connected to the default subscription you want to deploy the landingzones
+* jq must be installed if you plan to clone a local copy of the landingzone factory
 
-> For a better experience on Windows 10 it is recommended using the wsl2 and the Visual Studio Code insider build
+> For a better experience on Windows 10 it is recommended using the wsl2, the Visual Studio Code insider build and the Docker Technical Preview for wsl2
 
 ## Create a base folder to host the rover
 
 ```bash
-folder="~/git/github.com/aztfmod"
-alias baseFolder="cd ~/git/github.com/aztfmod"
+folder="${HOME}/git/github.com/aztfmod"
+alias baseFolder="cd ${folder}"
 mkdir -p ${folder}
 baseFolder
 ```
@@ -30,6 +31,7 @@ You have to clone the git repository first on your local machine.
 
 ```bash
 git clone https://github.com/aztfmod/rover.git
+cd rover
 ```
 
 ## Load the rover with landingzones
@@ -51,15 +53,12 @@ To load the rover with the local landingzones you need to prepare your environme
 # Go back to the base folder
 # ~/git/github.com/aztfmod
 baseFolder
-
-# Clone the level0 launchpads
-git clone https://github.com/aztfmod/level0.git
-
-# Clone the public landingzones
-git clone https://github.com/aztfmod/landingzones.git
-
-# Go to the rover folder and load the rover with the local copies
 cd rover
+
+make setup_dev_githttp
+
+# or use make setup_dev_gitssh if you have an ssh key mapped  to your github account
+
 make local
 ```
 
@@ -101,13 +100,14 @@ Open an issue list to report any issues and missing features.
 
 ### Error codes
 Error code returned by the bash (echo $?)
-Code | Description 
---- | ---
- 0 | Operation completed successfully 
-2 | Not connected to Azure subscription. You need to logout / login and set the default subscription
-10 | Launchpad is installed but no landingzone and action arguments have been set
-11 | Landingzone argument set without an action
-12 | Landingzone folder does not exist in the rover
+
+| Code | Description | 
+|--- |--- |
+| 0 | Operation completed successfully 
+|2 | Not connected to Azure subscription. You need to logout / login and set the default subscription 
+|10 | Launchpad is installed but no landingzone and action arguments have been set 
+|11 | Landingzone argument set without an action 
+|12 | Landingzone folder does not exist in the rover 
 
 ### Limitations
 
