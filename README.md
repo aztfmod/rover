@@ -100,13 +100,14 @@ Open an issue list to report any issues and missing features.
 
 ### Error codes
 Error code returned by the bash (echo $?)
-Code | Description 
---- | ---
- 0 | Operation completed successfully 
-2 | Not connected to Azure subscription. You need to logout / login and set the default subscription
-10 | Launchpad is installed but no landingzone and action arguments have been set
-11 | Landingzone argument set without an action
-12 | Landingzone folder does not exist in the rover
+
+| Code | Description | 
+|--- |--- |
+| 0 | Operation completed successfully 
+|2 | Not connected to Azure subscription. You need to logout / login and set the default subscription 
+|10 | Launchpad is installed but no landingzone and action arguments have been set 
+|11 | Landingzone argument set without an action 
+|12 | Landingzone folder does not exist in the rover 
 
 ### Limitations
 
