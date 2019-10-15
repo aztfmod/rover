@@ -240,7 +240,7 @@ fi
 # Initialise storage account to store remote terraform state
 if [ "${id}" == "null" ]; then
         echo "Calling initialize_state"
-        landingzone_name="launchpad_opensource"
+        landingzone_name="level0/launchpad_opensource"
 
         initialize_state
 
