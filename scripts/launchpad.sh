@@ -27,6 +27,31 @@ error() {
   exit "${code}"
 }
 
+if [ "${landingzone_name}" == "login" ]; then
+        echo "Checking existing Azure session"
+        session=$(az account show)
+
+        if [ $? == 1 ]; then
+                az login
+        fi
+
+        echo ${tf_action}
+        # the second parameter would be the subscription id to target
+        if [ ! -z "${tf_action}" ]; then
+                az account set -s ${tf_action}
+        fi
+        
+        az account show
+        exit
+fi
+
+if [ "${landingzone_name}" == "logout" ]; then
+        echo "Closing Azure session"
+        az logout
+        echo "Azure session closed"
+        exit
+fi
+
 function display_instructions {
         echo ""
         echo "You can deploy a landingzone with the rover by running ./rover.sh [landingzone_folder_name] [plan|apply|destroy]"
@@ -241,13 +266,6 @@ fi
 if [ "${id}" == "null" ]; then
         echo "Calling initialize_state"
         landingzone_name="level0/launchpad_opensource"
-
-        initialize_state
-
-        id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
-
-        echo "Launchpad installed and ready"
-        get_remote_state_details
 else    
         echo ""
         echo "Launchpad already installed"
@@ -259,9 +277,16 @@ if [ "${landingzone_name}" == "level0/launchpad_opensource" ]; then
 
         if [ "${tf_action}" == "destroy" ]; then
                 echo "The launchpad is protected from deletion"
-        fi
+        else
+                echo "Launchpad not installed"
+                initialize_state
 
-        display_instructions
+                id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
+
+                echo "Launchpad installed and ready"
+                display_instructions
+                get_remote_state_details
+        fi
 else
         if [ -z "${landingzone_name}" ]; then 
                 display_instructions
