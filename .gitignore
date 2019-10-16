@@ -1,4 +1,5 @@
 **/.terraform
+**/*.azure
 **/*.tfstate
 **/*.tfplan
 .DS_Store
