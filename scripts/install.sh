@@ -17,6 +17,8 @@ fi
 echo "loading landingzones from $1"
 echo ""
 
+cp ./.dockerignore ../
+
 docker build $(./scripts/buildargs.sh ./version.cat) -t caf_rover \
     -f ./docker/$1.Dockerfile ../
 
