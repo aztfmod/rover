@@ -4,7 +4,7 @@ default: github
 github: 
 	@bash "$(CURDIR)/scripts/install.sh" "github"
 
-local:  
+local:
 	@bash "$(CURDIR)/scripts/install.sh" "local"
 
 setup_dev_gitssh:
