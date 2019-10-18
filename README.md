@@ -1,20 +1,25 @@
 ## Introduction
-The rover is a docker container in charge of the deployment of the landing zones in your Azure environment.
+The rover is a Docker container in charge of the deployment of the landing zones in your Azure environment.
 
-You have to load the rover with some landingzones to be able to deploy them.
+You have to load the rover with some landing zones to be able to deploy them.
 
-The rover load the landingzones from github or directly from your local folder if you are building/modifying a new one on your local machine. Start loading the rover with the github landingzones as it will be the quickest way to start.
+The rover load the landing zones from Github or directly from your local folder if you are building/modifying a new one on your local machine. Start loading the rover with the Github landing zones as it will be the quickest way to start.
 
-When fully loaded the rover will deploy the landingzones from the launchpad you have installed. 
+When fully loaded the rover will deploy the landing zones from the launchpad you have installed. 
 
 ## Pre-requisites
-* To use the rover you need to have docker engine running on your local machine
-* For Windows users make sure docker is running in Linux mode.
+* To use the rover you need to have Docker engine running on your local machine
+* For Windows users make sure Docker is running in Linux mode.
 * Visual Studio Code
-* Azure cli must be installed on your local machine and connected to the default subscription you want to deploy the landingzones
+* Azure CLI must be installed on your local machine and connected to the default subscription you want to deploy the landingzones
 * jq must be installed if you plan to clone a local copy of the landingzone factory
+* git must be installed if you plan to clone local copy of the landing zones
 
-> For a better experience on Windows 10 it is recommended using the wsl2, the Visual Studio Code insider build and the Docker Technical Preview for wsl2
+> For a better experience on Windows 10 we recommended using:
+>- Windows Subsystem for Linux v2 (https://docs.microsoft.com/en-us/windows/wsl/wsl2-install)
+>- Chose Ubuntu 18.04 LTS 
+>- Docker Technical Preview for WSL2 (https://docs.docker.com/docker-for-windows/wsl-tech-preview/)
+>- (Optional) Visual Studio Code insider build 
 
 ## Create a base folder to host the rover
 
@@ -34,21 +39,21 @@ git clone https://github.com/aztfmod/rover.git
 cd rover
 ```
 
-## Load the rover with landingzones
+## Load the rover with landing zones
 
-### Load the rover with the latest public landingzones
+### Load the rover with the latest public landing zones
 
 Execute the following command from the local shell. Make sure docker engine is running.
 
-For Linux, macos or Windows wsl / wsl2
+For Linux, MacOS or Windows WSL / WSL2
 ```bash
 make
 ```
 Go to the next section to install the launchpad
 
-### Load the rover with your local landingzones
+### Load the rover with your local landing zones
 
-To load the rover with the local landingzones you need to prepare your environment with the level0 launchpad and landingzones 
+To load the rover with the local landing zones you need to prepare your environment with the level0 launchpad and landing zones 
 ```bash
 # Go back to the base folder
 # ~/git/github.com/aztfmod
@@ -62,10 +67,10 @@ make setup_dev_githttp
 make local
 ```
 
-> Everytime you update the local versions of the landingzones you need to re-execute the command 'make local' and then use the rover to deploy the modifications
+> Everytime you update the local versions of the landing zones you need to re-execute the command 'make local' and then use the rover to deploy the modifications
 
 ## Install the launchpad
-A launchpad is required by the rover to coordinate the initial and sub-sequent deployments of the landingzones.
+A launchpad is required by the rover to coordinate the initial and sub-sequent deployments of the landing  zones.
 
 At the moment the public launchpad is using Terraform open source edition.
 
@@ -73,17 +78,29 @@ To initialize the launchpad execute the following commands.
 
 ```bash
 # go to the rover subfolder
+# Login to your Azure subscription
+./rover.sh login
 # Verify the current Azure subscription
 az account show
-
+# If your are not using the default subscription, specify it using az account set --subscription <put your subscription GUID>
 # Install the launchpad
 ./rover.sh
 ```
-> The initial installation of the launchpad take between 5 to 10 minutes and occurs small costs.
+> The initial installation of the launchpad take between 5 to 10 minutes and incurs minimal costs.
 
-If you re-execute the rover.sh with no parameters it will display the coordinates of the launchpad and the landingzones that can be deployed
+If you re-execute the rover.sh with no parameters it will display the coordinates of the launchpad and the landing zones that are available for deployment:
 
 ![install_launchpad](/images/install_launchpad.png)
+
+## Deploy the Cloud Adoption Framework foundations landing zone: 
+```bash
+# Display the resources that are going to be deployed
+./rover.sh landingzones/landingzone_caf_foundations plan
+
+# Deploy the resources
+./rover.sh landingzones/landingzone_caf_foundations apply
+
+```
 
 ## Deploy the virtual datacenter level1
 ```bash
@@ -98,6 +115,7 @@ If you re-execute the rover.sh with no parameters it will display the coordinate
 ### Something you want, something not working?
 Open an issue list to report any issues and missing features.
 
+## Troubleshooting
 ### Error codes
 Error code returned by the bash (echo $?)
 
@@ -109,7 +127,13 @@ Error code returned by the bash (echo $?)
 |11 | Landingzone argument set without an action 
 |12 | Landingzone folder does not exist in the rover 
 
+### Purging Docker cache
+You can purge Docker cache running the following command:
+```bash
+docker system prune -a
+```
+
 ### Limitations
 
-* You cannot run the rover from the Azure cloud shell at the moment.
+* You cannot run the rover from the Azure Cloud Shell (including the Windows Terminal Azure Cloud Shell) at the moment.
 * You cannot run the rover from Powershell on Windows
