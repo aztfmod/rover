@@ -16,7 +16,9 @@ WORKDIR /tf
 
 COPY rover/scripts/launchpad.sh .
 COPY rover/scripts/functions.sh .
+
 COPY level0 /tf/level0
 COPY landingzones /tf/landingzones
+COPY blueprints /tf/blueprints
 
 ENTRYPOINT [ "./launchpad.sh" ]
