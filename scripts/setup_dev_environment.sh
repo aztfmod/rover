@@ -35,7 +35,7 @@ clone () {
     echo "git_clone_mode:  '${git_clone_mode}'"
     
     if [ ! -z $name ]; then
-        echo "cloning $name"
+        echo "cloning:         '$name'"
         # Check if the folder already exist
         if [ ! -d "${folder}${name}" ]; then
             echo "cloning with ${git_clone_mode} - ${name} into ${folder}${name}"
@@ -47,6 +47,8 @@ clone () {
             fi
         else
             echo "already cloned with ${git_clone_mode}"
+            echo "pulling latest updates"
+            git pull 
         fi
     fi
 }
@@ -81,6 +83,15 @@ done
 
 # Cloning level0
 repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/level0")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+
+echo ${repos_to_clone} | while read -d '" "' line; do
+    if [ ! -z "${line}" ]; then
+        clone ${line} "../" ${git_mode}
+    fi
+done 
+
+# Cloning blueprints
+repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/blueprints")) | "\(.name) \(.ssh_url) \(.clone_url)"')
 
 echo ${repos_to_clone} | while read -d '" "' line; do
     if [ ! -z "${line}" ]; then
