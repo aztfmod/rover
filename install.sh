@@ -13,16 +13,23 @@ fi
 
 # Create the base folder structure
 folder="${HOME}/git/github.com/aztfmod"
-mkdir -p ${folder}
-cd git && cd github.com && cd aztfmod
 
+# Install only if the rover is not yet installed
+if [ ! -d ${folder} ]; then
+    mkdir -p ${folder}
+    cd ${HOME} && cd git && cd github.com && cd aztfmod
 
-# Clone the rover
-git clone https://github.com/aztfmod/rover.git
-cd rover
+    # Clone the rover
+    git clone https://github.com/aztfmod/rover.git
+    cd rover
 
-# check the pre-requisites
-./scripts/pre_requisites.sh
+    # check the pre-requisites
+    ./scripts/pre_requisites.sh
+else
+    echo "Azure CAF Rover already installed. Refreshing"
+    cd ${HOME} && cd git && cd github.com && cd aztfmod
+    git pull 
+fi
 
 alias rover=$(pwd)/rover.sh
 
