@@ -94,7 +94,7 @@ function clone_azure_devops () {
     echo "devops"
 
     target_folder="../private/"
-    setup_folder "${target_folder}"
+    setup_folder "${target_folder}/landingzones"
     clone "landingzones" "${url}" "" "${target_folder}" "gitssh"
 }
 
