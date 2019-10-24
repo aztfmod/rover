@@ -9,7 +9,7 @@ fi
 # Create the base folder structure
 folder="${HOME}/git/github.com/aztfmod"
 mkdir -p ${folder}
-cd ${folder}
+cd git && cd github.com && cd aztfmod
 
 
 # Clone the rover
