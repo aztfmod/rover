@@ -27,8 +27,6 @@ docker build $(./scripts/buildargs.sh ./version.cat) -t caf_rover_base \
 docker build -t caf_rover \
     -f ./docker/$1.Dockerfile ../
 
-# set an alias to the script
-alias rover=$(pwd)/rover.sh
 
 echo ""
 echo "rover loaded with github landingzones"
