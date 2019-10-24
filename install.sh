@@ -25,16 +25,19 @@ if [ ! -d ${folder} ]; then
 
     # check the pre-requisites
     ./scripts/pre_requisites.sh
+
+    echo ""
+    echo "The Azure CAF Rover has been installed sucessfully."
+
 else
     echo "Azure CAF Rover already installed. Refreshing"
     cd ${HOME} && cd git && cd github.com && cd aztfmod && cd rover
+    pwd
     git pull 
 fi
 
 alias rover=$(pwd)/rover.sh
 
-echo ""
-echo "The Azure CAF Rover has been installed sucessfully."
 echo ""
 echo "To complete the initialisation you need to:"
 echo " - build the rover with the public landingzones (just type 'make')"
