@@ -2,8 +2,9 @@
 
 source ./functions.sh
 
-# Initialize the launchpad first with ./launchpad.sh
-# deploy a landingzone with ./launchpad.sh [landingzone_folder_name]
+# Initialize the launchpad first with rover
+# deploy a landingzone with 
+# rover [landingzone_folder_name]
 
 # capture the current path
 current_path=$(pwd)

@@ -14,18 +14,18 @@ error() {
 function display_login_instructions {
     echo ""
     echo "To login the rover to azure:"
-    echo " ./rover.sh login [subscription_id_to_target(optional)]"
+    echo " rover login [subscription_id_to_target(optional)]"
     echo ""
-    echo " ./rover.sh logout"
+    echo " rover logout"
     echo ""
     echo "To display the current azure session"
-    echo " ./rover.sh login "
+    echo " rover login "
     echo ""
 }
 
 function display_instructions {
     echo ""
-    echo "You can deploy a landingzone with the rover by running ./rover.sh [landingzone_folder_name] [plan|apply|destroy]"
+    echo "You can deploy a landingzone with the rover by running rover [landingzone_folder_name] [plan|apply|destroy]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
     for i in $(ls -d landingzones/landingzone*); do echo ${i%%/}; done
@@ -73,7 +73,7 @@ function verify_azure_session {
     session=$(az account show >/dev/null 2>&1)
     if [ $? == 1 ]; then
             display_login_instructions
-            error ${LINENO} "you must login to an Azure subscription first or './rover.sh login' again" 2
+            error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
     fi
 
 }
