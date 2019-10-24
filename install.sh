@@ -34,6 +34,7 @@ else
     echo "Azure CAF Rover already installed. Refreshing"
     rover_folder="${HOME}/git/github.com/aztfmod/rover"
     cd ${rover_folder}
+    pwd
     git pull 
 fi
 
