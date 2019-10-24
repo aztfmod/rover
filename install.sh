@@ -18,7 +18,7 @@ folder="${HOME}/git/github.com/aztfmod"
 if [ ! -d ${folder} ]; then
     mkdir -p ${folder}
     alias aztfmod_folder="cd ${HOME}/git/github.com/aztfmod"
-    aztfmod_folder
+    exec aztfmod_folder
 
     # Clone the rover
     git clone https://github.com/aztfmod/rover.git
@@ -33,7 +33,7 @@ if [ ! -d ${folder} ]; then
 else
     echo "Azure CAF Rover already installed. Refreshing"
     alias rover_folder="cd ${HOME}/git/github.com/aztfmod/rover"
-    rover_folder
+    exec rover_folder
     git pull 
 fi
 
