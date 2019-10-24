@@ -28,6 +28,7 @@ if [ ! -d ${folder} ]; then
 else
     echo "Azure CAF Rover already installed. Refreshing"
     cd ${HOME} && cd git && cd github.com && cd aztfmod
+    pwd
     git pull 
 fi
 
@@ -36,7 +37,7 @@ alias rover=$(pwd)/rover.sh
 echo ""
 echo "The Azure CAF Rover has been installed sucessfully."
 echo ""
-echo "As a next steps you need to do:"
+echo "To complete the initialisation you need to:"
 echo " - build the rover with the public landingzones (just type 'make')"
 echo " - login to the Azure subscription 'rover login [optional_subscription_id] [optional_tenantname.onmicrosoft.com_or_tenantguid]'"
 echo " - initialise the launchpad by running 'rover'"
