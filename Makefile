@@ -7,6 +7,10 @@ github:
 local:
 	@bash "$(CURDIR)/scripts/install.sh" "local"
 
+private:
+	@bash "$(CURDIR)/scripts/install.sh" "private"
+
+
 setup_dev_gitssh:
 	@bash "$(CURDIR)/scripts/setup_dev_environment.sh" "gitssh"
 
