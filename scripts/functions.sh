@@ -49,13 +49,17 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show)
 
-        if [ $? == 1 ]; then
-                ret=$(az login >/dev/null >&1)
+        if [ ! -z "${tf_command}" ]; then
+            echo "Login to azure with tenant ${tf_command}"
+            ret=$(az login --tenant ${tf_command} >/dev/null >&1)
+        else
+            ret=$(az login >/dev/null >&1)
         fi
 
         # the second parameter would be the subscription id to target
         if [ ! -z "${tf_action}" ]; then
-                az account set -s ${tf_action}
+            echo "Set default subscription to ${tf_action}"
+            az account set -s ${tf_action}
         fi
         
         az account show
