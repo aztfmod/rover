@@ -42,6 +42,7 @@ alias rover=$(pwd)/rover.sh
 
 echo ""
 echo "To complete the initialisation you need to:"
+echo " - go to the rover folder 'cd ${HOME}/git/github.com/aztfmod/rover'"
 echo " - build the rover with the public landingzones (just type 'make')"
 echo " - login to the Azure subscription 'rover login [optional_subscription_id] [optional_tenantname.onmicrosoft.com_or_tenantguid]'"
 echo " - initialise the launchpad by running 'rover'"
