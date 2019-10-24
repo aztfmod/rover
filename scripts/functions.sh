@@ -49,7 +49,7 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show)
 
-        if [ ! -z "${tf_command}" ]; then
+        if [ "${tf_command}" != "login" ] && [ ! -z "${tf_command}" ]; then
             echo "Login to azure with tenant ${tf_command}"
             ret=$(az login --tenant ${tf_command} >/dev/null >&1)
         else
