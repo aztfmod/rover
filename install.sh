@@ -27,8 +27,7 @@ if [ ! -d ${folder} ]; then
     ./scripts/pre_requisites.sh
 else
     echo "Azure CAF Rover already installed. Refreshing"
-    cd ${HOME} && cd git && cd github.com && cd aztfmod
-    pwd
+    cd ${HOME} && cd git && cd github.com && cd aztfmod && cd rover
     git pull 
 fi
 
