@@ -26,7 +26,7 @@ When fully loaded the rover will deploy the landing zones from the launchpad you
 To install the rover you must have git already installed
 
 ```bash
-wget -O - https://raw.githubusercontent.com/aztfmod/rover/master/install.sh | bash
+wget -O - --no-cache https://raw.githubusercontent.com/aztfmod/rover/master/install.sh | bash
 ```
 
 
