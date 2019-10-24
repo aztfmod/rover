@@ -21,23 +21,14 @@ When fully loaded the rover will deploy the landing zones from the launchpad you
 >- Docker Technical Preview for WSL2 (https://docs.docker.com/docker-for-windows/wsl-tech-preview/)
 >- (Optional) Visual Studio Code insider build 
 
-## Create a base folder to host the rover
+## Install the Azure CAF Rover on your local machine
+
+To install the rover you must have git already installed
 
 ```bash
-folder="${HOME}/git/github.com/aztfmod"
-alias baseFolder="cd ${folder}"
-mkdir -p ${folder}
-baseFolder
+wget -O - https://raw.githubusercontent.com/aztfmod/rover/master/install.sh | bash
 ```
 
-## Clone the rover
-
-You have to clone the git repository first on your local machine.
-
-```bash
-git clone https://github.com/aztfmod/rover.git
-cd rover
-```
 
 ## Load the rover with landing zones
 
@@ -62,12 +53,12 @@ To initialize the launchpad execute the following commands.
 ```bash
 # go to the rover subfolder
 # Login to your Azure subscription
-./rover.sh login
+rover login [subscription_guid] [tenantname.onmicrosoft.com or tenant_guid]
 # Verify the current Azure subscription
 az account show
 # If your are not using the default subscription, specify it using az account set --subscription <put your subscription GUID>
 # Install the launchpad
-./rover.sh
+rover
 ```
 > The initial installation of the launchpad take between 5 to 10 minutes and incurs minimal costs.
 
@@ -78,20 +69,20 @@ If you re-execute the rover.sh with no parameters it will display the coordinate
 ## Deploy the Cloud Adoption Framework foundations landing zone: 
 ```bash
 # Display the resources that are going to be deployed
-./rover.sh landingzones/landingzone_caf_foundations plan
+rover landingzones/landingzone_caf_foundations plan
 
 # Deploy the resources
-./rover.sh landingzones/landingzone_caf_foundations apply
+rover landingzones/landingzone_caf_foundations apply
 
 ```
 
 ## Deploy the virtual datacenter level1
 ```bash
 # Display the resources that are going to be deployed
-./rover.sh landingzones/landingzone_vdc_level1 plan
+rover landingzones/landingzone_vdc_level1 plan
 
 # Deploy the resources
-./rover.sh landingzones/landingzone_vdc_level1 apply
+rover landingzones/landingzone_vdc_level1 apply
 
 ```
 
