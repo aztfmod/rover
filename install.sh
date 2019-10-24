@@ -1,17 +1,23 @@
 #!/bin/bash
 
+res=$(which git)
+if [ ! $? == 0 ]; then
+    >&2 echo -e "You must install git to install the Azure CAF rover"
+    exit 1
+fi
+
 # Create the base folder structure
 folder="${HOME}/git/github.com/aztfmod"
 alias baseFolder="cd ${folder}"
 mkdir -p ${folder}
 baseFolder
 
-# check the pre-requisites
-./scripts/pre_requisites.sh
-
 # Clone the rover
 git clone https://github.com/aztfmod/rover.git
 cd rover
+
+# check the pre-requisites
+./scripts/pre_requisites.sh
 
 alias rover=$(pwd)/rover.sh
 
