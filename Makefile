@@ -12,3 +12,6 @@ setup_dev_gitssh:
 
 setup_dev_githttp:
 	@bash "$(CURDIR)/scripts/setup_dev_environment.sh" "githttp"
+
+setup_dev_devops_ssh:
+	@bash "$(CURDIR)/scripts/setup_dev_environment.sh" "devopsssh"

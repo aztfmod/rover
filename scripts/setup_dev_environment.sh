@@ -6,14 +6,13 @@ echo ""
 echo "setup the development environment"
 
 set -e
-repos=$(curl https://api.github.com/orgs/aztfmod/repos)
 
 setup_folder () {
     folder=$1
     if [ -d ${folder} ]; then
         echo "${folder} folder exists"
     else
-        mkdir ${folder}
+        mkdir -p ${folder}
         echo "${folder} folder created"
     fi
 }
@@ -53,48 +52,59 @@ clone () {
     fi
 }
 
-# Cloning modules
-repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/terraform-azurerm-caf-")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+function clone_repos() {
+    repo=$1
+    folder=$2
 
-setup_folder "../modules"
-echo ${repos_to_clone} | while read -d '" "' line; do
-    if [ ! -z "${line}" ]; then
-        clone ${line} "../modules/" ${git_mode}
-    fi
-done 
+    echo ${repo} | while read -d '" "' line; do
+        if [ ! -z "${line}" ]; then
+            clone ${line} ${folder} ${git_mode}
+        fi
+    done 
+}
 
-# Cloning landingzone_template
-repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/landingzone_template")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+function clone_git {
+    repo_patterns=(
+        "aztfmod/landingzone_template"
+        "aztfmod/landingzones"
+        "aztfmod/level0"
+        "aztfmod/blueprints"
+    )
 
-echo ${repos_to_clone} | while read -d '" "' line; do
-    if [ ! -z "${line}" ]; then
-        clone ${line} "../" ${git_mode}
-    fi
-done 
+    repos=$(curl https://api.github.com/orgs/aztfmod/repos)
 
-# Cloning landingzones
-repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/landingzones")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+    # Clone modules
+    setup_folder "../modules"
+    repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/terraform-azurerm-caf-")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+    clone_repos "${repos_to_clone}" "../modules/"
 
-echo ${repos_to_clone} | while read -d '" "' line; do
-    if [ ! -z "${line}" ]; then
-        clone ${line} "../" ${git_mode}
-    fi
-done 
+    # Clone the repo_patterns
+    for pattern in ${repo_patterns[@]}; do
+        
+        repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("'"${pattern}"'")) | "\(.name) \(.ssh_url) \(.clone_url)"')
 
-# Cloning level0
-repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/level0")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+        clone_repos "${repos_to_clone}" "../"
 
-echo ${repos_to_clone} | while read -d '" "' line; do
-    if [ ! -z "${line}" ]; then
-        clone ${line} "../" ${git_mode}
-    fi
-done 
+    done
+}
 
-# Cloning blueprints
-repos_to_clone=$(echo $repos | jq '.[] | select(.full_name | contains("aztfmod/blueprints")) | "\(.name) \(.ssh_url) \(.clone_url)"')
+function clone_azure_devops () {
 
-echo ${repos_to_clone} | while read -d '" "' line; do
-    if [ ! -z "${line}" ]; then
-        clone ${line} "../" ${git_mode}
-    fi
-done 
+    echo "cloning url: ${url}"
+    echo "devops"
+
+    target_folder="../private/"
+    setup_folder "${target_folder}"
+    clone "landingzones" "${url}" "" "${target_folder}" "gitssh"
+}
+
+if [ ${git_mode} == "gitssh" ] || [ ${git_mode} == "githttp" ]; then
+    
+    clone_git
+
+else
+    clone_azure_devops
+fi
+
+
+
