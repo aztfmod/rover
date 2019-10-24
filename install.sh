@@ -17,8 +17,8 @@ folder="${HOME}/git/github.com/aztfmod"
 # Install only if the rover is not yet installed
 if [ ! -d ${folder} ]; then
     mkdir -p ${folder}
-    alias aztfmod_folder="cd ${HOME}/git/github.com/aztfmod"
-    exec aztfmod_folder
+    aztfmod_folder="${HOME}/git/github.com/aztfmod"
+    cd ${aztfmod_folder}
 
     # Clone the rover
     git clone https://github.com/aztfmod/rover.git
@@ -32,8 +32,8 @@ if [ ! -d ${folder} ]; then
 
 else
     echo "Azure CAF Rover already installed. Refreshing"
-    alias rover_folder="cd ${HOME}/git/github.com/aztfmod/rover"
-    exec rover_folder
+    rover_folder="${HOME}/git/github.com/aztfmod/rover"
+    cd ${rover_folder}
     git pull 
 fi
 
