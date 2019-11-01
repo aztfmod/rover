@@ -159,9 +159,13 @@ function apply {
 function destroy {
     echo 'running terraform destroy'
     terraform destroy ${tf_command} \
-            -refresh=true
+            -refresh=false
 }
 
+function other {
+    echo "running terraform ${tf_action}"
+    terraform ${tf_action} ${tf_command}
+}
 
 function deploy_landingzone {
     echo "Deploying '${landingzone_name}'"
@@ -200,21 +204,24 @@ function deploy_landingzone {
             -backend-config access_key=${access_key} \
             -backend-config key=${tf_name}
 
-    if [ ${tf_action} == "plan" ]; then
+    case "${tf_action}" in 
+        "plan")
             echo "calling plan"
             plan
-    fi
-
-    if [ ${tf_action} == "apply" ]; then
+            ;;
+        "apply")
             echo "calling plan and apply"
             plan
             apply
-    fi
-
-    if [ ${tf_action} == "destroy" ]; then
+            ;;
+        "destroy")
             echo "calling destroy"
             destroy
-    fi
+            ;;
+        *)
+            other
+            ;;
+    esac
 
     if [ -f "$(basename $(pwd)).tfplan" ]; then
             echo "Deleting file $(basename $(pwd)).tfplan"
