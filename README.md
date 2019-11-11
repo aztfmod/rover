@@ -1,90 +1,105 @@
 ## Introduction
-The rover is a Docker container in charge of the deployment of the landing zones in your Azure environment.
+The **Azure CAF rover** is a Docker container in charge of the deployment of the landing zones in your Azure environment. It is acting as a **sandbox toolchain** development environment to avoid impacting the local machine but more importantly to make sure that all contributors in the GitOps teams are using a **consistent set of tools** and version. 
 
-You have to load the rover with some landing zones to be able to deploy them.
+The Azure CAF rover is the same container regarless you are using Windows, Linux or macOS. On the local GitOps machine you need to install Visual Studio Code. The Azure CAF rover is executed locally in a container.
 
-The rover load the landing zones from Github or directly from your local folder if you are building/modifying a new one on your local machine. Start loading the rover with the Github landing zones as it will be the quickest way to start.
+![Azure_CAF_Rover_Container](https://code.visualstudio.com/assets/docs/remote/containers/architecture-containers.png)
 
-When fully loaded the rover will deploy the landing zones from the launchpad you have installed. 
+You can learn more about the Visual Studio Code Remote on this [link](https://code.visualstudio.com/docs/remote/remote-overview).
+
+
 
 ## Pre-requisites
-* To use the rover you need to have Docker engine running on your local machine
-* For Windows users make sure Docker is running in Linux mode.
-* Visual Studio Code
-* Azure CLI must be installed on your local machine and connected to the default subscription you want to deploy the landingzones
-* jq must be installed if you plan to clone a local copy of the landingzone factory
-* git must be installed if you plan to clone local copy of the landing zones
+The Visual Studio Code system requirements describe the steps to follow to get your GitOps development environment ready -> [link](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+* **Windows**: Docker Desktop 2.0+ on Windows 10 Pro/Enterprise in Linux Container mode
+* **macOS**: Docker Desktop 2.0+
+* **Linux**: Docker CE/EE 18.06+ and Docker Compose 1.24+
 
-> For a better experience on Windows 10 we recommended using:
->- Windows Subsystem for Linux v2 (https://docs.microsoft.com/en-us/windows/wsl/wsl2-install)
->- Chose Ubuntu 18.04 LTS 
->- Docker Technical Preview for WSL2 (https://docs.docker.com/docker-for-windows/wsl-tech-preview/)
->- (Optional) Visual Studio Code insider build 
+The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
+https://hub.docker.com/r/aztfmod/rover/tags?page=1
 
-## Install the Azure CAF Rover on your local machine
+Install
+* Visual Studio Code version 1.40+ - [link](https://code.visualstudio.com/Download)
+* Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-To install the rover you must have git already installed
+## Create a GitHub respository based on the rover template
 
+Go to the Azure CAF rover remote container template https://github.com/aztfmod/rover-remote-container
+
+You install the Azure CAF rover by adding the following folder and files:
+
+Click on the templace button:
+![template](./images/template.png)
+
+Set a name to the repository
+![repository](./images/first.png)
+
+Wait for the repository to be created
+![wait](./images/wait.png)
+
+Clone the repository using SSH - copy the url
+![clone](./images/clone.png)
+
+From a console execute the git clone command
+![git_clone](./images/clone_local.png)
+
+Open the cloned repository with Visual Studio Code
+![code_open](./images/code_open.png)
+
+Visual Studio Code opens
+![vscode_opens](./images/vscode_opens.png)
+
+| Note: the bottom left green button shows the Visual Studio Remote Development extension has been installed
+
+Click on the button "Reopen in Container"
+![reopen_container](./images/vscode_reopen_container.png)
+
+While Visual Studio Code reopens your project and load the Azure CAF rover you will see the following icon
+![vscode_opening](./images/vscode_opening_remote.png)
+
+| Note: The first time it will take longer as the full docker image has to be downloaded.
+
+When successfuly loaded you will see Visual Studio Code opened with the following look and feel
+![vscode_opened](./images/vscode_opened.png)
+
+It is recommeded you leverage the workspace in order to drive more consistancy across different operating systems
+![vscode_container_ws](./images/vscode_container_ws.png)
+
+## Login the rover to Azure
+Open a new terminal from the menu Terminal..New Terminal
+
+Run **Rover login**
+![rover_login](./images/rover_login.png)
+
+Note: If you have more than one subscription or Azure AD Tenant you can use the command: 
 ```bash
-wget -O - --no-cache https://raw.githubusercontent.com/aztfmod/rover/master/install.sh | bash
-```
-
-
-## Load the rover with landing zones
-
-### Load the rover with the latest public landing zones
-
-Execute the following command from the local shell. Make sure docker engine is running.
-
-For Linux, MacOS or Windows WSL / WSL2
-```bash
-make
-```
-Go to the next section to install the launchpad
-
-
-## Install the launchpad
-A launchpad is required by the rover to coordinate the initial and sub-sequent deployments of the landing  zones.
-
-At the moment the public launchpad is using Terraform open source edition.
-
-To initialize the launchpad execute the following commands.
-
-```bash
-# go to the rover subfolder
 # Login to your Azure subscription
 rover login [subscription_guid] [tenantname.onmicrosoft.com or tenant_guid]
 # Verify the current Azure subscription
 az account show
-# If your are not using the default subscription, specify it using az account set --subscription <put your subscription GUID>
-# Install the launchpad
-rover
 ```
-> The initial installation of the launchpad take between 5 to 10 minutes and incurs minimal costs.
 
-If you re-execute the rover.sh with no parameters it will display the coordinates of the launchpad and the landing zones that are available for deployment:
+Authenticate with your credential
+![authenticate](./images/rover_login1.png)
 
-![install_launchpad](/images/install_launchpad.png)
+Note: Copy the code and open the device login to set your username and password
+
+![logged](./images/rover_logged.png)
+
+## Initialize the Level0 launchpad
+
+
 
 ## Deploy the Cloud Adoption Framework foundations landing zone: 
 ```bash
 # Display the resources that are going to be deployed
-rover landingzones/landingzone_caf_foundations plan
+rover /tf/landingzones/landingzone_caf_foundations plan
 
 # Deploy the resources
-rover landingzones/landingzone_caf_foundations apply
+rover /tf/landingzones/landingzone_caf_foundations apply
 
 ```
 
-## Deploy the virtual datacenter level1
-```bash
-# Display the resources that are going to be deployed
-rover landingzones/landingzone_vdc_level1 plan
-
-# Deploy the resources
-rover landingzones/landingzone_vdc_level1 apply
-
-```
 
 ### Something you want, something not working?
 Open an issue list to report any issues and missing features.
@@ -130,4 +145,4 @@ docker system prune -a
 ### Limitations
 
 * You cannot run the rover from the Azure Cloud Shell (including the Windows Terminal Azure Cloud Shell) at the moment.
-* You cannot run the rover from Powershell on Windows
+
