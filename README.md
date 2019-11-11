@@ -29,47 +29,47 @@ Go to the Azure CAF rover remote container template https://github.com/aztfmod/r
 You install the Azure CAF rover by adding the following folder and files:
 
 Click on the templace button:
-![template](./images/template.png)
+![template](/images/template.png)
 
 Set a name to the repository
-![repository](./images/first.png)
+![repository](/images/first.png)
 
 Wait for the repository to be created
-![wait](./images/wait.png)
+![wait](/images/wait.png)
 
 Clone the repository using SSH - copy the url
-![clone](./images/clone.png)
+![clone](/images/clone.png)
 
 From a console execute the git clone command
-![git_clone](./images/clone_local.png)
+![git_clone](/images/clone_local.png)
 
 Open the cloned repository with Visual Studio Code
-![code_open](./images/code_open.png)
+![code_open](/images/code_open.png)
 
 Visual Studio Code opens
-![vscode_opens](./images/vscode_opens.png)
+![vscode_opens](/images/vscode_opens.png)
 
 | Note: the bottom left green button shows the Visual Studio Remote Development extension has been installed
 
 Click on the button "Reopen in Container"
-![reopen_container](./images/vscode_reopen_container.png)
+![reopen_container](/images/vscode_reopen_container.png)
 
 While Visual Studio Code reopens your project and load the Azure CAF rover you will see the following icon
-![vscode_opening](./images/vscode_opening_remote.png)
+![vscode_opening](/images/vscode_opening_remote.png)
 
 | Note: The first time it will take longer as the full docker image has to be downloaded.
 
 When successfuly loaded you will see Visual Studio Code opened with the following look and feel
-![vscode_opened](./images/vscode_opened.png)
+![vscode_opened](/images/vscode_opened.png)
 
 It is recommeded you leverage the workspace in order to drive more consistancy across different operating systems
-![vscode_container_ws](./images/vscode_container_ws.png)
+![vscode_container_ws](/images/vscode_container_ws.png)
 
 ## Login the rover to Azure
 Open a new terminal from the menu Terminal..New Terminal
 
 Run **Rover login**
-![rover_login](./images/rover_login.png)
+![rover_login](/images/rover_login.png)
 
 Note: If you have more than one subscription or Azure AD Tenant you can use the command: 
 ```bash
@@ -80,11 +80,11 @@ az account show
 ```
 
 Authenticate with your credential
-![authenticate](./images/rover_login1.png)
+![authenticate](/images/rover_login1.png)
 
 Note: Copy the code and open the device login to set your username and password
 
-![logged](./images/rover_logged.png)
+![logged](/images/rover_logged.png)
 
 ## Initialize the Level0 launchpad
 
