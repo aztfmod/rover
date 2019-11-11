@@ -88,7 +88,12 @@ Note: Copy the code and open the device login to set your username and password
 
 ## Initialize the Level0 launchpad
 
+Initialize the rover by calling the rover command. The initialization of the launchpad will take between 5-10 mins.
 
+```bash
+# Deploy the launchpad level0
+rover
+```
 
 ## Deploy the Cloud Adoption Framework foundations landing zone: 
 ```bash
@@ -104,25 +109,6 @@ rover /tf/landingzones/landingzone_caf_foundations apply
 ### Something you want, something not working?
 Open an issue list to report any issues and missing features.
 
-### Want to build or extend the landingzones or blueprints?
-
-To load the rover with the local landing zones you need to prepare your environment with the level0 launchpad and landing zones 
-```bash
-# Go back to the base folder
-# ~/git/github.com/aztfmod
-baseFolder
-cd rover
-
-make setup_dev_githttp
-
-# or use make setup_dev_gitssh if you have an ssh key mapped  to your github account
-
-make local
-```
-
-> Everytime you update the local versions of the landing zones you need to re-execute the command 'make local' and then use the rover to deploy the modifications
-
-> You can also refresh the git repositories with the latest version by calling 'make setup_dev_githttp' or 'make setup_dev_gitssh'
 
 ## Troubleshooting
 ### Error codes
