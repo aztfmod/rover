@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./functions.sh
+source /tf/rover/functions.sh
 
 # Initialize the launchpad first with rover
 # deploy a landingzone with 

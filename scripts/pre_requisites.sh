@@ -3,7 +3,7 @@
 echo "Checking pre-requisites:"
 
 # Programs to be installed
-programs=(jq docker git)
+programs=(docker git)
 missing_programs=0
 
 for i in ${programs[@]}

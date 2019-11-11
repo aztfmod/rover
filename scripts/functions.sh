@@ -28,7 +28,8 @@ function display_instructions {
     echo "You can deploy a landingzone with the rover by running rover [landingzone_folder_name] [plan|apply|destroy]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
-    for i in $(ls -d landingzones/landingzone*); do echo ${i%%/}; done
+    for i in $(ls -d /tf/landingzones/landingzone*); do echo ${i%%/}; done
+    for i in $(ls -d /tf/private/landingzone*); do echo ${i%%/}; done
     echo ""
 }
 

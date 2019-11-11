@@ -17,18 +17,14 @@ fi
 echo "loading landingzones from $1"
 echo ""
 
-cp ./.dockerignore ../
+
+tag=$(date +"%g%m.%d%H")
 
 # Build the rover base image
-docker build $(./scripts/buildargs.sh ./version.cat) -t caf_rover_base \
-    -f ./docker/base.Dockerfile ../
+docker-compose build
+docker tag rover_rover aztfmod/rover:$tag
+docker tag rover_rover aztfmod/rover:latest
 
 # build the rover
-docker build -t caf_rover \
-    -f ./docker/$1.Dockerfile ../
-
-
-echo ""
-echo "rover loaded with github landingzones"
-echo "execute:"
-echo "rover"
+docker push aztfmod/rover:$tag
+docker push aztfmod/rover:latest
