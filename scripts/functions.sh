@@ -86,7 +86,7 @@ function verify_azure_session {
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
-            echo "Defaulting to level0/launchpad_opensource"
+            echo "Defaulting to /tf/level0/launchpad_opensource"
     else
             echo "Verify the landingzone folder exist in the rover"
             readlink -f "${landingzone_name}"
