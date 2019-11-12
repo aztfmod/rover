@@ -89,8 +89,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     yum -y install make openssh-clients
 
-RUN git clone https://github.com/aztfmod/landingzones.git /tf/landingzones && \
-    git clone https://github.com/aztfmod/level0.git /tf/level0 && \
+RUN git clone https://github.com/aztfmod/level0.git /tf/level0 && \
     echo "alias rover=/tf/rover/launchpad.sh" >> ~/.bashrc
 
 RUN mkdir -p /root/.vscode-server /root/.vscode-server-insiders /root/.ssh 
