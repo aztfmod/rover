@@ -87,7 +87,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         openssl-devel && \
     yum -y autoremove && \
     #
-    yum -y install make openssh-clients
+    yum -y install make openssh-clients man ansible
 
 RUN git clone https://github.com/aztfmod/level0.git /tf/level0 && \
     echo "alias rover=/tf/rover/launchpad.sh" >> ~/.bashrc
