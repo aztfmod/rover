@@ -19,7 +19,7 @@ The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
 https://hub.docker.com/r/aztfmod/rover/tags?page=1
 
 Install
-* Visual Studio Code version 1.40+ - [link](https://code.visualstudio.com/Download)
+* Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
 * Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
 ## Create a GitHub respository based on the rover template
