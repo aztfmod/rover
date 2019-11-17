@@ -26,7 +26,7 @@ verify_parameters
 set -e
 trap 'error ${LINENO}' ERR
 
-export TF_PLUGIN_CACHE_DIR="/root/.terraform.d/plugin-cache"
+export TF_PLUGIN_CACHE_DIR="~/.terraform.d/plugin-cache"
 
 # Trying to retrieve the terraform state storage account id
 id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
