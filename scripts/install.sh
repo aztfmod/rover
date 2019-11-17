@@ -26,5 +26,5 @@ docker tag rover_rover aztfmod/rover:$tag
 docker tag rover_rover aztfmod/rover:latest
 
 # build the rover
-docker push aztfmod/rover:$tag
-docker push aztfmod/rover:latest
+# docker push aztfmod/rover:$tag
+# docker push aztfmod/rover:latest
