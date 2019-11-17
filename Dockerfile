@@ -8,6 +8,10 @@ ARG versionTflint
 ARG versionJq
 ARG versionDockerCompose
 
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
 ENV versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
     versionGit=${versionGit} \
@@ -86,18 +90,24 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         curl-devel \
         openssl-devel && \
     yum -y autoremove && \
-    #
-    yum -y install make openssh-clients
+    # Add other tools
+    yum -y install make openssh-clients man ansible
 
-RUN git clone https://github.com/aztfmod/landingzones.git /tf/landingzones && \
-    git clone https://github.com/aztfmod/level0.git /tf/level0 && \
-    echo "alias rover=/tf/rover/launchpad.sh" >> ~/.bashrc
+RUN groupadd --gid $USER_GID ${USERNAME} && \
+    useradd --uid $USER_UID --gid $USER_GID -m ${USERNAME} && \
+    mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.d && \
+    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.d && \
+    yum install -y sudo && \
+    echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME}
 
-RUN mkdir -p /root/.vscode-server /root/.vscode-server-insiders /root/.ssh 
+RUN git clone https://github.com/aztfmod/level0.git /tf/level0 && \
+    echo "alias rover=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc
 
 WORKDIR /tf/rover
 
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
 
-
+USER ${USERNAME}

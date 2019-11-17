@@ -3,7 +3,7 @@ The **Azure CAF rover** is a Docker container in charge of the deployment of the
 
 The Azure CAF rover is the same container regarless you are using Windows, Linux or macOS. On the local GitOps machine you need to install Visual Studio Code. The Azure CAF rover is executed locally in a container.
 
-![Azure_CAF_Rover_Container](https://code.visualstudio.com/assets/docs/remote/containers/architecture-containers.png)
+<img src="https://code.visualstudio.com/assets/docs/remote/containers/architecture-containers.png" width="75%">
 
 You can learn more about the Visual Studio Code Remote on this [link](https://code.visualstudio.com/docs/remote/remote-overview).
 
@@ -19,7 +19,7 @@ The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
 https://hub.docker.com/r/aztfmod/rover/tags?page=1
 
 Install
-* Visual Studio Code version 1.40+ - [link](https://code.visualstudio.com/Download)
+* Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
 * Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
 ## Create a GitHub respository based on the rover template
@@ -28,63 +28,77 @@ Go to the Azure CAF rover remote container template https://github.com/aztfmod/r
 
 You install the Azure CAF rover by adding the following folder and files:
 
-Click on the templace button:
-![template](./images/template.PNG)
+**Click on the templace button:**
 
-Set a name to the repository
-![repository](./images/first.PNG)
+<img src="./images/template.PNG" width="75%">
 
-Wait for the repository to be created
-![wait](./images/wait.PNG)
+**Set a name to the repository**
 
-Clone the repository using SSH - copy the url
-![clone](./images/clone.PNG)
+<img src="./images/first.PNG" width="75%">
 
-From a console execute the git clone command
-![git_clone](./images/clone_local.PNG)
+**Wait for the repository to be created**
 
-Open the cloned repository with Visual Studio Code
-![code_open](./images/code_open.PNG)
+<img src="./images/wait.PNG" width="75%">
 
-Visual Studio Code opens
-![vscode_opens](./images/vscode_opens.PNG)
+**Clone the repository using SSH - copy the url**
+
+<img src="./images/clone.PNG" width="75%">
+
+**From a console execute the git clone command**
+
+<img src="./images/clone_local.PNG" width="75%">
+
+**Open the cloned repository with Visual Studio Code**
+
+<img src="./images/code_open.PNG" width="75%">
+
+**Visual Studio Code opens**
+
+<img src="./images/vscode_opens.PNG" width="75%">
 
 | Note: the bottom left green button shows the Visual Studio Remote Development extension has been installed
 
-Click on the button "Reopen in Container"
-![reopen_container](./images/vscode_reopen_container.PNG)
+**Click on the button "Reopen in Container"**
+
+<img src="./images/vscode_reopen_container.PNG" width="75%">
 
 While Visual Studio Code reopens your project and load the Azure CAF rover you will see the following icon
-![vscode_opening](./images/vscode_opening_remote.PNG)
+
+<img src="./images/vscode_opening_remote.PNG" width="75%">
 
 | Note: The first time it will take longer as the full docker image has to be downloaded.
 
 When successfuly loaded you will see Visual Studio Code opened with the following look and feel
-![vscode_opened](./images/vscode_opened.PNG)
+
+<img src="./images/vscode_opened.PNG" width="75%">
 
 It is recommeded you leverage the workspace in order to drive more consistancy across different operating systems
-![vscode_container_ws](./images/vscode_container_ws.PNG)
+
+<img src="./images/vscode_container_ws.PNG" width="75%">
 
 ## Login the rover to Azure
 Open a new terminal from the menu Terminal..New Terminal
 
 Run **Rover login**
-![rover_login](./images/rover_login.PNG)
+
+<img src="./images/rover_login.PNG" width="75%">
 
 Note: If you have more than one subscription or Azure AD Tenant you can use the command: 
 ```bash
-# Login to your Azure subscription
+# Login to your Azure subscription --> if you have multiple subscriptions and tenant, set the subscription guid and tenant guid
 rover login [subscription_guid] [tenantname.onmicrosoft.com or tenant_guid]
 # Verify the current Azure subscription
 az account show
 ```
 
-Authenticate with your credential
-![authenticate](./images/rover_login1.PNG)
+**Authenticate with your credential**
+
+<img src="./images/rover_login1.PNG" width="75%">
 
 Note: Copy the code and open the device login to set your username and password
 
-![logged](./images/rover_logged.PNG)
+
+<img src="./images/rover_logged.PNG" width="75%">
 
 ## Initialize the Level0 launchpad
 
