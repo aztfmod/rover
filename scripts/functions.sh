@@ -28,7 +28,7 @@ function display_instructions {
     echo "You can deploy a landingzone with the rover by running rover [landingzone_folder_name] [plan|apply|destroy]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
-    for i in $(ls -d /tf/private/landingzone*); do echo ${i%%/}; done
+    for i in $(ls -d /tf/caf/landingzones/*); do echo ${i%%/}; done
     echo ""
 }
 
@@ -85,7 +85,7 @@ function verify_azure_session {
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
-            echo "Defaulting to /tf/level0/launchpad_opensource"
+            echo "Defaulting to /tf/launchpads/level0_opensource"
     else
             echo "Verify the landingzone folder exist in the rover"
             readlink -f "${landingzone_name}"
@@ -253,7 +253,7 @@ function upload_tfstate {
 
 function get_remote_state_details {
     echo ""
-    echo "Getting level0 launchpad coordinates:"
+    echo "Getting launchpad coordinates:"
     stg=$(az storage account show --ids ${id})
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
