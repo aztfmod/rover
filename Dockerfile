@@ -7,6 +7,7 @@ ARG versionGit
 ARG versionTflint
 ARG versionJq
 ARG versionDockerCompose
+ARG versionLaunchpadOpensource
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -18,6 +19,7 @@ ENV versionTerraform=${versionTerraform} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
     versionDockerCompose=${versionDockerCompose} \
+    versionLaunchpadOpensource=${versionLaunchpadOpensource} \
     TF_DATA_DIR="/home/vscode/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/vscode/.terraform.cache/plugin-cache"
 
@@ -105,8 +107,9 @@ RUN groupadd --gid $USER_GID ${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # Command to execute in the context of the vscode
-RUN mkdir -p /tf/launchpads && \
-    git clone https://github.com/aztfmod/level0.git /tf/launchpads && \
+RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
+    mkdir -p /tf/launchpads && \
+    git clone https://github.com/aztfmod/level0.git /tf/launchpads --branch ${versionLaunchpadOpensource} && \
     echo "alias rover=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     chown -R vscode:1000 /tf/launchpads

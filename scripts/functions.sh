@@ -99,17 +99,23 @@ function verify_landingzone {
 function initialize_state {
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
-    set +e
-    rm ./.terraform/terraform.tfstate
-    rm ./terraform.tfstate
-    rm backend.azurerm.tf
-    set -e
+    # set +e
+    # rm ./.terraform/terraform.tfstate
+    # rm ./terraform.tfstate
+    # rm backend.azurerm.tf
+    # set -e
 
     # Get the looged in user ObjectID
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
+    tf_name="$(basename $(pwd)).tfstate"
 
-    terraform init
-    terraform apply -auto-approve
+    terraform init \
+        -get-plugins=true \
+        -upgrade=true
+
+    terraform apply \
+        -var "tf_name=${tf_name}" \
+        -auto-approve
 
     echo ""
     upload_tfstate

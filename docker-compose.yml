@@ -19,6 +19,7 @@ services:
         - versionTflint
         - versionJq
         - versionDockerCompose
+        - versionLaunchpadOpensource
 
     volumes:
       - ..:/tf
