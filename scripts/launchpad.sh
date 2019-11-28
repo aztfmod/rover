@@ -36,7 +36,7 @@ fi
 # Initialise storage account to store remote terraform state
 if [ "${id}" == "null" ]; then
         echo "Calling initialize_state"
-        landingzone_name="/tf/launchpads/level0_opensource"
+        landingzone_name="/tf/launchpads/launchpad_opensource"
 else    
         echo ""
         echo "Launchpad already installed"
@@ -44,7 +44,7 @@ else
         echo ""
 fi
 
-if [ "${landingzone_name}" == "/tf/launchpads/level0_opensource" ]; then
+if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
 
         if [ "${tf_action}" == "destroy" ]; then
                 echo "The launchpad is protected from deletion"

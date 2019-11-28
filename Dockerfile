@@ -106,9 +106,10 @@ RUN groupadd --gid $USER_GID ${USERNAME} && \
 
 # Command to execute in the context of the vscode
 RUN mkdir -p /tf/launchpads && \
-    git clone https://github.com/aztfmod/level0.git /tf/launchpads/level0_opensource && \
+    git clone https://github.com/aztfmod/level0.git /tf/launchpads && \
     echo "alias rover=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc
+    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    chown -R vscode:1000 /tf/launchpads
 
 WORKDIR /tf/rover
 

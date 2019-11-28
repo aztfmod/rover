@@ -85,7 +85,7 @@ function verify_azure_session {
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
-            echo "Defaulting to /tf/launchpads/level0_opensource"
+            echo "Defaulting to /tf/launchpads/launchpad_opensource"
     else
             echo "Verify the landingzone folder exist in the rover"
             readlink -f "${landingzone_name}"
@@ -126,6 +126,7 @@ function initialize_from_remote_state {
     terraform init \
             -backend=true \
             -reconfigure=true \
+            -get-plugins=true \
             -upgrade=true \
             -backend-config storage_account_name=${storage_account_name} \
             -backend-config container_name=${container} \
@@ -133,10 +134,45 @@ function initialize_from_remote_state {
             -backend-config key=${tf_name}
 
 
-    terraform apply -refresh=true -auto-approve
+    terraform apply \
+        -var tf_name=${tf_name} \
+        -refresh=true -auto-approve
 
     rm backend.azurerm.tf
     cd "${current_path}"
+}
+
+function upload_tfstate {
+    echo "Moving launchpad to the cloud"
+
+    storage_account_name=$(terraform output storage_account_name)
+    resource_group=$(terraform output resource_group)
+    access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
+    container=$(terraform output container)
+    tf_name="$(basename $(pwd)).tfstate"
+
+    blobFileName=$(terraform output tfstate-blob-name)
+
+    az storage blob upload -f terraform.tfstate \
+            -c ${container} \
+            -n ${blobFileName} \
+            --account-key ${access_key} \
+            --account-name ${storage_account_name}
+
+    rm -f terraform.tfstate
+}
+
+function get_remote_state_details {
+    echo ""
+    echo "Getting launchpad coordinates:"
+    stg=$(az storage account show --ids ${id})
+
+    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
+    location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
+    export tf_name="$(basename $(pwd)).tfstate"
 }
 
 function plan {
@@ -198,7 +234,7 @@ function deploy_landingzone {
     terraform init \
             -reconfigure \
             -backend=true \
-            -lock=false \
+            -get-plugins=true \
             -backend-config storage_account_name=${storage_account_name} \
             -backend-config container_name=${container} \
             -backend-config access_key=${access_key} \
@@ -231,35 +267,3 @@ function deploy_landingzone {
     cd "${current_path}"
 }
 
-function upload_tfstate {
-    echo "Moving launchpad to the cloud"
-
-    storage_account_name=$(terraform output storage_account_name)
-    resource_group=$(terraform output resource_group)
-    access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
-    container=$(terraform output container)
-    tf_name="$(basename $(pwd)).tfstate"
-
-    blobFileName=$(terraform output tfstate-blob-name)
-
-    az storage blob upload -f terraform.tfstate \
-            -c ${container} \
-            -n ${blobFileName} \
-            --account-key ${access_key} \
-            --account-name ${storage_account_name}
-
-    rm -f terraform.tfstate
-}
-
-function get_remote_state_details {
-    echo ""
-    echo "Getting launchpad coordinates:"
-    stg=$(az storage account show --ids ${id})
-
-    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
-    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
-    location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
-    export tf_name="$(basename $(pwd)).tfstate"
-}
