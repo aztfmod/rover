@@ -241,6 +241,7 @@ function deploy_landingzone {
             -reconfigure \
             -backend=true \
             -get-plugins=true \
+            -upgrade=true \
             -backend-config storage_account_name=${storage_account_name} \
             -backend-config container_name=${container} \
             -backend-config access_key=${access_key} \
