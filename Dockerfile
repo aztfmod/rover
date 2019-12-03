@@ -79,6 +79,9 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     cat /etc/yum.repos.d/azure-cli.repo && \
     yum -y install azure-cli-${versionAzureCli} && \
     #
+    # Install azure devop extensions
+    az extension add --name azure-devops && \
+    #
     echo "Installing jq ${versionJq}..." && \
     curl -sSL -o /usr/local/bin/jq -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/local/bin/jq && \
