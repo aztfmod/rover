@@ -105,6 +105,7 @@ function initialize_state {
     # rm backend.azurerm.tf
     # set -e
 
+    # TODO: when transitioning to devops pipeline need to be adjuested
     # Get the looged in user ObjectID
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
     tf_name="$(basename $(pwd)).tfstate"

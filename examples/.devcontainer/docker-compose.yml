@@ -6,7 +6,7 @@
 version: '3.7'
 services:
   rover:
-    image: aztfmod/rover:1912.0411
+    image: aztfmod/rover:1912.0412
   
     labels:
       - "caf=Azure CAF"
@@ -28,12 +28,17 @@ services:
  
 volumes:
   volume-caf-ssh:
+    labels:
       - "caf=Azure CAF"
   volume-caf-cache-azure:
+    labels:
       - "caf=Azure CAF"
   volume-caf-cache-terraform:
+    labels:
       - "caf=Azure CAF"
   volume-caf-vscode-server:
+    labels:
       - "caf=Azure CAF"
   volume-caf-vscode-server-insiders:
+    labels:
       - "caf=Azure CAF"
