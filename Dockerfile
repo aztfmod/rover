@@ -54,10 +54,6 @@ RUN yum -y groupinstall "Development Tools" && \
     # Install Docker CE CLI. 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
-    # adduser -g docker ${USERNAME} && \
-    # usermod -aG docker ${USERNAME} && \
-    mkdir /var/run/docker.sock && \
-    chmod 666 /var/run/docker.sock && \
     #
     # Install Terraform
     echo "Installing terraform ${versionTerraform}..." && \
@@ -107,6 +103,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
 
 RUN groupadd --gid $USER_GID ${USERNAME} && \
     useradd --uid $USER_UID --gid $USER_GID -m ${USERNAME} && \
+    usermod -aG docker ${USERNAME} && \
     mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
     chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
     yum install -y sudo && \
