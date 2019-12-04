@@ -110,6 +110,7 @@ function initialize_state {
     tf_name="$(basename $(pwd)).tfstate"
 
     terraform init \
+        -reconfigure=true \
         -get-plugins=true \
         -upgrade=true
 
@@ -157,11 +158,11 @@ function upload_tfstate {
     container=$(terraform output container)
     tf_name="$(basename $(pwd)).tfstate"
 
-    blobFileName=$(terraform output tfstate-blob-name)
+    # blobFileName=$(terraform output tfstate-blob-name)
 
     az storage blob upload -f terraform.tfstate \
             -c ${container} \
-            -n ${blobFileName} \
+            -n ${tf_name} \
             --account-key ${access_key} \
             --account-name ${storage_account_name}
 
@@ -178,7 +179,6 @@ function get_remote_state_details {
     export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
     export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
     location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
-    export tf_name="$(basename $(pwd)).tfstate"
 }
 
 function plan {
