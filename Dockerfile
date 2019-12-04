@@ -54,7 +54,9 @@ RUN yum -y groupinstall "Development Tools" && \
     # Install Docker CE CLI. 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
-    usermod -aG docker ${USERNAME} && \
+    # adduser -g docker ${USERNAME} && \
+    # usermod -aG docker ${USERNAME} && \
+    mkdir /var/run/docker.sock && \
     chmod 666 /var/run/docker.sock && \
     #
     # Install Terraform
