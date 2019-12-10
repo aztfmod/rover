@@ -147,6 +147,7 @@ function initialize_from_remote_state {
         -refresh=true -auto-approve
 
     rm backend.azurerm.tf
+    rm -f /home/vscode/.terraform.cache/terraform.tfstate
     cd "${current_path}"
 }
 
@@ -167,7 +168,7 @@ function upload_tfstate {
             --account-key ${access_key} \
             --account-name ${storage_account_name}
 
-    rm -f terraform.tfstate
+    rm -f /home/vscode/.terraform.cache/terraform.tfstate
 }
 
 function get_remote_state_details {
@@ -271,6 +272,8 @@ function deploy_landingzone {
             echo "Deleting file $(basename $(pwd)).tfplan"
             rm "$(basename $(pwd)).tfplan"
     fi
+
+    rm  -f /home/vscode/.terraform.cache/terraform.tfstate
 
     cd "${current_path}"
 }
