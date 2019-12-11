@@ -2,5 +2,5 @@
 default: github
 
 github: 
-	@bash "$(CURDIR)/scripts/install.sh" "github"
+	@bash "$(CURDIR)/scripts/build_image.sh" "github"
 
