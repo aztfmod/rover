@@ -99,7 +99,11 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         openssl-devel && \
     yum -y autoremove && \
     # Add other tools
-    yum -y install make openssh-clients man ansible
+    yum -y install make && \
+        openssh-clients && \
+        man && \
+        ansible && \
+        which
 
 RUN groupadd --gid $USER_GID ${USERNAME} && \
     useradd --uid $USER_UID --gid $USER_GID -m ${USERNAME} && \
