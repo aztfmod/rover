@@ -94,8 +94,8 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
     rm -rfd /tmp/git-${versionGit} && \
     yum -y groupremove "Development Tools" && \
-    yum -y remove \
-        curl-devel \
+    yum -y remove && \
+        curl-devel && \
         openssl-devel && \
     yum -y autoremove && \
     # Add other tools
@@ -105,9 +105,8 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         ansible && \
         which
 
-RUN groupadd --gid $USER_GID ${USERNAME} && \
-    useradd --uid $USER_UID --gid $USER_GID -m ${USERNAME} && \
-    usermod -aG docker ${USERNAME} && \
+RUN useradd --uid $USER_UID -m -G docker ${USERNAME} && \
+    # sudo usermod -aG docker ${USERNAME} && \
     mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
     chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
     yum install -y sudo && \

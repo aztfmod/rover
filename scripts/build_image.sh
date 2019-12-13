@@ -10,11 +10,11 @@ echo "Creating version ${tag}"
 # Build the rover base image
 docker-compose build
 
-docker tag rover_rover aztfmod/rover:$tag
-docker tag rover_rover aztfmod/rover:latest
+sudo docker tag rover_rover aztfmod/rover:$tag
+sudo docker tag rover_rover aztfmod/rover:latest
 
-docker push aztfmod/rover:$tag
-docker push aztfmod/rover:latest
+sudo docker push aztfmod/rover:$tag
+sudo docker push aztfmod/rover:latest
 
 # tag the git branch and push
 git tag $tag master
