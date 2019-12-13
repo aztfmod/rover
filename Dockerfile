@@ -84,8 +84,8 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     curl -sSL -o /usr/local/bin/jq -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/local/bin/jq && \
     #
-    echo "Installing graphviz ..." && \
-    yum -y install graphviz && \
+    # echo "Installing graphviz ..." && \
+    # yum -y install graphviz && \
     # && echo "Installing tflint ..." \
     # && curl -sSL -o /tmp/tflint.zip https://github.com/wata727/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip \
     # && unzip -d /usr/local/bin /tmp/tflint.zip \
@@ -94,15 +94,15 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
     rm -rfd /tmp/git-${versionGit} && \
     yum -y groupremove "Development Tools" && \
-    yum -y remove && \
-        curl-devel && \
+    yum -y remove \
+        curl-devel \
         openssl-devel && \
     yum -y autoremove && \
     # Add other tools
-    yum -y install make && \
-        openssh-clients && \
-        man && \
-        ansible && \
+    yum -y install make \
+        openssh-clients \
+        man \
+        ansible \
         which
 
 RUN useradd --uid $USER_UID -m -G docker ${USERNAME} && \
