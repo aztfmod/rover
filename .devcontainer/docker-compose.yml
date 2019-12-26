@@ -21,8 +21,8 @@ services:
       - volume-caf-vscode-server:/home/vscode/.vscode-server
       - volume-caf-vscode-server-insiders:/home/vscode/.vscode-server-insiders
       - ~/.ssh:/home/vscode/.ssh-localhost:ro
- 
-      # Uncomment the next line to use Docker from inside the container.
+
+      # Enable docker in docker
       - /var/run/docker.sock:/var/run/docker.sock 
  
     # Overrides default command so things don't shut down after the process ends.
