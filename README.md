@@ -142,6 +142,23 @@ You can purge Docker cache running the following command:
 docker system prune -a
 ```
 
+### Clean up the Dev Container volumes
+
+```bash
+# To list all Dev Container volumes
+docker volume ls -f label=caf
+
+# To cleanup de Dev Container volumes make sure there is not running or stopped containers
+docker ps
+docker ps -a
+
+# To cleanup a specific Dev Container
+docker volume rm -f $(docker volume ls -f label=com.docker.compose.project=landingzones_devcontainer)
+
+# To cleanup all Dev Containers
+docker volume rm -f $(docker volume ls -f label=caf)
+```
+
 ### Limitations
 
 * You cannot run the rover from the Azure Cloud Shell (including the Windows Terminal Azure Cloud Shell) at the moment.
