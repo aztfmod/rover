@@ -155,11 +155,12 @@ docker volume ls -f label=caf
 docker ps
 docker ps -a
 
+# To cleanup all Dev Containers and volumes
+docker rm -f $(docker ps -a -q -f label=caf)
+docker volume prune -f --filter label=caf
+
 # To cleanup a specific Dev Container
 docker volume rm -f $(docker volume ls -f label=com.docker.compose.project=landingzones_devcontainer)
-
-# To cleanup all Dev Containers
-docker volume rm -f $(docker volume ls -f label=caf)
 ```
 
 ### Limitations
