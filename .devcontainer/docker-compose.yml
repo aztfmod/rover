@@ -6,7 +6,7 @@
 version: '3.7'
 services:
   rover:
-    image: aztfmod/rover:1912.1312
+    image: aztfmod/rover:1912.2716
   
     labels:
       - "caf=Azure CAF"
@@ -14,7 +14,7 @@ services:
     volumes:
       # This is where VS Code should expect to find your project's source code
       # and the value of "workspaceFolder" in .devcontainer/devcontainer.json
-      - ..:/tf/caf
+      - ..:/tf/rover
       - volume-caf-ssh:/home/vscode/.ssh
       - volume-caf-cache-azure:/home/vscode/.azure
       - volume-caf-cache-terraform:/home/vscode/.terraform.cache
