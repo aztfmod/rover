@@ -19,7 +19,7 @@ The Visual Studio Code system requirements describe the steps to follow to get y
 * **Linux**: Docker CE/EE 18.06+ and Docker Compose 1.24+
 
 The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
-https://hub.docker.com/r/aztfmod/rover/tags?page=1
+https://hub.docker.com/r/aztfmod/rover/tags?page=1&ordering=last_updated
 
 Install
 * Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
