@@ -1,4 +1,5 @@
 ![](https://github.com/aztfmod/rover/workflows/master/badge.svg)
+![](https://github.com/aztfmod/rover/workflows/ci-branches/badge.svg)
 
 ## Introduction
 The **Azure CAF rover** is a Docker container in charge of the deployment of the landing zones in your Azure environment. It is acting as a **sandbox toolchain** development environment to avoid impacting the local machine but more importantly to make sure that all contributors in the GitOps teams are using a **consistent set of tools** and version. 
