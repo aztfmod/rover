@@ -20,8 +20,8 @@ ENV versionTerraform=${versionTerraform} \
     versionJq=${versionJq} \
     versionDockerCompose=${versionDockerCompose} \
     versionLaunchpadOpensource=${versionLaunchpadOpensource} \
-    TF_DATA_DIR="/home/vscode/.terraform.cache" \
-    TF_PLUGIN_CACHE_DIR="/home/vscode/.terraform.cache/plugin-cache"
+    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
+    TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
 
 
 RUN yum -y update && \
@@ -62,8 +62,8 @@ RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docke
     #
     # Install Docker-Compose
     echo "Installing docker-compose ${versionDockerCompose}..." && \
-    curl -sSL -o /usr/local/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
-    chmod +x /usr/local/bin/docker-compose && \
+    curl -sSL -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
+    chmod +x /usr/bin/docker-compose && \
     #
     # Install Azure-cli
     echo "Installing azure-cli ${versionAzureCli}..." && \
@@ -119,7 +119,7 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     git clone https://github.com/aztfmod/level0.git /tf/launchpads --branch ${versionLaunchpadOpensource} && \
     echo "alias rover=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc && \
-    chown -R vscode:1000 /tf/launchpads
+    chown -R ${USERNAME}:1000 /tf/launchpads
 
 WORKDIR /tf/rover
 
