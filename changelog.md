@@ -1,4 +1,4 @@
-## 1912.dev (Unrelease)
+## 2001.dev (Unrelease)
 
 NOTES:
 
@@ -9,6 +9,14 @@ ENHANCEMENTS:
 BUG FIXES:
 
 NEW FEATURES:
+
+# v1912.1312
+UPGRADE NOTES:
+* cleanup your vscode Dev Container volumes 
+docker volume rm -f $(docker volume ls -f label=caf)
+
+ENHANCEMENTS:
+* non-root support - requires vscode 1.41+
 
 # v1912.1201
 
