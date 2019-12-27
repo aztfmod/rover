@@ -99,11 +99,9 @@ function verify_landingzone {
 function initialize_state {
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
-    # set +e
-    # rm ./.terraform/terraform.tfstate
-    # rm ./terraform.tfstate
-    # rm backend.azurerm.tf
-    # set -e
+
+    rm -f -- ~/.terraform.cache/terraform.tfstate
+    rm -f -- ./terraform.tfstate
 
     # TODO: when transitioning to devops pipeline need to be adjuested
     # Get the looged in user ObjectID
@@ -147,7 +145,7 @@ function initialize_from_remote_state {
         -refresh=true -auto-approve
 
     rm backend.azurerm.tf
-    rm -f /home/vscode/.terraform.cache/terraform.tfstate
+    rm -f -- ~/.terraform.cache/terraform.tfstate
     cd "${current_path}"
 }
 
@@ -168,7 +166,7 @@ function upload_tfstate {
             --account-key ${access_key} \
             --account-name ${storage_account_name}
 
-    rm -f /home/vscode/.terraform.cache/terraform.tfstate
+    rm -f -- ~/.terraform.cache/terraform.tfstate
 }
 
 function get_remote_state_details {
@@ -268,12 +266,9 @@ function deploy_landingzone {
             ;;
     esac
 
-    if [ -f "$(basename $(pwd)).tfplan" ]; then
-            echo "Deleting file $(basename $(pwd)).tfplan"
-            rm "$(basename $(pwd)).tfplan"
-    fi
-
-    rm  -f /home/vscode/.terraform.cache/terraform.tfstate
+    echo "Deleting file $(basename $(pwd)).tfplan"
+    rm -f -- "$(basename $(pwd)).tfplan"
+    rm -f -- ~/.terraform.cache/terraform.tfstate
 
     cd "${current_path}"
 }
