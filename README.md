@@ -25,7 +25,7 @@ Install
 * Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
 * Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-## Create a GitHub respository based on the rover template
+## To create a GitHub respository based on the rover template and start from scratch a new landing zone
 
 Go to the Azure CAF rover remote container template https://github.com/aztfmod/rover-remote-container
 
