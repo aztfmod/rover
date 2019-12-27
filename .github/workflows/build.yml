@@ -1,8 +1,7 @@
 name: CI
 
-on:
-  pull_request:
-    types: [opened]
+on: [push]
+
 
 jobs:
   build:
