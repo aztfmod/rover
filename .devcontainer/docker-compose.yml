@@ -1,0 +1,46 @@
+#-------------------------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
+#-------------------------------------------------------------------------------------------------------------
+ 
+version: '3.7'
+services:
+  rover:
+    image: aztfmod/rover:1912.1312
+  
+    labels:
+      - "caf=Azure CAF"
+ 
+    volumes:
+      # This is where VS Code should expect to find your project's source code
+      # and the value of "workspaceFolder" in .devcontainer/devcontainer.json
+      - ..:/tf/caf
+      - volume-caf-ssh:/home/vscode/.ssh
+      - volume-caf-cache-azure:/home/vscode/.azure
+      - volume-caf-cache-terraform:/home/vscode/.terraform.cache
+      - volume-caf-vscode-server:/home/vscode/.vscode-server
+      - volume-caf-vscode-server-insiders:/home/vscode/.vscode-server-insiders
+      - ~/.ssh:/home/vscode/.ssh-localhost:ro
+
+      # Enable docker in docker
+      - /var/run/docker.sock:/var/run/docker.sock 
+ 
+    # Overrides default command so things don't shut down after the process ends.
+    command: /bin/sh -c "while sleep 1000; do :; done" 
+ 
+volumes:
+  volume-caf-ssh:
+    labels:
+      - "caf=Azure CAF"
+  volume-caf-cache-azure:
+    labels:
+      - "caf=Azure CAF"
+  volume-caf-cache-terraform:
+    labels:
+      - "caf=Azure CAF"
+  volume-caf-vscode-server:
+    labels:
+      - "caf=Azure CAF"
+  volume-caf-vscode-server-insiders:
+    labels:
+      - "caf=Azure CAF"

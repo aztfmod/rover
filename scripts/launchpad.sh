@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./functions.sh
+source /tf/rover/functions.sh
 
 # Initialize the launchpad first with rover
 # deploy a landingzone with 
@@ -26,8 +26,6 @@ verify_parameters
 set -e
 trap 'error ${LINENO}' ERR
 
-export TF_PLUGIN_CACHE_DIR="/root/.terraform.d/plugin-cache"
-
 # Trying to retrieve the terraform state storage account id
 id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
 
@@ -38,7 +36,7 @@ fi
 # Initialise storage account to store remote terraform state
 if [ "${id}" == "null" ]; then
         echo "Calling initialize_state"
-        landingzone_name="level0/launchpad_opensource"
+        landingzone_name="/tf/launchpads/launchpad_opensource"
 else    
         echo ""
         echo "Launchpad already installed"
@@ -46,7 +44,7 @@ else
         echo ""
 fi
 
-if [ "${landingzone_name}" == "level0/launchpad_opensource" ]; then
+if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
 
         if [ "${tf_action}" == "destroy" ]; then
                 echo "The launchpad is protected from deletion"

@@ -28,7 +28,7 @@ function display_instructions {
     echo "You can deploy a landingzone with the rover by running rover [landingzone_folder_name] [plan|apply|destroy]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
-    for i in $(ls -d landingzones/landingzone*); do echo ${i%%/}; done
+    for i in $(ls -d /tf/caf/landingzones/*); do echo ${i%%/}; done
     echo ""
 }
 
@@ -85,7 +85,7 @@ function verify_azure_session {
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
-            echo "Defaulting to level0/launchpad_opensource"
+            echo "Defaulting to /tf/launchpads/launchpad_opensource"
     else
             echo "Verify the landingzone folder exist in the rover"
             readlink -f "${landingzone_name}"
@@ -99,17 +99,25 @@ function verify_landingzone {
 function initialize_state {
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
-    set +e
-    rm ./.terraform/terraform.tfstate
-    rm ./terraform.tfstate
-    rm backend.azurerm.tf
-    set -e
+    # set +e
+    # rm ./.terraform/terraform.tfstate
+    # rm ./terraform.tfstate
+    # rm backend.azurerm.tf
+    # set -e
 
+    # TODO: when transitioning to devops pipeline need to be adjuested
     # Get the looged in user ObjectID
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
+    tf_name="$(basename $(pwd)).tfstate"
 
-    terraform init
-    terraform apply -auto-approve
+    terraform init \
+        -reconfigure=true \
+        -get-plugins=true \
+        -upgrade=true
+
+    terraform apply \
+        -var "tf_name=${tf_name}" \
+        -auto-approve
 
     echo ""
     upload_tfstate
@@ -126,6 +134,7 @@ function initialize_from_remote_state {
     terraform init \
             -backend=true \
             -reconfigure=true \
+            -get-plugins=true \
             -upgrade=true \
             -backend-config storage_account_name=${storage_account_name} \
             -backend-config container_name=${container} \
@@ -133,10 +142,45 @@ function initialize_from_remote_state {
             -backend-config key=${tf_name}
 
 
-    terraform apply -refresh=true -auto-approve
+    terraform apply \
+        -var tf_name=${tf_name} \
+        -refresh=true -auto-approve
 
     rm backend.azurerm.tf
+    rm -f /home/vscode/.terraform.cache/terraform.tfstate
     cd "${current_path}"
+}
+
+function upload_tfstate {
+    echo "Moving launchpad to the cloud"
+
+    storage_account_name=$(terraform output storage_account_name)
+    resource_group=$(terraform output resource_group)
+    access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
+    container=$(terraform output container)
+    tf_name="$(basename $(pwd)).tfstate"
+
+    # blobFileName=$(terraform output tfstate-blob-name)
+
+    az storage blob upload -f terraform.tfstate \
+            -c ${container} \
+            -n ${tf_name} \
+            --account-key ${access_key} \
+            --account-name ${storage_account_name}
+
+    rm -f /home/vscode/.terraform.cache/terraform.tfstate
+}
+
+function get_remote_state_details {
+    echo ""
+    echo "Getting launchpad coordinates:"
+    stg=$(az storage account show --ids ${id})
+
+    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
+    location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
 }
 
 function plan {
@@ -198,7 +242,8 @@ function deploy_landingzone {
     terraform init \
             -reconfigure \
             -backend=true \
-            -lock=false \
+            -get-plugins=true \
+            -upgrade=true \
             -backend-config storage_account_name=${storage_account_name} \
             -backend-config container_name=${container} \
             -backend-config access_key=${access_key} \
@@ -228,38 +273,8 @@ function deploy_landingzone {
             rm "$(basename $(pwd)).tfplan"
     fi
 
+    rm  -f /home/vscode/.terraform.cache/terraform.tfstate
+
     cd "${current_path}"
 }
 
-function upload_tfstate {
-    echo "Moving launchpad to the cloud"
-
-    storage_account_name=$(terraform output storage_account_name)
-    resource_group=$(terraform output resource_group)
-    access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
-    container=$(terraform output container)
-    tf_name="$(basename $(pwd)).tfstate"
-
-    blobFileName=$(terraform output tfstate-blob-name)
-
-    az storage blob upload -f terraform.tfstate \
-            -c ${container} \
-            -n ${blobFileName} \
-            --account-key ${access_key} \
-            --account-name ${storage_account_name}
-
-    rm -f terraform.tfstate
-}
-
-function get_remote_state_details {
-    echo ""
-    echo "Getting level0 launchpad coordinates:"
-    stg=$(az storage account show --ids ${id})
-
-    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
-    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
-    location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
-    export tf_name="$(basename $(pwd)).tfstate"
-}

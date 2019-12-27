@@ -1,0 +1,22 @@
+{
+    "name": "Azure CAF rover",
+ 
+    "dockerComposeFile": "docker-compose.yml",
+
+    "service": "rover",
+
+    "workspaceFolder": "/tf/caf",
+ 
+    "settings": { 
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+
+    // Required for cross Windows / macOS /Linux consistency
+    "postCreateCommand": "cp -R ~/.ssh-localhost/* ~/.ssh && chmod 700 ~/.ssh && chmod 600 ~/.ssh/* && sudo chmod 666 /var/run/docker.sock",
+
+    // Add the IDs of extensions you want installed when the container is created in the array below.
+    "extensions": [
+        "mauve.terraform",
+        "mutantdino.resourcemonitor"
+    ]
+}
