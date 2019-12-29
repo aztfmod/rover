@@ -81,7 +81,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     az extension add --name azure-devops && \
     #
     echo "Installing jq ${versionJq}..." && \
-    curl -sSL -o /usr/local/bin/jq -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
+    curl -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/local/bin/jq && \
     #
     # echo "Installing graphviz ..." && \

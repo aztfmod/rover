@@ -13,6 +13,7 @@ ENHANCEMENTS:
 BUG FIXES:
 * change *.sh from CRLF to LF
 * moving docker-compose to /usr/bin
+* fixing a curl for jq in the Dockerfile
 
 NEW FEATURES:
 
