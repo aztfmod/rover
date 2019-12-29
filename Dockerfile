@@ -49,7 +49,8 @@ RUN yum -y groupinstall "Development Tools" && \
         curl-devel \
         openssl-devel && \
     yum -y autoremove && \
-    yum -y install unzip
+    yum -y install unzip \
+        bzip2
 
     # Install Docker CE CLI. 
 RUN yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
@@ -103,7 +104,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         openssh-clients \
         man \
         ansible \
-        which
+        which 
 
 RUN useradd --uid $USER_UID -m -G docker ${USERNAME} && \
     # sudo usermod -aG docker ${USERNAME} && \

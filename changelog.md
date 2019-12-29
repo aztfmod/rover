@@ -9,6 +9,7 @@ ENHANCEMENTS:
 * az cli version to 2.0.78
 * git version to 2.24.1
 * require sudo to execute docker in docker to access host docker deamon
+* Adding bzip2
 
 BUG FIXES:
 * change *.sh from CRLF to LF
