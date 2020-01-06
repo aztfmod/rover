@@ -198,6 +198,13 @@ function apply {
     cd "${current_path}"
 }
 
+function validate {
+    echo 'running terraform validate'
+    terraform validate
+    
+    cd "${current_path}"
+}
+
 function destroy {
     echo 'running terraform destroy'
     terraform destroy ${tf_command} \
@@ -256,6 +263,10 @@ function deploy_landingzone {
             echo "calling plan and apply"
             plan
             apply
+            ;;
+        "validate")
+            echo "calling validate"
+            validate
             ;;
         "destroy")
             echo "calling destroy"
