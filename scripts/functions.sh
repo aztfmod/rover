@@ -145,7 +145,7 @@ function initialize_from_remote_state {
         -refresh=true -auto-approve
 
     rm backend.azurerm.tf
-    rm -f -- ~/.terraform.cache/terraform.tfstate
+    rm -f $TF_DATA_DIR/terraform.tfstate
     cd "${current_path}"
 }
 
@@ -166,7 +166,7 @@ function upload_tfstate {
             --account-key ${access_key} \
             --account-name ${storage_account_name}
 
-    rm -f -- ~/.terraform.cache/terraform.tfstate
+    rm -f $TF_DATA_DIR/terraform.tfstate
 }
 
 function get_remote_state_details {
@@ -277,9 +277,12 @@ function deploy_landingzone {
             ;;
     esac
 
-    echo "Deleting file $(basename $(pwd)).tfplan"
-    rm -f -- "$(basename $(pwd)).tfplan"
-    rm -f -- ~/.terraform.cache/terraform.tfstate
+    if [ -f "$(basename $(pwd)).tfplan" ]; then
+            echo "Deleting file $(basename $(pwd)).tfplan"
+            rm "$(basename $(pwd)).tfplan"
+    fi
+
+    rm  -f $TF_DATA_DIR/terraform.tfstate
 
     cd "${current_path}"
 }
