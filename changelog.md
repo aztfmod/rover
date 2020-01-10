@@ -6,7 +6,8 @@ UPGRADE NOTES:
 
 ENHANCEMENTS:
 * Deleting previous terraform.tfstate from rover after each execution
-* az cli version to 2.0.78
+* terraform version to 0.12.19
+* az cli version to 2.0.79
 * git version to 2.24.1
 * require sudo to execute docker in docker to access host docker deamon
 * Adding bzip2
