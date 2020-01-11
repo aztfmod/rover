@@ -138,6 +138,7 @@ Error code returned by the bash (echo $?)
 |10 | Launchpad is installed but no landingzone and action arguments have been set 
 |11 | Landingzone argument set without an action 
 |12 | Landingzone folder does not exist in the rover 
+|1000 | Launchpad not initialized
 
 ### Purging Docker cache
 You can purge Docker cache running the following command:

@@ -11,6 +11,7 @@ ENHANCEMENTS:
 * git version to 2.24.1
 * require sudo to execute docker in docker to access host docker deamon
 * Adding bzip2
+* Refactoring the Dockerfile to support multi-stage build and reduce sub-sequent rebuild
 
 BUG FIXES:
 * change *.sh from CRLF to LF
