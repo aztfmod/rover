@@ -13,11 +13,15 @@ sudo docker-compose build
 sudo docker tag rover_rover aztfmod/rover:$tag
 sudo docker tag rover_rover aztfmod/rover:latest
 
-sudo docker push aztfmod/rover:$tag
-sudo docker push aztfmod/rover:latest
+if [ "$1" == 'github' ]; then
+    sudo docker push aztfmod/rover:$tag
+    sudo docker push aztfmod/rover:latest
 
-# tag the git branch and push
-git tag $tag master
-git push --follow-tags
+    # tag the git branch and push
+    git tag $tag master
+    git push --follow-tags
+else
+    echo "Local version created"
+fi
 
-echo "Version ${tag} created."
+echo "Version aztfmod/rover:${tag} created."
