@@ -12,11 +12,25 @@ landingzone_name=$1
 tf_action=$2
 shift 2
 
-tf_command=$@
-
-echo "tf_action   is : '$(echo ${tf_action})'"
-echo "tf_command  is : '$(echo ${tf_command})'"
+while (( "$#" )); do
+        case "$1" in
+        -o|--output)
+                tf_output_file=$2
+                shift 2
+                ;;
+        *) # preserve positional arguments
+                PARAMS="$PARAMS $1"
+                shift
+                ;;
+        esac
+done
+ 
+tf_command=$PARAMS
+ 
+echo "tf_action is : '$(echo ${tf_action})'"
+echo "tf_command is : '$(echo ${tf_command})'"
 echo "landingzone is : '$(echo ${landingzone_name})'"
+echo "terraform command output file is: '$(echo ${tf_output_file})' "
 
 
 verify_azure_session

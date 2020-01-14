@@ -255,7 +255,7 @@ function plan {
     terraform plan $tf_command \
             -refresh=true \
             -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
-            -out="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan"
+            -out="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan" | tee ${tf_output_file}
 }
 
 function apply {
@@ -263,7 +263,7 @@ function apply {
     terraform apply \
             -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
             -no-color \
-            "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan"
+            "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan" | tee ${tf_output_file}
     
 }
 
@@ -283,7 +283,7 @@ function destroy {
 
 function other {
     echo "running terraform ${tf_action}"
-    terraform ${tf_action} ${tf_command}
+    terraform ${tf_action} ${tf_command} | tee ${tf_output_file}
 }
 
 function deploy_landingzone {
