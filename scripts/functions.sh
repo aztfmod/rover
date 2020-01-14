@@ -28,7 +28,19 @@ function display_instructions {
     echo "You can deploy a landingzone with the rover by running rover [landingzone_folder_name] [plan|apply|destroy]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
-    for i in $(ls -d /tf/caf/landingzones/*); do echo ${i%%/}; done
+    for i in $(ls -d /tf/caf/landingzones/landingzone*); do echo ${i%%/}; done
+    echo ""
+    for i in $(ls -d /tf/caf/landingzones/public/landingzone*); do echo ${i%%/}; done
+    echo ""
+}
+
+function display_launchpad_instructions {
+    echo ""
+    echo "You can bootstrap the launchpad from the rover by running:"
+    echo " launchpad [launchpad_foler_name] [plan|apply|destroy]"
+    echo ""
+    echo "List of the launchpads available:"
+    for i in $(ls -d /tf/launchpads/launchpad*); do echo ${i%%/}; done
     echo ""
 }
 
@@ -85,7 +97,7 @@ function verify_azure_session {
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
-            echo "Defaulting to /tf/launchpads/launchpad_opensource"
+            display_launchpad_instructions
     else
             echo "Verify the landingzone folder exist in the rover"
             readlink -f "${landingzone_name}"
@@ -101,24 +113,46 @@ function initialize_state {
     cd ${landingzone_name}
 
     rm -f -- ~/.terraform.cache/terraform.tfstate
-    rm -f -- ./terraform.tfstate
+    # rm -f -- ./terraform.tfstate
+    rm -f -- ./backend.azurerm.tf
 
     # TODO: when transitioning to devops pipeline need to be adjuested
     # Get the looged in user ObjectID
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
-    tf_name="$(basename $(pwd)).tfstate"
+    export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
     terraform init \
-        -reconfigure=true \
         -get-plugins=true \
         -upgrade=true
 
-    terraform apply \
-        -var "tf_name=${tf_name}" \
-        -auto-approve
+    case "${tf_action}" in 
+        "plan")
+            echo "calling plan"
+            plan
+            ;;
+        "apply")
+            echo "calling plan and apply"
+            plan
+            apply
+            upload_tfstate
 
-    echo ""
-    upload_tfstate
+            # if [ -f "$(basename $(pwd)).tfplan" ]; then
+            #         echo "Deleting file $(basename $(pwd)).tfplan"
+            #         rm "$(basename $(pwd)).tfplan"
+            # fi
+
+            ;;
+        "validate")
+            echo "calling validate"
+            validate
+            ;;
+        "destroy")
+            destroy
+            ;;
+        *)
+            other
+            ;;
+    esac
 
     cd "${current_path}"
 }
@@ -127,58 +161,92 @@ function initialize_from_remote_state {
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
     cp backend.azurerm backend.azurerm.tf
+    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
+    export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
+   
+    deploy_landingzone
+    
+    cd "${current_path}"
+}
+
+function destroy_from_remote_state {
+    echo 'Connecting to the launchpad'
+    cd ${landingzone_name}
+   
+    get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
+    az storage blob download -f terraform.tfstate \
+            -c ${contaTF_VAR_lowerlevel_container_nameiner} \
+            -n ${tf_name} \
+            --account-key ${access_key} \
+            --account-name ${TF_VAR_lowerlevel_storage_account_name}
+    
     terraform init \
-            -backend=true \
-            -reconfigure=true \
-            -get-plugins=true \
-            -upgrade=true \
-            -backend-config storage_account_name=${storage_account_name} \
-            -backend-config container_name=${container} \
-            -backend-config access_key=${access_key} \
-            -backend-config key=${tf_name}
+        -reconfigure=true \
+        -get-plugins=true \
+        -upgrade=true
 
+    destroy
 
-    terraform apply \
-        -var tf_name=${tf_name} \
-        -refresh=true -auto-approve
-
-    rm backend.azurerm.tf
-    rm -f $TF_DATA_DIR/terraform.tfstate
     cd "${current_path}"
 }
 
 function upload_tfstate {
     echo "Moving launchpad to the cloud"
 
-    storage_account_name=$(terraform output storage_account_name)
-    resource_group=$(terraform output resource_group)
+    storage_account_name=$(terraform output -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" storage_account_name)
+    resource_group=$(terraform output -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" resource_group)
     access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
-    container=$(terraform output container)
-    tf_name="$(basename $(pwd)).tfstate"
+    container=$(terraform output -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" container)
+    tf_name=$(terraform output -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" tfstate-blob-name)
 
-    # blobFileName=$(terraform output tfstate-blob-name)
-
-    az storage blob upload -f terraform.tfstate \
+    az storage blob upload -f "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
             -c ${container} \
             -n ${tf_name} \
             --account-key ${access_key} \
             --account-name ${storage_account_name}
 
-    rm -f $TF_DATA_DIR/terraform.tfstate
+    rm -f "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate"
 }
 
 function get_remote_state_details {
     echo ""
     echo "Getting launchpad coordinates:"
-    stg=$(az storage account show --ids ${id})
+    
+    # Get parameters of the terraform state from keyvault. Note we are using tags to retrieve the level0
+    export keyvault=$(az resource list --tag kvtfstate=level0 | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
 
-    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
-    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
-    location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
+    export TF_VAR_lowerlevel_storage_account_name=$(az keyvault secret show -n tfstate-storage-account-name --vault-name ${keyvault} | jq -r .value) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
+    export TF_VAR_lowerlevel_resource_group_name=$(az keyvault secret show -n tfstate-resource-group --vault-name ${keyvault} | jq -r .value) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
+    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n tfstate-blob-name --vault-name ${keyvault} | jq -r .value)
+    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n tfstate-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
+    
+    # stg=$(az storage account show --ids ${id})
+
+    # export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    # export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    # export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    # export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
+    # location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
+
+    #tf_name="$(basename $(pwd)).tfstate"
+
+    # Set the security context under the devops app
+    echo ""
+    echo "Identity of the pilot in charge of delivering the landingzone"
+    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n tfstate-sp-devops-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+    export ARM_CLIENT_ID=$(az keyvault secret show -n tfstate-sp-devops-client-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+    export ARM_CLIENT_SECRET=$(az keyvault secret show -n tfstate-sp-devops-client-secret --vault-name ${keyvault} | jq -r .value)
+    export ARM_TENANT_ID=$(az keyvault secret show -n tfstate-sp-devops-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+
+    export TF_VAR_prefix=$(az keyvault secret show -n tfstate-prefix --vault-name ${keyvault} | jq -r .value)
+    echo ""
+
+    # todo to be replaced with SAS key - short ttl or msi with the rover
+    export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} | jq -r .[0].value)
+
+
 }
 
 function plan {
@@ -186,28 +254,30 @@ function plan {
     pwd
     terraform plan $tf_command \
             -refresh=true \
-            -out="$(basename $(pwd)).tfplan"
+            -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
+            -out="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan"
 }
 
 function apply {
     echo 'running terraform apply'
     terraform apply \
+            -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
             -no-color \
-            "$(basename $(pwd)).tfplan"
+            "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfplan"
     
-    cd "${current_path}"
 }
 
 function validate {
     echo 'running terraform validate'
     terraform validate
     
-    cd "${current_path}"
 }
 
 function destroy {
     echo 'running terraform destroy'
+    echo "using tfstate from ${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate"
     terraform destroy ${tf_command} \
+            -state="${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
             -refresh=false
 }
 
@@ -220,38 +290,18 @@ function deploy_landingzone {
     echo "Deploying '${landingzone_name}'"
 
     cd ${landingzone_name}
-
     tf_name="$(basename $(pwd)).tfstate"
 
-    # Get parameters of the terraform state from keyvault. Note we are using tags to retrieve the level0
-    export keyvault=$(az resource list --tag kvtfstate=level0 | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
-
-    # Set the security context under the devops app
-    echo ""
-    echo "Identity of the pilot in charge of delivering the landingzone"
-    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n tfstate-sp-devops-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    export ARM_CLIENT_ID=$(az keyvault secret show -n tfstate-sp-devops-client-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-    export ARM_CLIENT_SECRET=$(az keyvault secret show -n tfstate-sp-devops-client-secret --vault-name ${keyvault} | jq -r .value)
-    export ARM_TENANT_ID=$(az keyvault secret show -n tfstate-sp-devops-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-
-    export TF_VAR_prefix=$(az keyvault secret show -n tfstate-prefix --vault-name ${keyvault} | jq -r .value)
-    echo ""
-    export TF_VAR_lowerlevel_storage_account_name=$(az keyvault secret show -n tfstate-storage-account-name --vault-name ${keyvault} | jq -r .value)
-    export TF_VAR_lowerlevel_resource_group_name=$(az keyvault secret show -n tfstate-resource-group --vault-name ${keyvault} | jq -r .value)
-    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n tfstate-blob-name --vault-name ${keyvault} | jq -r .value)
-    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n tfstate-container --vault-name ${keyvault} | jq -r .value)
-    
-    # todo to be replaced with SAS key - short ttl or msi with the rover
-    export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value)
+    get_remote_state_details
 
     terraform init \
             -reconfigure \
             -backend=true \
             -get-plugins=true \
             -upgrade=true \
-            -backend-config storage_account_name=${storage_account_name} \
-            -backend-config container_name=${container} \
-            -backend-config access_key=${access_key} \
+            -backend-config storage_account_name=${TF_VAR_lowerlevel_storage_account_name} \
+            -backend-config container_name=${TF_VAR_lowerlevel_container_name} \
+            -backend-config access_key=${ARM_ACCESS_KEY} \
             -backend-config key=${tf_name}
 
     case "${tf_action}" in 

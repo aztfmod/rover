@@ -20,7 +20,7 @@ echo "landingzone is : '$(echo ${landingzone_name})'"
 
 
 verify_azure_session
-verify_landingzone
+# verify_landingzone
 verify_parameters
 
 set -e
