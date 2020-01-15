@@ -109,11 +109,17 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo "Creating ${USERNAME} user..." && \
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
     # sudo usermod -aG docker ${USERNAME} && \
-    mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
-    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache && \
+    mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates && \
+    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates  && \
     yum install -y sudo && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
+
+WORKDIR /tf/rover
+
+COPY ./scripts/rover.sh .
+COPY ./scripts/launchpad.sh .
+COPY ./scripts/functions.sh .
 
 # to force the docker cache to invalidate when there is a new version
 ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpadOpensource} version.json
@@ -125,10 +131,6 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc
 
-WORKDIR /tf/rover
 
-COPY ./scripts/rover.sh .
-COPY ./scripts/launchpad.sh .
-COPY ./scripts/functions.sh .
 
 USER ${USERNAME}
