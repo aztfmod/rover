@@ -170,17 +170,20 @@ function initialize_from_remote_state {
 }
 
 function destroy_from_remote_state {
+    echo "Destroying remote launchpad"
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
    
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
-    az storage blob download -f terraform.tfstate \
-            -c ${contaTF_VAR_lowerlevel_container_nameiner} \
-            -n ${tf_name} \
-            --account-key ${access_key} \
-            --account-name ${TF_VAR_lowerlevel_storage_account_name}
+    az storage blob download \
+            --name "$(basename $(pwd)).tfstate" \
+            --file "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate" \
+            --container-name ${TF_VAR_lowerlevel_container_name} \
+            --account-key ${ARM_ACCESS_KEY} \
+            --account-name ${TF_VAR_lowerlevel_storage_account_name} \
+            --no-progress
     
     terraform init \
         -reconfigure=true \
@@ -205,7 +208,8 @@ function upload_tfstate {
             -c ${container} \
             -n ${tf_name} \
             --account-key ${access_key} \
-            --account-name ${storage_account_name}
+            --account-name ${storage_account_name} \
+            --no-progress
 
     rm -f "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate"
 }
