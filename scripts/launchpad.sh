@@ -20,10 +20,13 @@ echo "  landingzone is : '$(echo ${landingzone_name})'"
 echo ""
 
 verify_azure_session
-verify_parameters
+# verify_parameters
 
 set -e
 trap 'error ${LINENO}' ERR
+
+# Trying to retrieve the terraform state storage account id
+id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
 
 
 if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
@@ -34,9 +37,7 @@ if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
                 exit 0
         else
                 echo "Deploying from scratch the launchpad"
-                # Trying to retrieve the terraform state storage account id
-                id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
-
+        
                 if [ "${id}" == '' ]; then
                         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
                 fi
@@ -53,7 +54,16 @@ if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
                 fi
         fi
 else
-        display_launchpad_instructions
+        case "${tf_command}" in 
+                "list")
+                        echo "Listing the deployed landing zones"
+                        list_deployed_landingzones
+                        ;;
+                *)
+                        display_launchpad_instructions
+                        ;;
+        esac
+        
 fi
 
 

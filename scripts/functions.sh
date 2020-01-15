@@ -210,6 +210,30 @@ function upload_tfstate {
     rm -f "${TF_DATA_DIR}/tfstates/$(basename $(pwd)).tfstate"
 }
 
+function list_deployed_landingzones {
+    
+    stg=$(az storage account show --ids ${id})
+
+    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
+
+    echo ""
+    echo "Landing zones deployed:"
+    echo ""
+
+    az storage blob list \
+            -c ${container} \
+            --account-key ${access_key} \
+            --account-name ${storage_account_name} |  \
+    jq -r '["lnanding zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
+    awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1'  | \
+    column -t -s ','
+
+    echo ""
+}
+
 function get_remote_state_details {
     echo ""
     echo "Getting launchpad coordinates:"
@@ -221,16 +245,8 @@ function get_remote_state_details {
     export TF_VAR_lowerlevel_resource_group_name=$(az keyvault secret show -n tfstate-resource-group --vault-name ${keyvault} | jq -r .value) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
     export TF_VAR_lowerlevel_key=$(az keyvault secret show -n tfstate-blob-name --vault-name ${keyvault} | jq -r .value)
     export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n tfstate-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
-    
-    # stg=$(az storage account show --ids ${id})
 
-    # export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    # export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    # export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
-    # export container=$(echo ${stg}  | jq -r .tags.container) && echo " - container: ${container}"
     # location=$(echo ${stg} | jq -r .location) && echo " - location: ${location}"
-
-    #tf_name="$(basename $(pwd)).tfstate"
 
     # Set the security context under the devops app
     echo ""
