@@ -54,7 +54,7 @@ if [ "${id}" == "null" ]; then
 else    
         echo ""
         echo "Launchpad already installed"
-        get_remote_state_details
+        # get_remote_state_details
         echo ""
 fi
 
