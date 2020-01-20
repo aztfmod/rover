@@ -2,9 +2,6 @@
 
 source /tf/rover/functions.sh
 
-# Initialize the launchpad first with rover
-# deploy a landingzone with 
-# rover [landingzone_folder_name]
 
 # capture the current path
 current_path=$(pwd)
@@ -13,57 +10,109 @@ tf_action=$2
 shift 2
 
 tf_command=$@
+
+export TF_VAR_workspace="level0"
+
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"
 echo "  tf_command  is : '$(echo ${tf_command})'"
 echo "  landingzone is : '$(echo ${landingzone_name})'"
+echo "  workspace   is : '$(echo ${TF_VAR_workspace})'"
 echo ""
 
 verify_azure_session
-# verify_parameters
 
 set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
 
-
-if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
-
-        if [ -e "${TF_DATA_DIR}/tfstates/$(basename ${landingzone_name}).tfstate" ]; then
+function launchpad_opensource {
+        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
                 echo "Recover from an un-finished initialisation"
                 initialize_state
                 exit 0
         else
-                echo "Deploying from scratch the launchpad"
-        
                 if [ "${id}" == '' ]; then
                         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
                 fi
         fi
 
         if [ "${id}" == "null" ]; then
-                initialize_state
+                if [ "${tf_action}" == "destroy" ]; then
+                        echo "There is no launchpad in this subscription"
+                else
+                        echo "Deploying from scratch the launchpad"
+                        initialize_state
+                fi
         else
-                
+                echo "Deploying from the launchpad"
                 if [ "${tf_action}" == "destroy" ]; then
                         destroy_from_remote_state
                 else
-                        initialize_from_remote_state
+                        deploy_from_remote_state
                 fi
         fi
-else
-        case "${tf_command}" in 
+}
+
+function landing_zone {
+        case "${tf_action}" in 
                 "list")
                         echo "Listing the deployed landing zones"
                         list_deployed_landingzones
                         ;;
                 *)
-                        display_launchpad_instructions
+                        echo "launchpad landing_zone [ list | unlock [landing_zone_tfstate_name]]"
                         ;;
         esac
-        
-fi
+}
 
+## Workspaces are used to isolate environments like sandpit, dev, sit, production
+function workspace {
 
+        if [ "${id}" == "null" ]; then
+                display_launchpad_instructions
+                exit 1000
+        fi
+
+        case "${tf_action}" in 
+                "list")
+                        workspace_list
+                        ;;
+
+                "create")
+                        workspace_create ${tf_command}
+                        ;;
+
+                "delete")     
+                        ;;
+                *)
+                        echo "launchpad workspace [ list | create | delete ]"
+                        ;;
+        esac
+}
+
+case "${landingzone_name}" in
+        "/tf/launchpads/launchpad_opensource")
+                launchpad_opensource "level0"
+                ;;
+
+        "landing_zone")
+                landing_zone
+                ;;
+
+        "workspace")
+                workspace
+                ;;
+        *)
+                if [ "${id}" == "null" ]; then
+                        display_launchpad_instructions
+                        exit 1000
+                else
+                        verify_landingzone
+                fi
+                ;;
+esac
+
+clean_up_variables

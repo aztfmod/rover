@@ -27,21 +27,23 @@ done
  
 tf_command=$PARAMS
  
-echo "tf_action is : '$(echo ${tf_action})'"
-echo "tf_command is : '$(echo ${tf_command})'"
-echo "landingzone is : '$(echo ${landingzone_name})'"
-echo "terraform command output file is: '$(echo ${tf_output_file})' "
+export TF_VAR_workspace="sandpit"
 
+echo "tf_action                     : '$(echo ${tf_action})'"
+echo "tf_command                    : '$(echo ${tf_command})'"
+echo "landingzone                   : '$(echo ${landingzone_name})'"
+echo "terraform command output file : '$(echo ${tf_output_file})' "
+echo "workspace                     : '$(echo ${TF_VAR_workspace=})'"
+echo ""
 
 verify_azure_session
-# verify_landingzone
 verify_parameters
 
 set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
 
 if [ "${id}" == '' ]; then
         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
@@ -63,22 +65,10 @@ if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
         error ${LINENO} "You need to manage the launchpad using the command \n
                 launchpad /tf/launchpads/launchpad_opensource [plan | apply | destroy]" 1001
 
-        # if [ "${tf_action}" == "destroy" ]; then
-        #         echo "The launchpad is protected from deletion"
-        # else
-        #         echo "Launchpad not installed"
-        #         initialize_state
-
-        #         id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
-
-        #         echo "Launchpad installed and ready"
-        #         display_instructions
-        #         get_remote_state_details
-        # fi
 else
         if [ -z "${landingzone_name}" ]; then 
                 display_instructions
         else
-                deploy_landingzone
+                deploy_from_remote_state
         fi
 fi

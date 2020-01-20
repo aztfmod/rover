@@ -115,19 +115,21 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
+
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpadOpensource} version.json
+RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
+    mkdir -p /tf && \
+    git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
+    chown -R ${USERNAME}:1000 /tf/launchpads
+
 WORKDIR /tf/rover
 
 COPY ./scripts/rover.sh .
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
 
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpadOpensource} version.json
-RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
-    mkdir -p /tf/launchpads && \
-    git clone https://github.com/aztfmod/level0.git /tf/launchpads --branch ${versionLaunchpadOpensource} && \
-    chown -R ${USERNAME}:1000 /tf/launchpads && \
-    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc
 
