@@ -31,7 +31,11 @@ id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].
 function launchpad_opensource {
         if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
                 echo "Recover from an un-finished initialisation"
-                initialize_state
+                if [ "${tf_action}" == "destroy" ]; then
+                        destroy
+                else
+                        initialize_state
+                fi
                 exit 0
         else
                 if [ "${id}" == '' ]; then

@@ -196,12 +196,6 @@ function destroy_from_remote_state {
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
-    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
-    export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
-
-    rm -f "${TF_DATA_DIR}/terraform.tfstate"
-    rm -f ${landingzone_name}/backend.azurerm.tf
-   
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
@@ -212,16 +206,9 @@ function destroy_from_remote_state {
             --account-key ${ARM_ACCESS_KEY} \
             --account-name ${TF_VAR_lowerlevel_storage_account_name} \
             --no-progress
-    
-    terraform init \
-        -reconfigure=true \
-        -get-plugins=true \
-        -upgrade=true
 
     destroy
 
-    # Delete tfstate
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
 
     cd "${current_path}"
 }
@@ -329,12 +316,38 @@ function validate {
 }
 
 function destroy {
+    cd ${landingzone_name}
+    
+    get_remote_state_details
+    tf_name="$(basename $(pwd)).tfstate"
+
+    unset ARM_TENANT_ID
+    unset ARM_SUBSCRIPTION_ID
+    unset ARM_CLIENT_ID
+    unset ARM_CLIENT_SECRET
+
+    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
+    export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
+
+    rm -f "${TF_DATA_DIR}/terraform.tfstate"
+    rm -f ${landingzone_name}/backend.azurerm.tf
+   
+
+    terraform init \
+        -reconfigure=true \
+        -get-plugins=true \
+        -upgrade=true
+
     echo 'running terraform destroy'
-    echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate"
+    echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
 
     terraform destroy ${tf_command} \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate"
+            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+    
+    # Delete tfstate
+    echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
 }
 
 function other {
