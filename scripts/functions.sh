@@ -199,7 +199,8 @@ function destroy_from_remote_state {
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
-    rm  -f ${landingzone_name}/backend.azurerm.tf
+    rm -f "${TF_DATA_DIR}/terraform.tfstate"
+    rm -f ${landingzone_name}/backend.azurerm.tf
    
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
