@@ -29,35 +29,64 @@ trap 'error ${LINENO}' ERR
 id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
 
 function launchpad_opensource {
-        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
-                echo "Recover from an un-finished initialisation"
-                if [ "${tf_action}" == "destroy" ]; then
-                        destroy
-                else
-                        initialize_state
-                fi
-                exit 0
-        else
-                if [ "${id}" == '' ]; then
-                        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
-                fi
-        fi
 
-        if [ "${id}" == "null" ]; then
-                if [ "${tf_action}" == "destroy" ]; then
-                        echo "There is no launchpad in this subscription"
-                else
-                        echo "Deploying from scratch the launchpad"
-                        initialize_state
-                fi
-        else
-                echo "Deploying from the launchpad"
-                if [ "${tf_action}" == "destroy" ]; then
-                        destroy_from_remote_state
-                else
-                        deploy_from_remote_state
-                fi
-        fi
+        case "${id}" in 
+                "null")
+                        if [ "${tf_action}" == "destroy" ]; then
+                                echo "There is no launchpad in this subscription"
+                        else
+                                echo "Deploying from scratch the launchpad"
+                                initialize_state
+                        fi
+                        ;;
+                '')
+                        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
+                        ;;
+                *)
+                        
+                        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+                                echo "Recover from an un-finished initialisation"
+                                if [ "${tf_action}" == "destroy" ]; then
+                                        destroy
+                                else
+                                        initialize_state
+                                fi
+                                exit 0
+                        else
+                                echo "Deploying from the launchpad"
+                                if [ "${tf_action}" == "destroy" ]; then
+                                        destroy_from_remote_state
+                                else
+                                        deploy_from_remote_state
+                                fi
+                        fi
+                        ;;
+        esac
+
+        # if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+        #         echo "Recover from an un-finished initialisation"
+        #         if [ "${tf_action}" == "destroy" ]; then
+        #                 destroy
+        #         else
+        #                 initialize_state
+        #         fi
+        #         exit 0
+        # else
+        #         if [ "${id}" == '' ]; then
+                        
+        #         fi
+        # fi
+
+        # if [ "${id}" == "null" ]; then
+                
+        # else
+        #         echo "Deploying from the launchpad"
+        #         if [ "${tf_action}" == "destroy" ]; then
+        #                 destroy_from_remote_state
+        #         else
+        #                 deploy_from_remote_state
+        #         fi
+        # fi
 }
 
 function landing_zone {

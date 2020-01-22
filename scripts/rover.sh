@@ -69,6 +69,10 @@ else
         if [ -z "${landingzone_name}" ]; then 
                 display_instructions
         else
-                deploy_from_remote_state
+                if [ "${tf_action}" == "destroy" ]; then
+                        destroy_from_remote_state
+                else
+                        deploy_from_remote_state
+                fi
         fi
 fi

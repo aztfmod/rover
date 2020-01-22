@@ -39,7 +39,7 @@ function display_instructions {
     fi
 
     if [ -d "/tf/caf/landingzones/public" ]; then
-        for i in $(ls -d /tf/caf/landingzones/public/landingzone*); do echo ${i%%/}; done
+        for i in $(ls -d /tf/caf/landingzones/public/landingzones/landingzone*); do echo ${i%%/}; done
             echo ""
     fi
 
@@ -182,7 +182,11 @@ function initialize_state {
 function deploy_from_remote_state {
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
-    cp backend.azurerm backend.azurerm.tf
+
+    if [ -f "backend.azurerm" ]; then
+        cp backend.azurerm backend.azurerm.tf
+    fi
+
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
    
@@ -192,23 +196,32 @@ function deploy_from_remote_state {
 }
 
 function destroy_from_remote_state {
-    echo "Destroying remote launchpad"
+    echo "Destroying from remote state"
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
-    az storage blob download \
-            --name ${tf_name} \
-            --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}" \
-            --container-name ${TF_VAR_workspace} \
-            --account-key ${ARM_ACCESS_KEY} \
-            --account-name ${TF_VAR_lowerlevel_storage_account_name} \
-            --no-progress
+    fileExists=$(az storage blob exists \
+        --name ${tf_name} \
+        --container-name ${TF_VAR_workspace} \
+        --account-key ${ARM_ACCESS_KEY} \
+        --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
+    
+    if [ ${fileExists} == true ]; then
+        az storage blob download \
+                --name ${tf_name} \
+                --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}" \
+                --container-name ${TF_VAR_workspace} \
+                --account-key ${ARM_ACCESS_KEY} \
+                --account-name ${TF_VAR_lowerlevel_storage_account_name} \
+                --no-progress
 
-    destroy
-
+        destroy
+    else
+        echo "landing zone already deleted"
+    fi
 
     cd "${current_path}"
 }
@@ -266,13 +279,14 @@ function get_remote_state_details {
 
     export TF_VAR_lowerlevel_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
     export TF_VAR_lowerlevel_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
-    export TF_VAR_lowerlevel_key=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} | jq -r .[0].value) && echo " - storage_key: retrieved"
-    
+
     # todo to be replaced with SAS key - short ttl or msi with the rover
     export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} | jq -r .[0].value)
 
     # Set the security context under the devops app
     export keyvault=$(az keyvault list --query "[?tags.workspace=='level0']" | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
+    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
 
     echo ""
     echo "Identity of the pilot in charge of delivering the landingzone"
@@ -280,7 +294,7 @@ function get_remote_state_details {
     export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
     export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
     export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-    export TF_VAR_rover_pilot_application_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - application id: ${TF_VAR_rover_pilot_application_id}"
+    export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
     export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} | jq -r .value)
     export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} | jq -r .value)
     echo ""
@@ -321,6 +335,7 @@ function destroy {
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
+    # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
     unset ARM_TENANT_ID
     unset ARM_SUBSCRIPTION_ID
     unset ARM_CLIENT_ID
@@ -348,6 +363,23 @@ function destroy {
     # Delete tfstate
     echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+
+    stgNameAvailable=$(az storage account check-name --name ${TF_VAR_lowerlevel_storage_account_name} | jq .nameAvailable)
+    if [ ${stgNameAvailable} == false ]; then
+        fileExists=$(az storage blob exists \
+                --name ${tf_name} \
+                --container-name ${TF_VAR_workspace} \
+                --account-key ${ARM_ACCESS_KEY} \
+                --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
+        
+        if [ ${fileExists} == true ]; then
+            az storage blob delete \
+                    --name ${tf_name} \
+                    --container-name ${TF_VAR_workspace} \
+                    --account-key ${ARM_ACCESS_KEY} \
+                    --account-name ${TF_VAR_lowerlevel_storage_account_name}
+        fi
+    fi
 }
 
 function other {
@@ -396,12 +428,8 @@ function deploy_landingzone {
             ;;
     esac
 
-    if [ -f "$(basename ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(pwd)).tfplan" ]; then
-            echo "Deleting file ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan"
-            rm "$(basename ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(pwd)).tfplan"
-    fi
-
-    rm  -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
 
     cd "${current_path}"
 }
