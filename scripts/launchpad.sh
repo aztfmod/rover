@@ -2,9 +2,6 @@
 
 source /tf/rover/functions.sh
 
-# Initialize the launchpad first with rover
-# deploy a landingzone with 
-# rover [landingzone_folder_name]
 
 # capture the current path
 current_path=$(pwd)
@@ -14,54 +11,141 @@ shift 2
 
 tf_command=$@
 
-echo "tf_action   is : '$(echo ${tf_action})'"
-echo "tf_command  is : '$(echo ${tf_command})'"
-echo "landingzone is : '$(echo ${landingzone_name})'"
+export TF_VAR_workspace="level0"
 
+echo "Launchpad management tool started with:"
+echo "  tf_action   is : '$(echo ${tf_action})'"
+echo "  tf_command  is : '$(echo ${tf_command})'"
+echo "  landingzone is : '$(echo ${landingzone_name})'"
+echo "  workspace   is : '$(echo ${TF_VAR_workspace})'"
+echo ""
 
 verify_azure_session
-verify_landingzone
-verify_parameters
 
 set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
 
-if [ "${id}" == '' ]; then
-        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
-fi
+function launchpad_opensource {
 
-# Initialise storage account to store remote terraform state
-if [ "${id}" == "null" ]; then
-        echo "Calling initialize_state"
-        landingzone_name="/tf/launchpads/launchpad_opensource"
-else    
-        echo ""
-        echo "Launchpad already installed"
-        get_remote_state_details
-        echo ""
-fi
+        case "${id}" in 
+                "null")
+                        if [ "${tf_action}" == "destroy" ]; then
+                                echo "There is no launchpad in this subscription"
+                        else
+                                echo "Deploying from scratch the launchpad"
+                                initialize_state
+                        fi
+                        ;;
+                '')
+                        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
+                        ;;
+                *)
+                        
+                        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+                                echo "Recover from an un-finished initialisation"
+                                if [ "${tf_action}" == "destroy" ]; then
+                                        destroy
+                                else
+                                        initialize_state
+                                fi
+                                exit 0
+                        else
+                                echo "Deploying from the launchpad"
+                                if [ "${tf_action}" == "destroy" ]; then
+                                        destroy_from_remote_state
+                                else
+                                        deploy_from_remote_state
+                                fi
+                        fi
+                        ;;
+        esac
 
-if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
+        # if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+        #         echo "Recover from an un-finished initialisation"
+        #         if [ "${tf_action}" == "destroy" ]; then
+        #                 destroy
+        #         else
+        #                 initialize_state
+        #         fi
+        #         exit 0
+        # else
+        #         if [ "${id}" == '' ]; then
+                        
+        #         fi
+        # fi
 
-        if [ "${tf_action}" == "destroy" ]; then
-                echo "The launchpad is protected from deletion"
-        else
-                echo "Launchpad not installed"
-                initialize_state
+        # if [ "${id}" == "null" ]; then
+                
+        # else
+        #         echo "Deploying from the launchpad"
+        #         if [ "${tf_action}" == "destroy" ]; then
+        #                 destroy_from_remote_state
+        #         else
+        #                 deploy_from_remote_state
+        #         fi
+        # fi
+}
 
-                id=$(az resource list --tag stgtfstate=level0 | jq -r .[0].id)
+function landing_zone {
+        case "${tf_action}" in 
+                "list")
+                        echo "Listing the deployed landing zones"
+                        list_deployed_landingzones
+                        ;;
+                *)
+                        echo "launchpad landing_zone [ list | unlock [landing_zone_tfstate_name]]"
+                        ;;
+        esac
+}
 
-                echo "Launchpad installed and ready"
-                display_instructions
-                get_remote_state_details
+## Workspaces are used to isolate environments like sandpit, dev, sit, production
+function workspace {
+
+        if [ "${id}" == "null" ]; then
+                display_launchpad_instructions
+                exit 1000
         fi
-else
-        if [ -z "${landingzone_name}" ]; then 
-                display_instructions
-        else
-                deploy_landingzone
-        fi
-fi
+
+        case "${tf_action}" in 
+                "list")
+                        workspace_list
+                        ;;
+
+                "create")
+                        workspace_create ${tf_command}
+                        ;;
+
+                "delete")     
+                        ;;
+                *)
+                        echo "launchpad workspace [ list | create | delete ]"
+                        ;;
+        esac
+}
+
+case "${landingzone_name}" in
+        "/tf/launchpads/launchpad_opensource")
+                launchpad_opensource "level0"
+                ;;
+
+        "landing_zone")
+                landing_zone
+                ;;
+
+        "workspace")
+                workspace
+                ;;
+        *)
+                if [ "${id}" == "null" ]; then
+                        display_launchpad_instructions
+                        exit 1000
+                else
+                        verify_landingzone
+                fi
+                ;;
+esac
+
+clean_up_variables

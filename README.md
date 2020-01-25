@@ -19,13 +19,13 @@ The Visual Studio Code system requirements describe the steps to follow to get y
 * **Linux**: Docker CE/EE 18.06+ and Docker Compose 1.24+
 
 The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
-https://hub.docker.com/r/aztfmod/rover/tags?page=1
+https://hub.docker.com/r/aztfmod/rover/tags?page=1&ordering=last_updated
 
 Install
 * Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
 * Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-## Create a GitHub respository based on the rover template
+## To create a GitHub respository based on the rover template and start from scratch a new landing zone
 
 Go to the Azure CAF rover remote container template https://github.com/aztfmod/rover-remote-container
 
@@ -138,6 +138,7 @@ Error code returned by the bash (echo $?)
 |10 | Launchpad is installed but no landingzone and action arguments have been set 
 |11 | Landingzone argument set without an action 
 |12 | Landingzone folder does not exist in the rover 
+|1000 | Launchpad not initialized
 
 ### Purging Docker cache
 You can purge Docker cache running the following command:
@@ -155,11 +156,12 @@ docker volume ls -f label=caf
 docker ps
 docker ps -a
 
+# To cleanup all Dev Containers and volumes
+docker rm -f $(docker ps -a -q -f label=caf)
+docker volume prune -f --filter label=caf
+
 # To cleanup a specific Dev Container
 docker volume rm -f $(docker volume ls -f label=com.docker.compose.project=landingzones_devcontainer)
-
-# To cleanup all Dev Containers
-docker volume rm -f $(docker volume ls -f label=caf)
 ```
 
 ### Limitations

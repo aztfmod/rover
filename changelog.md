@@ -5,8 +5,18 @@ NOTES:
 UPGRADE NOTES:
 
 ENHANCEMENTS:
+* Deleting previous terraform.tfstate from rover after each execution
+* terraform version to 0.12.19
+* az cli version to 2.0.79
+* git version to 2.24.1
+* require sudo to execute docker in docker to access host docker deamon
+* Adding bzip2
+* Refactoring the Dockerfile to support multi-stage build and reduce sub-sequent rebuild
 
 BUG FIXES:
+* change *.sh from CRLF to LF
+* moving docker-compose to /usr/bin
+* fixing a curl for jq in the Dockerfile
 
 NEW FEATURES:
 
