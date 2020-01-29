@@ -20,7 +20,6 @@ while (( "$#" )); do
                 shift 2
                 ;;
         -w|--workspace)
-                echo "configurting workspace"
                 export TF_VAR_workspace=$2
                 shift 2
                 ;;
