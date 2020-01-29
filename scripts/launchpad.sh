@@ -9,9 +9,27 @@ landingzone_name=$1
 tf_action=$2
 shift 2
 
+export TF_VAR_workspace="level0"
+
+
+while (( "$#" )); do
+        case "$1" in
+        -o|--output)
+                tf_output_file=$2
+                shift 2
+                ;;
+        -w|--workspace)
+                export TF_VAR_workspace=$2
+                shift 2
+                ;;
+        *) # preserve positional arguments
+                PARAMS="$PARAMS $1"
+                shift
+                ;;
+        esac
+done
 tf_command=$@
 
-export TF_VAR_workspace="level0"
 
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"

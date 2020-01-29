@@ -7,6 +7,7 @@ source /tf/rover/functions.sh
 # rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
 
 # capture the current path
+export TF_VAR_workspace="sandpit"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -18,7 +19,14 @@ while (( "$#" )); do
                 tf_output_file=$2
                 shift 2
                 ;;
+        -w|--workspace)
+                echo "configurting workspace"
+                export TF_VAR_workspace=$2
+                shift 2
+                ;;
         *) # preserve positional arguments
+                echo "else $1"
+
                 PARAMS="$PARAMS $1"
                 shift
                 ;;
@@ -27,8 +35,6 @@ done
  
 tf_command=$PARAMS
  
-export TF_VAR_workspace="sandpit"
-
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
