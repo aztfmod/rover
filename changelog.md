@@ -5,10 +5,11 @@ NOTES:
 UPGRADE NOTES:
 
 ENHANCEMENTS:
+* Rover login argument changes to rover login [tenant] [subscription]
 * Deleting previous terraform.tfstate from rover after each execution
-* terraform version to 0.12.19
-* az cli version to 2.0.79
-* git version to 2.24.1
+* terraform version to 0.12.20
+* az cli version to 2.0.80
+* git version to 2.25.0
 * require sudo to execute docker in docker to access host docker deamon
 * Adding bzip2
 * Refactoring the Dockerfile to support multi-stage build and reduce sub-sequent rebuild

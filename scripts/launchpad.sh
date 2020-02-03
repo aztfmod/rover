@@ -9,9 +9,29 @@ landingzone_name=$1
 tf_action=$2
 shift 2
 
-tf_command=$@
-
 export TF_VAR_workspace="level0"
+
+
+while (( "$#" )); do
+        case "$1" in
+        -o|--output)
+                tf_output_file=$2
+                shift 2
+                ;;
+        -w|--workspace)
+                export TF_VAR_workspace=$2
+                shift 2
+                ;;
+        *) # preserve positional arguments
+                echo "else $1"
+
+                PARAMS+="$1 "
+                shift
+                ;;
+        esac
+done
+
+tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"
@@ -26,12 +46,13 @@ set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
 
 function launchpad_opensource {
 
         case "${id}" in 
                 "null")
+                        echo "No launchpad found."
                         if [ "${tf_action}" == "destroy" ]; then
                                 echo "There is no launchpad in this subscription"
                         else
@@ -63,30 +84,7 @@ function launchpad_opensource {
                         ;;
         esac
 
-        # if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
-        #         echo "Recover from an un-finished initialisation"
-        #         if [ "${tf_action}" == "destroy" ]; then
-        #                 destroy
-        #         else
-        #                 initialize_state
-        #         fi
-        #         exit 0
-        # else
-        #         if [ "${id}" == '' ]; then
-                        
-        #         fi
-        # fi
 
-        # if [ "${id}" == "null" ]; then
-                
-        # else
-        #         echo "Deploying from the launchpad"
-        #         if [ "${tf_action}" == "destroy" ]; then
-        #                 destroy_from_remote_state
-        #         else
-        #                 deploy_from_remote_state
-        #         fi
-        # fi
 }
 
 function landing_zone {
@@ -113,11 +111,9 @@ function workspace {
                 "list")
                         workspace_list
                         ;;
-
                 "create")
                         workspace_create ${tf_command}
                         ;;
-
                 "delete")     
                         ;;
                 *)
@@ -130,11 +126,12 @@ case "${landingzone_name}" in
         "/tf/launchpads/launchpad_opensource")
                 launchpad_opensource "level0"
                 ;;
-
+        "/tf/launchpads/launchpad_opensource_light")
+                launchpad_opensource "level0"
+                ;;
         "landing_zone")
                 landing_zone
                 ;;
-
         "workspace")
                 workspace
                 ;;

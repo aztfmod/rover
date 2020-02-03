@@ -7,6 +7,7 @@ source /tf/rover/functions.sh
 # rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
 
 # capture the current path
+export TF_VAR_workspace="sandpit"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -18,22 +19,27 @@ while (( "$#" )); do
                 tf_output_file=$2
                 shift 2
                 ;;
+        -w|--workspace)
+                echo "configurting workspace"
+                export TF_VAR_workspace=$2
+                shift 2
+                ;;
         *) # preserve positional arguments
-                PARAMS="$PARAMS $1"
+                echo "else $1"
+
+                PARAMS+="$1 "
                 shift
                 ;;
         esac
 done
  
-tf_command=$PARAMS
+tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
  
-export TF_VAR_workspace="sandpit"
-
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
 echo "terraform command output file : '$(echo ${tf_output_file})' "
-echo "workspace                     : '$(echo ${TF_VAR_workspace=})'"
+echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo ""
 
 verify_azure_session
@@ -43,7 +49,7 @@ set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
 
 if [ "${id}" == '' ]; then
         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
@@ -52,7 +58,7 @@ fi
 # Initialise storage account to store remote terraform state
 if [ "${id}" == "null" ]; then
         error ${LINENO} "You need to initialise a launchpad first with the command \n
-                launchpad /tf/launchpads/launchpad_opensource [plan | apply | destroy]" 1000
+                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1000
 else    
         echo ""
         echo "Launchpad already installed"
@@ -60,10 +66,10 @@ else
         echo ""
 fi
 
-if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
+if [ "${landingzone_name}" == *"/tf/launchpads/launchpad_opensource"* ]; then
 
         error ${LINENO} "You need to manage the launchpad using the command \n
-                launchpad /tf/launchpads/launchpad_opensource [plan | apply | destroy]" 1001
+                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1001
 
 else
         if [ -z "${landingzone_name}" ]; then 
