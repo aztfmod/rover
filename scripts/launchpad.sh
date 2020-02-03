@@ -52,6 +52,7 @@ function launchpad_opensource {
 
         case "${id}" in 
                 "null")
+                        echo "No launchpad found."
                         if [ "${tf_action}" == "destroy" ]; then
                                 echo "There is no launchpad in this subscription"
                         else
@@ -83,30 +84,7 @@ function launchpad_opensource {
                         ;;
         esac
 
-        # if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
-        #         echo "Recover from an un-finished initialisation"
-        #         if [ "${tf_action}" == "destroy" ]; then
-        #                 destroy
-        #         else
-        #                 initialize_state
-        #         fi
-        #         exit 0
-        # else
-        #         if [ "${id}" == '' ]; then
-                        
-        #         fi
-        # fi
 
-        # if [ "${id}" == "null" ]; then
-                
-        # else
-        #         echo "Deploying from the launchpad"
-        #         if [ "${tf_action}" == "destroy" ]; then
-        #                 destroy_from_remote_state
-        #         else
-        #                 deploy_from_remote_state
-        #         fi
-        # fi
 }
 
 function landing_zone {
@@ -133,11 +111,9 @@ function workspace {
                 "list")
                         workspace_list
                         ;;
-
                 "create")
                         workspace_create ${tf_command}
                         ;;
-
                 "delete")     
                         ;;
                 *)
@@ -150,11 +126,12 @@ case "${landingzone_name}" in
         "/tf/launchpads/launchpad_opensource")
                 launchpad_opensource "level0"
                 ;;
-
+        "/tf/launchpads/launchpad_opensource_light")
+                launchpad_opensource "level0"
+                ;;
         "landing_zone")
                 landing_zone
                 ;;
-
         "workspace")
                 workspace
                 ;;
