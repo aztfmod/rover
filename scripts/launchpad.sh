@@ -25,13 +25,13 @@ while (( "$#" )); do
         *) # preserve positional arguments
                 echo "else $1"
 
-                PARAMS="$PARAMS $1"
+                PARAMS+="$1 "
                 shift
                 ;;
         esac
 done
 
-tf_command=$PARAMS
+tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"

@@ -5,6 +5,7 @@ NOTES:
 UPGRADE NOTES:
 
 ENHANCEMENTS:
+* Rover login argument changes to rover login [tenant] [subscription]
 * Deleting previous terraform.tfstate from rover after each execution
 * terraform version to 0.12.20
 * az cli version to 2.0.80

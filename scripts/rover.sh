@@ -27,13 +27,13 @@ while (( "$#" )); do
         *) # preserve positional arguments
                 echo "else $1"
 
-                PARAMS="$PARAMS $1"
+                PARAMS+="$1 "
                 shift
                 ;;
         esac
 done
  
-tf_command=$PARAMS
+tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
  
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
@@ -58,7 +58,7 @@ fi
 # Initialise storage account to store remote terraform state
 if [ "${id}" == "null" ]; then
         error ${LINENO} "You need to initialise a launchpad first with the command \n
-                launchpad /tf/launchpads/launchpad_opensource [plan | apply | destroy]" 1000
+                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1000
 else    
         echo ""
         echo "Launchpad already installed"
@@ -66,10 +66,10 @@ else
         echo ""
 fi
 
-if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource" ]; then
+if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource"* ]; then
 
         error ${LINENO} "You need to manage the launchpad using the command \n
-                launchpad /tf/launchpads/launchpad_opensource [plan | apply | destroy]" 1001
+                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1001
 
 else
         if [ -z "${landingzone_name}" ]; then 

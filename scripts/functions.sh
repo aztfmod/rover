@@ -17,7 +17,7 @@ error() {
 function display_login_instructions {
     echo ""
     echo "To login the rover to azure:"
-    echo " rover login [subscription_id_to_target(optional)]"
+    echo " rover login [tenant_name.onmicrosoft.com or tenant_guid (optional)] [subscription_id_to_target(optional)]"
     echo ""
     echo " rover logout"
     echo ""
@@ -80,17 +80,17 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show)
 
-        if [ "${tf_command}" != "login" ] && [ ! -z "${tf_action}" ]; then
-            echo "Login to azure with tenant ${tf_command}"
-            ret=$(az login --tenant ${tf_command} >/dev/null >&1)
+        if [ ! -z "${tf_action}" ]; then
+            echo "Login to azure with tenant ${tf_action}"
+            ret=$(az login --tenant ${tf_action} >/dev/null >&1)
         else
             ret=$(az login >/dev/null >&1)
         fi
 
         # the second parameter would be the subscription id to target
-        if [ ! -z "${tf_action}" ]; then
-            echo "Set default subscription to ${tf_action}"
-            az account set -s ${tf_action}
+        if [ "${tf_command}" != "login" ] && [ ! -z "${tf_command}" ]; then
+            echo "Set default subscription to ${tf_command}"
+            az account set -s ${tf_command}
         fi
         
         az account show
