@@ -66,7 +66,7 @@ else
         echo ""
 fi
 
-if [ "${landingzone_name}" == "/tf/launchpads/launchpad_opensource"* ]; then
+if [ "${landingzone_name}" == *"/tf/launchpads/launchpad_opensource"* ]; then
 
         error ${LINENO} "You need to manage the launchpad using the command \n
                 launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1001
