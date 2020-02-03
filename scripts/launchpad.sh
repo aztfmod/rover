@@ -23,13 +23,15 @@ while (( "$#" )); do
                 shift 2
                 ;;
         *) # preserve positional arguments
+                echo "else $1"
+
                 PARAMS="$PARAMS $1"
                 shift
                 ;;
         esac
 done
-tf_command=$@
 
+tf_command=$PARAMS
 
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"

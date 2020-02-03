@@ -20,6 +20,7 @@ while (( "$#" )); do
                 shift 2
                 ;;
         -w|--workspace)
+                echo "configurting workspace"
                 export TF_VAR_workspace=$2
                 shift 2
                 ;;
@@ -38,7 +39,7 @@ echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
 echo "terraform command output file : '$(echo ${tf_output_file})' "
-echo "workspace                     : '$(echo ${TF_VAR_workspace=})'"
+echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo ""
 
 verify_azure_session
