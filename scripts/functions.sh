@@ -210,15 +210,19 @@ function destroy_from_remote_state {
         --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
     
     if [ ${fileExists} == true ]; then
-        az storage blob download \
-                --name ${tf_name} \
-                --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}" \
-                --container-name ${TF_VAR_workspace} \
-                --account-key ${ARM_ACCESS_KEY} \
-                --account-name ${TF_VAR_lowerlevel_storage_account_name} \
-                --no-progress
+        if [ ${TF_VAR_workspace} == "level0" ]; then
+            az storage blob download \
+                    --name ${tf_name} \
+                    --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}" \
+                    --container-name ${TF_VAR_workspace} \
+                    --account-key ${ARM_ACCESS_KEY} \
+                    --account-name ${TF_VAR_lowerlevel_storage_account_name} \
+                    --no-progress
 
-        destroy
+            destroy
+        else
+            destroy "remote"
+        fi
     else
         echo "landing zone already deleted"
     fi
@@ -335,35 +339,52 @@ function destroy {
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
-    # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
-    unset ARM_TENANT_ID
-    unset ARM_SUBSCRIPTION_ID
-    unset ARM_CLIENT_ID
-    unset ARM_CLIENT_SECRET
-
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     rm -f ${landingzone_name}/backend.azurerm.tf
-   
-
-    terraform init \
-        -reconfigure=true \
-        -get-plugins=true \
-        -upgrade=true
-
-    echo 'running terraform destroy'
-    echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
-
-    terraform destroy ${tf_command} \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
     
-    # Delete tfstate
-    echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
 
+    if [ $1 == "remote" ]; then
+
+        echo 'running terraform destroy remote'
+        terraform init \
+            -reconfigure=true \
+            -backend=true \
+            -get-plugins=true \
+            -upgrade=true \
+            -backend-config storage_account_name=${TF_VAR_lowerlevel_storage_account_name} \
+            -backend-config container_name=${TF_VAR_workspace} \
+            -backend-config access_key=${ARM_ACCESS_KEY} \
+            -backend-config key=${tf_name}
+
+        terraform destroy ${tf_command}
+    else
+        echo 'running terraform destroy with local tfstate'
+        # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
+        unset ARM_TENANT_ID
+        unset ARM_SUBSCRIPTION_ID
+        unset ARM_CLIENT_ID
+        unset ARM_CLIENT_SECRET
+
+        terraform init \
+            -reconfigure=true \
+            -get-plugins=true \
+            -upgrade=true
+
+        echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+        mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+
+        terraform destroy ${tf_command} \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+
+        echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+        rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+
+    fi
+
+    # Delete tfstate
     stgNameAvailable=$(az storage account check-name --name ${TF_VAR_lowerlevel_storage_account_name} | jq .nameAvailable)
     if [ ${stgNameAvailable} == false ]; then
         fileExists=$(az storage blob exists \
