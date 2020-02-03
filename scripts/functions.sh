@@ -159,7 +159,7 @@ function initialize_state {
             plan
             apply
             # Create sandpit workspace
-            id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
+            id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
             workspace_create "sandpit"
             workspace_create ${TF_VAR_workspace}
             upload_tfstate
@@ -284,7 +284,7 @@ function get_remote_state_details {
     export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} | jq -r .[0].value)
 
     # Set the security context under the devops app
-    export keyvault=$(az keyvault list --query "[?tags.workspace=='level0']" | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0']" | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
     export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
     export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
 
