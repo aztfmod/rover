@@ -49,7 +49,7 @@ set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
 
 if [ "${id}" == '' ]; then
         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2

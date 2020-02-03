@@ -46,7 +46,7 @@ set -e
 trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.workspace=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
 
 function launchpad_opensource {
 
