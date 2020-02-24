@@ -28,4 +28,4 @@ Install
 ## Sample landing zones
 
 You can test the CAF rover in the context of the demonstration landing zones.
-[Open source landing zones](../landingzones)
+[Open source landing zones](https://github.com/aztfmod/landingzones)

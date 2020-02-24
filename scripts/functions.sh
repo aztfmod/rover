@@ -348,6 +348,10 @@ function destroy {
 
     if [ $1 == "remote" ]; then
 
+        if [ -e backend.azurerm ]; then
+            cp -f backend.azurerm backend.azurerm.tf
+        fi
+
         echo 'running terraform destroy remote'
         terraform init \
             -reconfigure=true \
