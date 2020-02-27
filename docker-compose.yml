@@ -15,6 +15,7 @@ services:
       args:
         - versionTerraform
         - versionAzureCli
+        - versionKubectl
         - versionGit
         - versionTflint
         - versionJq

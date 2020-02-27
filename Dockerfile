@@ -32,6 +32,7 @@ FROM base
 # Arguments set during docker-compose build -b --build from .env file
 ARG versionTerraform
 ARG versionAzureCli
+ARG versionKubectl
 ARG versionTflint
 ARG versionGit
 ARG versionJq
@@ -44,6 +45,7 @@ ARG USER_GID=${USER_UID}
 
 ENV versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
+    versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
     versionGit=${versionGit} \
@@ -61,26 +63,34 @@ RUN yum -y install \
         bzip2 \
         gcc \
         unzip && \
+    #
+    # Install git from source code
+    #
     echo "Installing git ${versionGit}..." && \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
     ./configure && make && make install && \
+    #
     # Install Docker CE CLI.
+    #
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
     #
     # Install Terraform
+    #
     echo "Installing terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/local/bin /tmp/terraform.zip && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
+    #
     echo "Installing docker-compose ${versionDockerCompose}..." && \
     curl -sSL -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
     # Install Azure-cli
+    #
     echo "Installing azure-cli ${versionAzureCli}..." && \
     rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     sh -c 'echo -e "[azure-cli] \n\
@@ -91,6 +101,18 @@ gpgcheck=1 \n\
 gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo' && \
     cat /etc/yum.repos.d/azure-cli.repo && \
     yum -y install azure-cli-${versionAzureCli} && \
+    #
+    # Install kubectl
+    #
+    echo "Installing kubectl ${versionKubectl}..." && \
+    curl -sSL -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${versionKubectl}/bin/linux/amd64/kubectl && \
+    chmod +x /usr/bin/kubectl && \
+    #
+    # Install Helm
+    #
+    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
+    #
+    # Install jq
     #
     echo "Installing jq ${versionJq}..." && \
     curl -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
