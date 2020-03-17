@@ -24,6 +24,17 @@ RUN yum makecache fast && \
     yum -y update
 
 
+
+###########################################################
+# Getting latest version of Azure DevOps Terraform provider
+###########################################################
+FROM golang:1.13 as devops
+
+RUN cd /tmp && \
+    git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
+    cd terraform-provider-azuredevops && \
+    ./scripts/build.sh
+
 ###########################################################
 # CAF rover image
 ###########################################################
@@ -53,7 +64,6 @@ ENV versionTerraform=${versionTerraform} \
     versionLaunchpadOpensource=${versionLaunchpadOpensource} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
-
      
 RUN yum -y install \
         make \
@@ -145,8 +155,9 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
     chown -R ${USERNAME}:1000 /tf/launchpads
 
-WORKDIR /tf/rover
+COPY --from=devops /tmp/terraform-provider-azuredevops/bin /tf/terraform-provider-community/
 
+WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .

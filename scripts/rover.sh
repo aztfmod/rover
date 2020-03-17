@@ -48,6 +48,7 @@ echo ""
 
 verify_azure_session
 verify_parameters
+copy_terraform_providers
 
 set -e
 trap 'error ${LINENO}' ERR
