@@ -169,7 +169,8 @@ function initialize_state {
             validate
             ;;
         "destroy")
-            destroy
+            echo "Shall we call destroy here?"
+            exit
             ;;
         *)
             other
@@ -187,7 +188,7 @@ function deploy_from_remote_state {
         cp backend.azurerm backend.azurerm.tf
     fi
 
-    logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+    export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
     export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
    
@@ -200,6 +201,9 @@ function destroy_from_remote_state {
     echo "Destroying from remote state"
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
+
+    export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
 
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
@@ -295,12 +299,20 @@ function get_remote_state_details {
 
     echo ""
     echo "Identity of the pilot in charge of delivering the landingzone"
-    export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
+    if [ "${TF_VAR_limited_privilege}" == "1" ]; then
+        echo " - Name: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
+    else
+        export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
+        export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+        export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
+        export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} | jq -r .value)
+    fi
+
     export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
     export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-    export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
-    export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} | jq -r .value)
+    
+
+
     export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} | jq -r .value)
     echo ""
 
@@ -337,15 +349,14 @@ function validate {
 function destroy {
     cd ${landingzone_name}
     
-    get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
 
-    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId}"
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     rm -f ${landingzone_name}/backend.azurerm.tf
     
+    # get_remote_state_details
 
     if [ $1 == "remote" ]; then
 

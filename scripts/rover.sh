@@ -15,6 +15,10 @@ shift 2
 
 while (( "$#" )); do
         case "$1" in
+        -limited|--limited-privilege)
+                export TF_VAR_limited_privilege='1'
+                shift 1
+                ;;
         -o|--output)
                 tf_output_file=$2
                 shift 2
