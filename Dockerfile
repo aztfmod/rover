@@ -155,7 +155,8 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
     chown -R ${USERNAME}:1000 /tf/launchpads
 
-COPY --from=devops /tmp/terraform-provider-azuredevops/bin /tf/terraform-provider-community/
+# Add Community terraform providers
+COPY --from=devops /tmp/terraform-provider-azuredevops/bin /usr/local/bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .

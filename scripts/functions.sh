@@ -527,9 +527,3 @@ function clean_up_variables {
         unset TF_VAR_logged_user_objectId
         unset keyvault
 }
-
-
-function copy_terraform_providers {
-    sudo mkdir -p ~/.terraform.cache/plugin-cache/linux_amd64/
-    cp -u /tf/terraform-provider-community/* ~/.terraform.cache/plugin-cache/linux_amd64/
-}
