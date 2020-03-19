@@ -358,7 +358,7 @@ function destroy {
     
     # get_remote_state_details
 
-    if [ $1 == "remote" ]; then
+    if [ "$1" == "remote" ]; then
 
         if [ -e backend.azurerm ]; then
             cp -f backend.azurerm backend.azurerm.tf
