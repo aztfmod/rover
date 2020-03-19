@@ -3,7 +3,15 @@
 set -e
 ./scripts/pre_requisites.sh
 
-tag=$(date +"%g%m.%d%H")
+
+case "$1" in 
+    "private")
+        tag=$(date +"%g%m.%d%H%M")
+        ;;
+    *)
+        tag=$(date +"%g%m.%d%H")
+        ;;
+esac
 
 echo "Creating version ${tag}"
 
