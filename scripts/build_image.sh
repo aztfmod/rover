@@ -5,11 +5,11 @@ set -e
 
 
 case "$1" in 
-    "private")
-        tag=$(date +"%g%m.%d%H%M")
+    "github")
+        tag=$(date +"%g%m.%d%H")
         ;;
     *)
-        tag=$(date +"%g%m.%d%H")
+        tag=$(date +"%g%m.%d%H%M")
         ;;
 esac
 
