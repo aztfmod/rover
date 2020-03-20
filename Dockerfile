@@ -30,10 +30,25 @@ RUN yum makecache fast && \
 ###########################################################
 FROM golang:1.13 as devops
 
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
 RUN cd /tmp && \
     git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
     cd terraform-provider-azuredevops && \
     ./scripts/build.sh
+
+###########################################################
+# Getting latest version of Azure CAF Terraform provider
+###########################################################
+FROM golang:1.13 as azurecaf
+
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/refs/heads/master version.json
+RUN cd /tmp && \
+    git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
+    cd terraform-provider-azurecaf && \
+    go build -o terraform-provider-azurecaf
+
 
 ###########################################################
 # CAF rover image
@@ -157,6 +172,7 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
 
 # Add Community terraform providers
 COPY --from=devops /tmp/terraform-provider-azuredevops/bin /usr/local/bin/
+COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /usr/local/bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
