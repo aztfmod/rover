@@ -1,11 +1,17 @@
 ## 2002.dev (Unrelease)
 
+# v2002 refresh
+
 NOTES:
 
 UPGRADE NOTES:
 
 ENHANCEMENTS:
-
+* Update terraform to 0.12.21
+* Update az cli to 2.1.0
+* Add kubectl v1.17.0
+* Add Helm 3.1.0
+* Adding launchpad_opensource_light. Add support for enable_collaboration
 
 BUG FIXES:
 

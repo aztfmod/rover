@@ -26,5 +26,5 @@ jobs:
         set -e
         tag="dev"
         docker-compose build
-        docker tag rover_rover aztfmod/rover:$tag
-        docker push aztfmod/rover:$tag
+        docker tag rover_rover aztfmod/roverdev:$tag
+        docker push aztfmod/roverdev:$tag

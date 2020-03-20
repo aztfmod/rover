@@ -24,6 +24,32 @@ RUN yum makecache fast && \
     yum -y update
 
 
+
+###########################################################
+# Getting latest version of Azure DevOps Terraform provider
+###########################################################
+FROM golang:1.13 as devops
+
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
+RUN cd /tmp && \
+    git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
+    cd terraform-provider-azuredevops && \
+    ./scripts/build.sh
+
+###########################################################
+# Getting latest version of Azure CAF Terraform provider
+###########################################################
+FROM golang:1.13 as azurecaf
+
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/refs/heads/master version.json
+RUN cd /tmp && \
+    git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
+    cd terraform-provider-azurecaf && \
+    go build -o terraform-provider-azurecaf
+
+
 ###########################################################
 # CAF rover image
 ###########################################################
@@ -32,6 +58,7 @@ FROM base
 # Arguments set during docker-compose build -b --build from .env file
 ARG versionTerraform
 ARG versionAzureCli
+ARG versionKubectl
 ARG versionTflint
 ARG versionGit
 ARG versionJq
@@ -44,6 +71,7 @@ ARG USER_GID=${USER_UID}
 
 ENV versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
+    versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
     versionGit=${versionGit} \
@@ -51,7 +79,6 @@ ENV versionTerraform=${versionTerraform} \
     versionLaunchpadOpensource=${versionLaunchpadOpensource} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
-
      
 RUN yum -y install \
         make \
@@ -61,26 +88,34 @@ RUN yum -y install \
         bzip2 \
         gcc \
         unzip && \
+    #
+    # Install git from source code
+    #
     echo "Installing git ${versionGit}..." && \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
     ./configure && make && make install && \
+    #
     # Install Docker CE CLI.
+    #
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
     #
     # Install Terraform
+    #
     echo "Installing terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/local/bin /tmp/terraform.zip && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
+    #
     echo "Installing docker-compose ${versionDockerCompose}..." && \
     curl -sSL -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
     # Install Azure-cli
+    #
     echo "Installing azure-cli ${versionAzureCli}..." && \
     rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     sh -c 'echo -e "[azure-cli] \n\
@@ -91,6 +126,18 @@ gpgcheck=1 \n\
 gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo' && \
     cat /etc/yum.repos.d/azure-cli.repo && \
     yum -y install azure-cli-${versionAzureCli} && \
+    #
+    # Install kubectl
+    #
+    echo "Installing kubectl ${versionKubectl}..." && \
+    curl -sSL -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${versionKubectl}/bin/linux/amd64/kubectl && \
+    chmod +x /usr/bin/kubectl && \
+    #
+    # Install Helm
+    #
+    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
+    #
+    # Install jq
     #
     echo "Installing jq ${versionJq}..." && \
     curl -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
@@ -123,8 +170,11 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
     chown -R ${USERNAME}:1000 /tf/launchpads
 
-WORKDIR /tf/rover
+# Add Community terraform providers
+COPY --from=devops /tmp/terraform-provider-azuredevops/bin /usr/local/bin/
+COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /usr/local/bin/
 
+WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .

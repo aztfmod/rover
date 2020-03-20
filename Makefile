@@ -7,4 +7,5 @@ github:
 local:
 	@bash "$(CURDIR)/scripts/build_image.sh" "local"
 
-
+private:
+	@bash "$(CURDIR)/scripts/build_image.sh" "private"
