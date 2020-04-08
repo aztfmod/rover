@@ -95,7 +95,9 @@ RUN yum -y install \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
-    ./configure && make && make install && \
+    ./configure && \
+    make -j && \
+    make install && \
     #
     # Install Docker CE CLI.
     #
@@ -181,7 +183,8 @@ COPY ./scripts/functions.sh .
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc
+    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    chown -R ${USERNAME}:1000 /tf/rover
 
 
 
