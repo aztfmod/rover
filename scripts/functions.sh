@@ -140,9 +140,8 @@ function initialize_state {
     rm -f -- ${landingzone_name}/backend.azurerm.tf
     rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
 
-    # TODO: when transitioning to devops pipeline need to be adjuested
-    # Get the looged in user ObjectID
-    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
+    get_logged_user_object_id
+
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
     terraform init \
@@ -188,8 +187,8 @@ function deploy_from_remote_state {
         cp backend.azurerm backend.azurerm.tf
     fi
 
-    export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
-    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
+    get_logged_user_object_id
+
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
    
     deploy_landingzone
@@ -202,8 +201,7 @@ function destroy_from_remote_state {
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
-    export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
-    export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv) && echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
+    get_logged_user_object_id
 
     get_remote_state_details
     tf_name="$(basename $(pwd)).tfstate"
@@ -214,7 +212,7 @@ function destroy_from_remote_state {
         --account-key ${ARM_ACCESS_KEY} \
         --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
     
-    if [ ${fileExists} == true ]; then
+    if [ "${fileExists}" == "true" ]; then
         if [ ${TF_VAR_workspace} == "level0" ]; then
             az storage blob download \
                     --name ${tf_name} \
@@ -297,26 +295,29 @@ function get_remote_state_details {
     export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
     export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
 
-    echo ""
-    echo "Identity of the pilot in charge of delivering the landingzone"
-    if [ "${TF_VAR_limited_privilege}" == "1" ]; then
-        echo " - Name: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
-    else
+    # Don't get there for launchpad destroy
+    if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) ]; then
+        echo ""
+        echo "Identity of the pilot in charge of delivering the landingzone"
+        
         export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
         export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
         export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
         export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} | jq -r .value)
-    fi
-
-    export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    
+        export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+        export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+    fi    
 
 
     export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} | jq -r .value)
     echo ""
 
+# tf_action="apply"
+# caf_command="rover"
+# if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) ]; then
+#         echo "true"
 
+# fi
 
 }
 
@@ -348,15 +349,13 @@ function validate {
 
 function destroy {
     cd ${landingzone_name}
-    
-    tf_name="$(basename $(pwd)).tfstate"
 
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
+    get_logged_user_object_id
+
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     rm -f ${landingzone_name}/backend.azurerm.tf
-    
-    # get_remote_state_details
 
     if [ "$1" == "remote" ]; then
 
@@ -373,50 +372,54 @@ function destroy {
             -backend-config storage_account_name=${TF_VAR_lowerlevel_storage_account_name} \
             -backend-config container_name=${TF_VAR_workspace} \
             -backend-config access_key=${ARM_ACCESS_KEY} \
-            -backend-config key=${tf_name}
+            -backend-config key=${TF_VAR_tf_name}
 
         terraform destroy ${tf_command}
+
+        # Delete tfstate
+        stgNameAvailable=$(az storage account check-name --name ${TF_VAR_tf_name} | jq .nameAvailable)
+        if [ "${stgNameAvailable}" == "false" ]; then
+            fileExists=$(az storage blob exists \
+                    --name ${TF_VAR_tf_name} \
+                    --container-name ${TF_VAR_workspace} \
+                    --account-key ${ARM_ACCESS_KEY} \
+                    --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
+            
+            if [ "${fileExists}" == "true" ]; then
+                az storage blob delete \
+                        --name ${TF_VAR_tf_name} \
+                        --container-name ${TF_VAR_workspace} \
+                        --account-key ${ARM_ACCESS_KEY} \
+                        --account-name ${TF_VAR_lowerlevel_storage_account_name}
+            fi
+        fi
+
     else
         echo 'running terraform destroy with local tfstate'
         # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
-        unset ARM_TENANT_ID
-        unset ARM_SUBSCRIPTION_ID
-        unset ARM_CLIENT_ID
-        unset ARM_CLIENT_SECRET
+        if [ ${user_type} == "user" ]; then
+            unset ARM_TENANT_ID
+            unset ARM_SUBSCRIPTION_ID
+            unset ARM_CLIENT_ID
+            unset ARM_CLIENT_SECRET
+        fi
 
         terraform init \
             -reconfigure=true \
             -get-plugins=true \
             -upgrade=true
 
-        echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+        echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
 
         terraform destroy ${tf_command} \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
-
-        echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
-        rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${tf_name}"
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
     fi
 
-    # Delete tfstate
-    stgNameAvailable=$(az storage account check-name --name ${TF_VAR_lowerlevel_storage_account_name} | jq .nameAvailable)
-    if [ ${stgNameAvailable} == false ]; then
-        fileExists=$(az storage blob exists \
-                --name ${tf_name} \
-                --container-name ${TF_VAR_workspace} \
-                --account-key ${ARM_ACCESS_KEY} \
-                --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
-        
-        if [ ${fileExists} == true ]; then
-            az storage blob delete \
-                    --name ${tf_name} \
-                    --container-name ${TF_VAR_workspace} \
-                    --account-key ${ARM_ACCESS_KEY} \
-                    --account-name ${TF_VAR_lowerlevel_storage_account_name}
-        fi
-    fi
+    echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+
 }
 
 function other {
@@ -526,4 +529,22 @@ function clean_up_variables {
         unset TF_VAR_prefix
         unset TF_VAR_logged_user_objectId
         unset keyvault
+}
+
+
+function get_logged_user_object_id {
+    export user_type=$(az account show --query user.type -o tsv)
+    if [ ${user_type} == "user" ]; then
+        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
+        export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+        echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
+
+        echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv)"
+    else
+        # When connected with a service account the name contains the objectId
+        export clientId=$(az account show --query user.name -o tsv)
+        export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv)
+
+        echo " - logged in Azure AD application:  ${TF_VAR_logged_user_objectId} ($(az ad sp show --id ${clientId} --query displayName -o tsv))"
+    fi
 }

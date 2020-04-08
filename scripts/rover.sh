@@ -8,6 +8,7 @@ source /tf/rover/functions.sh
 
 # capture the current path
 export TF_VAR_workspace="sandpit"
+export caf_command="rover"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -15,10 +16,6 @@ shift 2
 
 while (( "$#" )); do
         case "$1" in
-        -limited|--limited-privilege)
-                export TF_VAR_limited_privilege='1'
-                shift 1
-                ;;
         -o|--output)
                 tf_output_file=$2
                 shift 2
@@ -49,8 +46,8 @@ echo ""
 verify_azure_session
 verify_parameters
 
-set -e
-trap 'error ${LINENO}' ERR
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
 
 # Trying to retrieve the terraform state storage account id
 id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)

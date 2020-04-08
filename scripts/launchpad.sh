@@ -10,14 +10,11 @@ tf_action=$2
 shift 2
 
 export TF_VAR_workspace="level0"
+export caf_command="launchpad"
 
 
 while (( "$#" )); do
         case "$1" in
-        -limited|--limited-privilege)
-                export TF_VAR_limited_privilege='1'
-                shift 1
-                ;;
         -o|--output)
                 tf_output_file=$2
                 shift 2
@@ -52,12 +49,15 @@ trap 'error ${LINENO}' ERR
 # Trying to retrieve the terraform state storage account id
 id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
 
+# Cannot execute the launchpad 
+
 function launchpad_opensource {
 
         case "${id}" in 
                 "null")
                         echo "No launchpad found."
                         if [ "${tf_action}" == "destroy" ]; then
+                                rm  "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/*"
                                 echo "There is no launchpad in this subscription"
                         else
                                 echo "Deploying from scratch the launchpad"
