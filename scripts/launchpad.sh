@@ -58,8 +58,8 @@ function launchpad_opensource {
         case "${id}" in 
                 "null")
                         echo "No launchpad found."
-                        rm  "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/*"
-                        
+                        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+
                         if [ "${tf_action}" == "destroy" ]; then
                                 echo "There is no launchpad in this subscription"
                         else
