@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
 source /tf/rover/functions.sh
 
 
@@ -43,8 +46,7 @@ echo ""
 
 verify_azure_session
 
-set -e
-trap 'error ${LINENO}' ERR
+
 
 # Trying to retrieve the terraform state storage account id
 id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
@@ -56,8 +58,9 @@ function launchpad_opensource {
         case "${id}" in 
                 "null")
                         echo "No launchpad found."
+                        rm  "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/*"
+                        
                         if [ "${tf_action}" == "destroy" ]; then
-                                rm  "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/*"
                                 echo "There is no launchpad in this subscription"
                         else
                                 echo "Deploying from scratch the launchpad"

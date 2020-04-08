@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
 source /tf/rover/functions.sh
 
 # Initialize the launchpad first with rover
@@ -46,8 +50,6 @@ echo ""
 verify_azure_session
 verify_parameters
 
-set -ETe
-trap 'error ${LINENO}' ERR 1 2 3 6
 
 # Trying to retrieve the terraform state storage account id
 id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
