@@ -484,7 +484,7 @@ function destroy {
 }
 
 function other {
-    echo "running terraform ${tf_action}"
+    echo "running terraform ${tf_action} ${tf_command}"
     terraform ${tf_action} ${tf_command} | tee ${tf_output_file}
 }
 
