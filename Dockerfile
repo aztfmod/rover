@@ -95,7 +95,7 @@ RUN yum -y install \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
-    ./configure && \
+    ./configure --exec-prefix="/usr" && \
     make -j && \
     make install && \
     #
@@ -108,7 +108,8 @@ RUN yum -y install \
     #
     echo "Installing terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
-    unzip -d /usr/local/bin /tmp/terraform.zip && \
+    unzip -d /usr/bin /tmp/terraform.zip && \
+    chmod +x /usr/bin/terraform && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
@@ -142,8 +143,8 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     # Install jq
     #
     echo "Installing jq ${versionJq}..." && \
-    curl -sSL -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
-    chmod +x /usr/local/bin/jq && \
+    curl -sSL -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
+    chmod +x /usr/bin/jq && \
     #
     # echo "Installing graphviz ..." && \
     # yum -y install graphviz && \
@@ -173,8 +174,8 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     chown -R ${USERNAME}:1000 /tf/launchpads
 
 # Add Community terraform providers
-COPY --from=devops /tmp/terraform-provider-azuredevops/bin /usr/local/bin/
-COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /usr/local/bin/
+COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
+COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
@@ -183,7 +184,7 @@ COPY ./scripts/functions.sh .
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/local/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     chown -R ${USERNAME}:1000 /tf/rover
 
 

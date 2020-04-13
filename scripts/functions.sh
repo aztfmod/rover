@@ -364,7 +364,7 @@ function plan {
         if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat stderr.txt
-        RETURN_CODE=200
+        RETURN_CODE=2000
     fi
 }
 
@@ -382,7 +382,7 @@ function apply {
         if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat stderr.txt
-        RETURN_CODE=200
+        RETURN_CODE=2001
     fi
 
     if [ $RETURN_CODE != 0 ]; then
@@ -394,6 +394,19 @@ function apply {
 function validate {
     echo 'running terraform validate'
     terraform validate
+
+    RETURN_CODE=$? && echo "Terraform validate return code: ${RETURN_CODE}"
+
+    if [ -s stderr.txt ]; then
+        if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
+        echo "Terraform returned errors:"
+        cat stderr.txt
+        RETURN_CODE=2002
+    fi
+
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error running terraform validate" $RETURN_CODE
+    fi
 
 }
 
@@ -484,8 +497,25 @@ function destroy {
 }
 
 function other {
-    echo "running terraform ${tf_action} ${tf_command}"
-    terraform ${tf_action} ${tf_command} | tee ${tf_output_file}
+    echo "running terraform ${tf_action} ${tf_command} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate""
+    
+    rm -f stderr.txt
+
+    terraform ${tf_action} ${tf_command} \
+        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate" 2>stderr.txt | tee ${tf_output_file}
+
+    RETURN_CODE=$? && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
+
+    if [ -s stderr.txt ]; then
+        if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
+        echo "Terraform returned errors:"
+        cat stderr.txt
+        RETURN_CODE=2003
+    fi
+
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error running terraform ${tf_action}" $RETURN_CODE
+    fi
 }
 
 function deploy_landingzone {
