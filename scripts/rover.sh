@@ -1,17 +1,12 @@
 #!/bin/bash
 
 
-set -ETe
-trap 'error ${LINENO}' ERR 1 2 3 6
-
-source /tf/rover/functions.sh
-
 # Initialize the launchpad first with rover
 # deploy a landingzone with 
 # rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
 
 # capture the current path
-export TF_VAR_workspace="sandpit"
+export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
 export caf_command="rover"
 current_path=$(pwd)
 landingzone_name=$1
@@ -37,7 +32,12 @@ while (( "$#" )); do
                 ;;
         esac
 done
- 
+
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
+source /tf/rover/functions.sh
+
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
  
 echo "tf_action                     : '$(echo ${tf_action})'"

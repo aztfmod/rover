@@ -14,6 +14,17 @@ error() {
     exit "${code}"
 }
 
+exit_if_error() {
+  local exit_code=$1
+  shift
+  [[ $exit_code ]] &&               # do nothing if no error code passed
+    ((exit_code != 0)) && {         # do nothing if error code is 0
+      printf 'ERROR: %s\n' "$@" >&2 # we can use better logging here
+      exit "$exit_code"             # we could also check to make sure
+                                    # error code is numeric when passed
+    }
+}
+
 function display_login_instructions {
     echo ""
     echo "To login the rover to azure:"
@@ -148,6 +159,8 @@ function initialize_state {
         -get-plugins=true \
         -upgrade=true
 
+    RETURN_CODE=@? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+    
     case "${tf_action}" in 
         "plan")
             echo "calling plan"
@@ -221,6 +234,11 @@ function destroy_from_remote_state {
                     --account-key ${ARM_ACCESS_KEY} \
                     --account-name ${TF_VAR_lowerlevel_storage_account_name} \
                     --no-progress
+            
+            RETURN_CODE=$?
+            if [ $RETURN_CODE != 0 ]; then
+                error ${LINENO} "Error downloading the blob storage" $RETURN_CODE
+            fi
 
             destroy
         else
@@ -249,6 +267,11 @@ function upload_tfstate {
             --account-key ${access_key} \
             --account-name ${storage_account_name} \
             --no-progress
+
+    RETURN_CODE=$?
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error uploading the blob storage" $RETURN_CODE
+    fi
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
@@ -292,7 +315,15 @@ function get_remote_state_details {
 
     # Set the security context under the devops app
     export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0']" | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    
     export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
+    
+    # If the logged in user does not have access to the launchpad
+    echo "value is '${TF_VAR_lowerlevel_container_name}'"
+    if [ "${TF_VAR_lowerlevel_container_name}" == "" ]; then
+        error 298 "User must be member of the security group to access the launchpad and deploy a landing zone" 101
+    fi
+
     export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
 
     # Don't get there for launchpad destroy
@@ -312,43 +343,64 @@ function get_remote_state_details {
     export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} | jq -r .value)
     echo ""
 
-# tf_action="apply"
-# caf_command="rover"
-# if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) ]; then
-#         echo "true"
-
-# fi
-
 }
 
 function plan {
-    echo "running terraform plan with $tf_command"
+    echo "running terraform plan with ${tf_command}"
+    echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     pwd
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
 
-    terraform plan $tf_command \
+    rm -f stderr.txt
+
+    terraform plan ${tf_command} \
             -refresh=true \
             -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate" \
-            -out="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan" | tee ${tf_output_file}
+            -out="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan" 2>stderr.txt | tee ${tf_output_file}
+    
+    RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
+
+    if [ -s stderr.txt ]; then
+        if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
+        echo "Terraform returned errors:"
+        cat stderr.txt
+        RETURN_CODE=200
+    fi
 }
 
 function apply {
     echo 'running terraform apply'
+    rm -f stderr.txt
+
     terraform apply \
             -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfstate" \
-            -no-color \
-            "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan" | tee ${tf_output_file}
+            "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd)).tfplan" 2>stderr.txt | tee ${tf_output_file}
+
+    RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
+
+    if [ -s stderr.txt ]; then
+        if [ ${tf_output_file+x} ]; then cat stderr.txt >> ${tf_output_file}; fi
+        echo "Terraform returned errors:"
+        cat stderr.txt
+        RETURN_CODE=200
+    fi
+
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error running terraform apply" $RETURN_CODE
+    fi
     
 }
 
 function validate {
     echo 'running terraform validate'
     terraform validate
-    
+
 }
 
 function destroy {
     cd ${landingzone_name}
+    echo "Calling function destroy"
+    echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
 
     export TF_VAR_tf_name="$(basename $(pwd)).tfstate"
 
@@ -374,7 +426,14 @@ function destroy {
             -backend-config access_key=${ARM_ACCESS_KEY} \
             -backend-config key=${TF_VAR_tf_name}
 
+        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+
         terraform destroy ${tf_command}
+
+        RETURN_CODE=$?
+        if [ $RETURN_CODE != 0 ]; then
+            error ${LINENO} "Error running terraform destroy" $RETURN_CODE
+        fi
 
         # Delete tfstate
         stgNameAvailable=$(az storage account check-name --name ${TF_VAR_tf_name} | jq .nameAvailable)
@@ -408,6 +467,8 @@ function destroy {
             -reconfigure=true \
             -get-plugins=true \
             -upgrade=true
+
+        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
         echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
@@ -444,6 +505,8 @@ function deploy_landingzone {
             -backend-config container_name=${TF_VAR_workspace} \
             -backend-config access_key=${ARM_ACCESS_KEY} \
             -backend-config key=${tf_name}
+    
+    RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
     case "${tf_action}" in 
         "plan")

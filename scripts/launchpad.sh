@@ -1,11 +1,5 @@
 #!/bin/bash
 
-set -ETe
-trap 'error ${LINENO}' ERR 1 2 3 6
-
-source /tf/rover/functions.sh
-
-
 # capture the current path
 current_path=$(pwd)
 landingzone_name=$1
@@ -20,10 +14,6 @@ while (( "$#" )); do
         case "$1" in
         -o|--output)
                 tf_output_file=$2
-                shift 2
-                ;;
-        -w|--workspace)
-                export TF_VAR_workspace=$2
                 shift 2
                 ;;
         *) # preserve positional arguments
@@ -43,6 +33,13 @@ echo "  tf_command  is : '$(echo ${tf_command})'"
 echo "  landingzone is : '$(echo ${landingzone_name})'"
 echo "  workspace   is : '$(echo ${TF_VAR_workspace})'"
 echo ""
+
+
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
+source /tf/rover/functions.sh
+
 
 verify_azure_session
 
