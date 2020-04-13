@@ -32,7 +32,7 @@ case "$1" in
         git push --follow-tags
         echo "Version aztfmod/rover:${tag} created."
         ;;
-    "private")
+    "dev")
         sudo docker tag rover_rover aztfmod/roverdev:$tag
         sudo docker tag rover_rover aztfmod/roverdev:latest
 
