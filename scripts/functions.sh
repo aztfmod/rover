@@ -171,7 +171,7 @@ function initialize_state {
             plan
             apply
             # Create sandpit workspace
-            id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
+            id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
             workspace_create "sandpit"
             workspace_create ${TF_VAR_workspace}
             upload_tfstate
@@ -223,7 +223,7 @@ function destroy_from_remote_state {
         --name ${tf_name} \
         --container-name ${TF_VAR_workspace} \
         --account-key ${ARM_ACCESS_KEY} \
-        --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
+        --account-name ${TF_VAR_lowerlevel_storage_account_name} -o json | jq .exists)
     
     if [ "${fileExists}" == "true" ]; then
         if [ ${TF_VAR_workspace} == "level0" ]; then
@@ -254,11 +254,11 @@ function destroy_from_remote_state {
 function upload_tfstate {
     echo "Moving launchpad to the cloud"
 
-    stg=$(az storage account show --ids ${id})
+    stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
     export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
 
     az storage blob upload -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
             -c ${TF_VAR_workspace} \
@@ -280,11 +280,11 @@ function upload_tfstate {
 
 function list_deployed_landingzones {
     
-    stg=$(az storage account show --ids ${id})
+    stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
     export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} | jq -r .[0].value) && echo " - storage_key: retrieved"
+    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
 
     echo ""
     echo "Landing zones deployed:"
@@ -293,7 +293,7 @@ function list_deployed_landingzones {
     az storage blob list \
             -c ${TF_VAR_workspace} \
             --account-key ${access_key} \
-            --account-name ${storage_account_name} |  \
+            --account-name ${storage_account_name} -o json |  \
     jq -r '["lnanding zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
     awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1'  | \
     column -t -s ','
@@ -305,18 +305,18 @@ function get_remote_state_details {
     echo ""
     echo "Getting launchpad coordinates:"
     
-    stg=$(az storage account show --ids ${id})
+    stg=$(az storage account show --ids ${id} -o json)
 
     export TF_VAR_lowerlevel_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
     export TF_VAR_lowerlevel_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
 
     # todo to be replaced with SAS key - short ttl or msi with the rover
-    export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} | jq -r .[0].value)
+    export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} -o json | jq -r .[0].value)
 
     # Set the security context under the devops app
-    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0']" | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
     
-    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
+    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
     
     # If the logged in user does not have access to the launchpad
     echo "value is '${TF_VAR_lowerlevel_container_name}'"
@@ -324,23 +324,23 @@ function get_remote_state_details {
         error 298 "User must be member of the security group to access the launchpad and deploy a landing zone" 101
     fi
 
-    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
+    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"
 
     # Don't get there for launchpad destroy
     if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) ]; then
         echo ""
         echo "Identity of the pilot in charge of delivering the landingzone"
         
-        export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
-        export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-        export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
-        export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} | jq -r .value)
-        export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-        export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+        export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
+        export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+        export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
+        export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} -o json | jq -r .value)
+        export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+        export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
     fi    
 
 
-    export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} | jq -r .value)
+    export TF_VAR_prefix=$(az keyvault secret show -n launchpad-prefix --vault-name ${keyvault} -o json | jq -r .value)
     echo ""
 
 }
@@ -449,13 +449,13 @@ function destroy {
         fi
 
         # Delete tfstate
-        stgNameAvailable=$(az storage account check-name --name ${TF_VAR_tf_name} | jq .nameAvailable)
+        stgNameAvailable=$(az storage account check-name --name ${TF_VAR_tf_name} -o json | jq .nameAvailable)
         if [ "${stgNameAvailable}" == "false" ]; then
             fileExists=$(az storage blob exists \
                     --name ${TF_VAR_tf_name} \
                     --container-name ${TF_VAR_workspace} \
                     --account-key ${ARM_ACCESS_KEY} \
-                    --account-name ${TF_VAR_lowerlevel_storage_account_name} | jq .exists)
+                    --account-name ${TF_VAR_lowerlevel_storage_account_name} -o json | jq .exists)
             
             if [ "${fileExists}" == "true" ]; then
                 az storage blob delete \
@@ -573,7 +573,7 @@ function deploy_landingzone {
 function workspace_list {
 
     echo " Calling workspace_list function"
-    stg=$(az storage account show --ids ${id})
+    stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -581,7 +581,7 @@ function workspace_list {
     echo  ""
     az storage container list \
             --auth-mode "login" \
-            --account-name ${storage_account_name} |  \
+            --account-name ${storage_account_name} -o json |  \
     jq -r '["workspace", "last modification", "lease ststus"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' | \
     column -t -s ','
 
@@ -591,7 +591,7 @@ function workspace_list {
 function workspace_create {
 
     echo " Calling workspace_create function"
-    stg=$(az storage account show --ids ${id})
+    stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 

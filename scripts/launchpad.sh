@@ -46,7 +46,7 @@ verify_azure_session
 
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
 
 # Cannot execute the launchpad 
 
