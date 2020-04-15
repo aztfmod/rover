@@ -14,7 +14,7 @@ You can learn more about the Visual Studio Code Remote on this [link](https://co
 
 ## Pre-requisites
 The Visual Studio Code system requirements describe the steps to follow to get your GitOps development environment ready -> [link](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
-* **Windows**: Docker Desktop 2.0+ on Windows 10 Pro/Enterprise in Linux Container mode
+* **Windows**: Docker Desktop 2.0+ on Windows 10 Pro/Enterprise with Linux Container mode
 * **macOS**: Docker Desktop 2.0+
 * **Linux**: Docker CE/EE 18.06+ and Docker Compose 1.24+
 
@@ -28,4 +28,4 @@ Install
 ## Sample landing zones
 
 You can test the CAF rover in the context of the demonstration landing zones.
-[Open source landing zones](https://github.com/aztfmod/landingzones)
+[Open source landing zones](https://github.com/Azure/caf-terraform-landingzones)
