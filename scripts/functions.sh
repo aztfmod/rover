@@ -89,7 +89,7 @@ function verify_azure_session {
     if [ "${landingzone_name}" == "login" ]; then
         echo ""
         echo "Checking existing Azure session"
-        session=$(az account show)
+        session=$(az account show 2>/dev/null || true)
 
         if [ ! -z "${tf_action}" ]; then
             echo "Login to azure with tenant ${tf_action}"
@@ -110,7 +110,7 @@ function verify_azure_session {
 
     if [ "${landingzone_name}" == "logout" ]; then
             echo "Closing Azure session"
-            az logout
+            az logout || true
             echo "Azure session closed"
             exit
     fi
