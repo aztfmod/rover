@@ -1,13 +1,13 @@
 #!/bin/bash
 
-source /tf/rover/functions.sh
 
 # Initialize the launchpad first with rover
 # deploy a landingzone with 
 # rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
 
 # capture the current path
-export TF_VAR_workspace="sandpit"
+export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
+export caf_command="rover"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -15,10 +15,6 @@ shift 2
 
 while (( "$#" )); do
         case "$1" in
-        -limited|--limited-privilege)
-                export TF_VAR_limited_privilege='1'
-                shift 1
-                ;;
         -o|--output)
                 tf_output_file=$2
                 shift 2
@@ -36,7 +32,12 @@ while (( "$#" )); do
                 ;;
         esac
 done
- 
+
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
+source /tf/rover/functions.sh
+
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
  
 echo "tf_action                     : '$(echo ${tf_action})'"
@@ -49,11 +50,9 @@ echo ""
 verify_azure_session
 verify_parameters
 
-set -e
-trap 'error ${LINENO}' ERR
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='level0']" | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
 
 if [ "${id}" == '' ]; then
         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
