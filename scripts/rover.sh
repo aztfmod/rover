@@ -52,7 +52,7 @@ verify_parameters
 
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
+id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0'].{id:id}" -o tsv)
 
 if [ "${id}" == '' ]; then
         error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
