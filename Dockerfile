@@ -117,7 +117,7 @@ RUN yum -y install \
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
     echo "Installing docker-compose ${versionDockerCompose}..." && \
-    curl -sSL -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
+    curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
     # Install Azure-cli
@@ -146,7 +146,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     # Install jq
     #
     echo "Installing jq ${versionJq}..." && \
-    curl -sSL -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
+    curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/bin/jq && \
     #
     # echo "Installing graphviz ..." && \
