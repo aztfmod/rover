@@ -35,7 +35,9 @@ jobs:
     - name: Build the rover
       run: |        
         set -e
-        # tag=$(date +"%g%m.%d%H%M")
+        docker_tag=$(date +"%g%m.%d%H%M")
+        echo ::set-env name=docker_tag::${docker_tag}
+        
         docker-compose build
         docker tag rover_rover aztfmod/roverdev:$docker_tag
         docker push aztfmod/roverdev:$docker_tag
