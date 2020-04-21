@@ -42,8 +42,11 @@ RUN cd /tmp && \
 ###########################################################
 FROM golang:1.13 as azurecaf
 
+ARG versionAzureCafTerraform
+ENV versionAzureCafTerraform=${versionAzureCafTerraform}
+
 # to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/refs/heads/master version.json
+ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/ref/tags/${versionAzureCafTerraform} version.json
 RUN cd /tmp && \
     git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
     cd terraform-provider-azurecaf && \
