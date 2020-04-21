@@ -171,7 +171,7 @@ function initialize_state {
             plan
             apply
             # Create sandpit workspace
-            id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
+            id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0'].{id:id}" -o json | jq -r .[0].id)
             workspace_create "sandpit"
             workspace_create ${TF_VAR_workspace}
             upload_tfstate
