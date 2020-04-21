@@ -159,7 +159,7 @@ function initialize_state {
         -get-plugins=true \
         -upgrade=true
 
-    RETURN_CODE=@? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
     
     case "${tf_action}" in 
         "plan")
