@@ -24,6 +24,11 @@ while (( "$#" )); do
                 export TF_VAR_workspace=$2
                 shift 2
                 ;;
+        -tfstate)
+                export TF_VAR_tf_name="${2}.tfstate"
+                export TF_VAR_tf_plan="${2}.tfplan"
+                shift 2
+                ;;
         *) # preserve positional arguments
                 echo "else $1"
 
@@ -45,6 +50,7 @@ echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
 echo "terraform command output file : '$(echo ${tf_output_file})' "
 echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
+echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo ""
 
 verify_azure_session

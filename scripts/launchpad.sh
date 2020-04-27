@@ -127,12 +127,6 @@ function workspace {
 }
 
 case "${landingzone_name}" in
-        "/tf/launchpads/launchpad_opensource")
-                launchpad_opensource "level0"
-                ;;
-        "/tf/launchpads/launchpad_opensource_light")
-                launchpad_opensource "level0"
-                ;;
         "landing_zone")
                 landing_zone
                 ;;
@@ -144,7 +138,7 @@ case "${landingzone_name}" in
                         display_launchpad_instructions
                         exit 1000
                 else
-                        verify_landingzone
+                        launchpad_opensource "level0"
                 fi
                 ;;
 esac
