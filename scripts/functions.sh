@@ -222,6 +222,8 @@ function destroy_from_remote_state {
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
+    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
 
     fileExists=$(az storage blob exists \
