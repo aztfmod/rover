@@ -668,12 +668,20 @@ function get_logged_user_object_id {
         echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv)"
     else
         export clientId=$(az account show --query user.name -o tsv)
-        if [ ${clientId} == "systemAssignedIdentity" ]; then
-            echo " - logged in Azure with System Assigned Identity"
-        else
-            # When connected with a service account the name contains the objectId
-            export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv)
-            echo " - logged in Azure AD application:  ${TF_VAR_logged_user_objectId} ($(az ad sp show --id ${clientId} --query displayName -o tsv))"
-        fi
+
+        case "${clientId}" in 
+            "systemAssignedIdentity")
+                echo " - logged in Azure with System Assigned Identity"
+                ;;
+            "userAssignedIdentity")
+                echo " - logged in Azure wiht User Assigned Identity: ($(az account show | jq -r .user.assignedIdentityInfo))"
+                ;;
+            *)
+                # When connected with a service account the name contains the objectId
+                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv)
+                echo " - logged in Azure AD application:  ${TF_VAR_logged_user_objectId} ($(az ad sp show --id ${clientId} --query displayName -o tsv))"
+                ;;
+        esac
+
     fi
 }
