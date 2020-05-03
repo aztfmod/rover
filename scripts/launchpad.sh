@@ -78,12 +78,18 @@ function launchpad_opensource {
                                 fi
                                 exit 0
                         else
-                                echo "Deploying from the launchpad"
-                                if [ "${tf_action}" == "destroy" ]; then
-                                        destroy_from_remote_state
-                                else
-                                        deploy_from_remote_state
-                                fi
+                                case "${tf_action}" in
+                                        "destroy")
+                                                destroy_from_remote_state
+                                                ;;
+                                        "plan"|"apply")
+                                                deploy_from_remote_state
+                                                ;;
+                                        *)
+                                                get_launchpad_coordinates
+                                                display_instructions
+                                                ;;
+                                esac
                         fi
                         ;;
         esac
@@ -133,14 +139,12 @@ case "${landingzone_name}" in
         "workspace")
                 workspace
                 ;;
-        *)
-                if [ "${id}" == "null" ]; then
-                        display_launchpad_instructions
-                        exit 1000
-                else
-                        launchpad_opensource "level0"
-                fi
+        "")
+                get_launchpad_coordinates
+                display_instructions
                 ;;
+        *)
+                launchpad_opensource "level0"
 esac
 
 clean_up_variables

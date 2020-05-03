@@ -337,8 +337,17 @@ function get_remote_state_details {
         az account set -s ${ARM_SUBSCRIPTION_ID}
     fi  
 
+    get_launchpad_coordinates
+
+    echo ""
+
+}
+
+function get_launchpad_coordinates {
     echo ""
     echo "Getting launchpad coordinates:"
+    
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].name)
     
     stg=$(az storage account show --ids ${id} -o json)
 
@@ -347,14 +356,11 @@ function get_remote_state_details {
     export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
     
     # If the logged in user does not have access to the launchpad
-    echo "value is '${TF_VAR_lowerlevel_container_name}'"
     if [ "${TF_VAR_lowerlevel_container_name}" == "" ]; then
         error 351 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 101
     fi
 
     export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"  
-
-    echo ""
 
 }
 
@@ -472,6 +478,24 @@ function destroy {
             error ${LINENO} "Error running terraform destroy" $RETURN_CODE
         fi
 
+        # Delete tfstate
+        echo "Delete state file on storage account:"
+        stg_name=$(az storage account show --ids ${id} -o json | jq -r .name) && echo " -stg_name: ${stg_name}"
+        
+        fileExists=$(az storage blob exists \
+                --name ${TF_VAR_tf_name} \
+                --container-name ${TF_VAR_workspace} \
+                --auth-mode login \
+                --account-name ${stg_name} -o json | jq .exists)
+        
+        if [ "${fileExists}" == "true" ]; then
+            az storage blob delete \
+                --name ${TF_VAR_tf_name} \
+                --container-name ${TF_VAR_workspace} \
+                --auth-mode login \
+                --account-name ${stg_name}
+        fi
+
     else
         echo 'running terraform destroy with local tfstate'
         # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
@@ -499,24 +523,6 @@ function destroy {
         if [ $RETURN_CODE != 0 ]; then
             error ${LINENO} "Error running terraform destroy" $RETURN_CODE
         fi
-    fi
-
-    # Delete tfstate
-    echo "Delete state file on storage account:"
-    stg_name=$(az storage account show --ids ${id} -o json | jq -r .name) && echo " -stg_name: ${stg_name}"
-    
-    fileExists=$(az storage blob exists \
-            --name ${TF_VAR_tf_name} \
-            --container-name ${TF_VAR_workspace} \
-            --auth-mode login \
-            --account-name ${stg_name} -o json | jq .exists)
-    
-    if [ "${fileExists}" == "true" ]; then
-        az storage blob delete \
-            --name ${TF_VAR_tf_name} \
-            --container-name ${TF_VAR_workspace} \
-            --auth-mode login \
-            --account-name ${stg_name}
     fi
 
 
