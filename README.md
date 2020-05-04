@@ -1,3 +1,5 @@
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/aztfmod/rover) 
+
 ![](https://github.com/aztfmod/rover/workflows/master/badge.svg)
 ![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
 
