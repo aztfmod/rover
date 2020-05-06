@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # capture the current path
-export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
+export TF_VAR_rover_version="$(echo $(cat /tf/rover/version.txt))"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -28,7 +28,6 @@ done
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
-echo "running rover version         : '$(echo $(cat /tf/rover/version.txt))'"
 echo ""
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"
@@ -42,7 +41,7 @@ set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
 source /tf/rover/functions.sh
-
+source /tf/rover/banner.sh
 
 verify_azure_session
 

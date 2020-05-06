@@ -43,10 +43,10 @@ set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
 source /tf/rover/functions.sh
+source /tf/rover/banner.sh
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
-echo "running rover version         : '$(echo $(cat /tf/rover/version.txt))'"
 echo ""
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
