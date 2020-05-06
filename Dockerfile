@@ -1,3 +1,10 @@
+FROM centos:7 as rover_version
+
+ARG versionRover
+
+RUN echo ${versionRover} > version.txt
+
+
 # There is no latest git package for centos 7. So building it from source using docker multi-stage builds
 # also speed-up sub-sequent builds
 
@@ -174,7 +181,9 @@ ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpa
 RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     mkdir -p /tf && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
-    chown -R ${USERNAME}:1000 /tf/launchpads
+    chown -R ${USERNAME}:1000 /tf/launchpads && \
+    chmod +x /tf/launchpads/launchpad_opensource/modules/azuredevops_bootstrap/1-ad-app-bootstrap/scripts/set_ad_role.sh && \
+    chmod +x /tf/launchpads/launchpad_opensource/modules/azuredevops_bootstrap/1-ad-app-bootstrap/scripts/grant_consent.sh
 
 # Add Community terraform providers
 COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
@@ -184,12 +193,11 @@ WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
+COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     chown -R ${USERNAME}:1000 /tf/rover
-
-
 
 USER ${USERNAME}

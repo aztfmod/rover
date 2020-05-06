@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # capture the current path
+export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -27,6 +28,8 @@ done
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+echo "running rover version         : '$(echo $(cat /tf/rover/version.txt))'"
+echo ""
 echo "Launchpad management tool started with:"
 echo "  tf_action   is : '$(echo ${tf_action})'"
 echo "  tf_command  is : '$(echo ${tf_command})'"
@@ -140,8 +143,13 @@ case "${landingzone_name}" in
                 workspace
                 ;;
         "")
-                get_launchpad_coordinates
-                display_instructions
+                if [ "${id}" == "null" ]; then
+                        display_launchpad_instructions
+                        exit 1000
+                else
+                        get_launchpad_coordinates
+                        display_instructions
+                fi
                 ;;
         *)
                 launchpad_opensource "level0"

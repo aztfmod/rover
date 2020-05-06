@@ -7,6 +7,7 @@
 
 # capture the current path
 export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
+export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export caf_command="rover"
 current_path=$(pwd)
 landingzone_name=$1
@@ -44,7 +45,9 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 source /tf/rover/functions.sh
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
- 
+
+echo "running rover version         : '$(echo $(cat /tf/rover/version.txt))'"
+echo ""
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
