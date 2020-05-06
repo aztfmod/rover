@@ -91,6 +91,12 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show 2>/dev/null || true)
 
+        # Cleaup any service principal session
+        unset ARM_TENANT_ID
+        unset ARM_SUBSCRIPTION_ID
+        unset ARM_CLIENT_ID
+        unset ARM_CLIENT_SECRET
+
         if [ ! -z "${tf_action}" ]; then
             echo "Login to azure with tenant ${tf_action}"
             ret=$(az login --tenant ${tf_action} >/dev/null >&1)
@@ -111,13 +117,20 @@ function verify_azure_session {
     if [ "${landingzone_name}" == "logout" ]; then
             echo "Closing Azure session"
             az logout || true
+
+            # Cleaup any service principal session
+            unset ARM_TENANT_ID
+            unset ARM_SUBSCRIPTION_ID
+            unset ARM_CLIENT_ID
+            unset ARM_CLIENT_SECRET
+
             echo "Azure session closed"
             exit
     fi
 
     echo "Checking existing Azure session"
-    session=$(az account show >/dev/null 2>&1)
-    if [ $? == 1 ]; then
+    session=$(az account show -o json 2>/dev/null || true)
+    if [ "$session" == '' ]; then
             display_login_instructions
             error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
     fi
@@ -316,9 +329,9 @@ function get_remote_state_details {
     
 
         # Don't get there for launchpad destroy
-    if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) ]; then
+    if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) -o \( "${landingzone_name}" != "/tf/launchpads/launchpad_opensource_light"  \) ]; then
         echo ""
-        echo "Identity of the pilot in charge of delivering the landingzone"
+        echo "Impersonating with the launchpad service principal to deliver the landingzone"
         
         export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
         
@@ -667,6 +680,12 @@ function clean_up_variables {
 function get_logged_user_object_id {
     export user_type=$(az account show --query user.type -o tsv)
     if [ ${user_type} == "user" ]; then
+
+        unset ARM_TENANT_ID
+        unset ARM_SUBSCRIPTION_ID
+        unset ARM_CLIENT_ID
+        unset ARM_CLIENT_SECRET
+
         export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
         export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
         echo " - logged in objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
