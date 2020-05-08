@@ -329,7 +329,7 @@ function get_remote_state_details {
     
 
         # Don't get there for launchpad destroy
-    if [  \( "${tf_action}" != "destroy" \) -o \( "${caf_command}" != "launchpad" \) -o \( "${landingzone_name}" != "/tf/launchpads/launchpad_opensource_light"  \) ]; then
+    if [ "${caf_action}" == "launchpad" ]; then
         echo ""
         echo "Impersonating with the launchpad service principal to deliver the landingzone"
         
