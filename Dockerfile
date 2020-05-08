@@ -182,6 +182,7 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     mkdir -p /tf && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
     chown -R ${USERNAME}:1000 /tf/launchpads && \
+    chmod +x /tf/bootstrap/**/*.sh && \
     chmod +x /tf/launchpads/launchpad_opensource/modules/azuredevops_bootstrap/1-ad-app-bootstrap/scripts/set_ad_role.sh && \
     chmod +x /tf/launchpads/launchpad_opensource/modules/azuredevops_bootstrap/1-ad-app-bootstrap/scripts/grant_consent.sh
 
