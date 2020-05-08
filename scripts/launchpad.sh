@@ -30,6 +30,7 @@ tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 echo ""
 echo "Launchpad management tool started with:"
+echo "  tool        is : '$(echo ${caf_command})'"
 echo "  tf_action   is : '$(echo ${tf_action})'"
 echo "  tf_command  is : '$(echo ${tf_command})'"
 echo "  landingzone is : '$(echo ${landingzone_name})'"

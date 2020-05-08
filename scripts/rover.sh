@@ -48,6 +48,8 @@ source /tf/rover/banner.sh
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 echo ""
+
+echo "tool                          : '$(echo ${caf_command})'"
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
