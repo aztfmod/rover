@@ -76,6 +76,8 @@ function display_launchpad_instructions {
 
 
 function verify_parameters {
+    echo "@calling verify_parameters"
+
     # Must provide an action when the tf_command is set
     if [ -z "${tf_action}" ] && [ ! -z "${tf_command}" ]; then
         display_instructions
@@ -86,6 +88,8 @@ function verify_parameters {
 # The rover stores the Azure sessions in a local rover/.azure subfolder
 # This function verifies the rover has an opened azure session
 function verify_azure_session {
+    echo "@calling verify_azure_session"
+
     if [ "${landingzone_name}" == "login" ]; then
         echo ""
         echo "Checking existing Azure session"
@@ -139,6 +143,8 @@ function verify_azure_session {
 
 # Verifies the landingzone exist in the rover
 function verify_landingzone {
+    echo "@calling verifiy_landingzone"
+
     if [ -z "${landingzone_name}" ] && [ -z "${tf_action}" ] && [ -z "${tf_command}" ]; then
             get_remote_state_details
 
@@ -158,6 +164,8 @@ function verify_landingzone {
 }
 
 function initialize_state {
+    echo "@calling initialize_state"
+
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
 
@@ -208,6 +216,8 @@ function initialize_state {
 }
 
 function deploy_from_remote_state {
+    echo "@calling deploy_from_remote_state"
+
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
@@ -217,19 +227,25 @@ function deploy_from_remote_state {
 
     get_logged_user_object_id
 
+    get_launchpad_coordinates
+
     deploy_landingzone
     
     cd "${current_path}"
 }
 
 function destroy_from_remote_state {
+    echo "@calling destroy_from_remote_state"
+
     echo "Destroying from remote state"
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
     get_logged_user_object_id
 
-    get_remote_state_details
+    get_launchpad_coordinates
+
+    # get_remote_state_details
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
@@ -248,12 +264,12 @@ function destroy_from_remote_state {
     if [ "${fileExists}" == "true" ]; then
         if [ ${TF_VAR_workspace} == "level0" ]; then
             az storage blob download \
-                    --name ${TF_VAR_tf_name} \
-                    --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                    --container-name ${TF_VAR_workspace} \
-                    --auth-mode "login" \
-                    --account-name ${stg_name} \
-                    --no-progress
+                --name ${TF_VAR_tf_name} \
+                --file "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                --container-name ${TF_VAR_workspace} \
+                --auth-mode "login" \
+                --account-name ${stg_name} \
+                --no-progress
             
             RETURN_CODE=$?
             if [ $RETURN_CODE != 0 ]; then
@@ -272,6 +288,8 @@ function destroy_from_remote_state {
 }
 
 function upload_tfstate {
+    echo "@calling upload_tfstate"
+
     echo "Moving launchpad to the cloud"
 
     stg=$(az storage account show --ids ${id} -o json)
@@ -299,6 +317,7 @@ function upload_tfstate {
 }
 
 function list_deployed_landingzones {
+    echo "@calling list_deployed_landingzones"
     
     stg=$(az storage account show --ids ${id} -o json)
 
@@ -322,6 +341,8 @@ function list_deployed_landingzones {
 }
 
 function get_remote_state_details {
+    echo "@calling get_remote_state_details"
+
     echo ""
 
         # Set the security context under the devops app
@@ -356,7 +377,38 @@ function get_remote_state_details {
 
 }
 
+function login_as_launchpad {
+    echo "@calling login_as_launchpad"
+
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    
+    export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
+        
+    # If the logged in user does not have access to the launchpad
+    if [ "${LAUNCHPAD_NAME}" == "" ]; then
+        error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
+    fi
+
+    export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+    export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
+    export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} -o json | jq -r .value)
+    export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+
+    if [ "${caf_launchpad}" == "launchpad_opensource" ]; then
+
+        echo ""
+        echo "Impersonating with the launchpad service principal to deploy the landingzone"
+        
+        az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID} 
+        az account set -s ${ARM_SUBSCRIPTION_ID}
+
+    fi
+}
+
 function get_launchpad_coordinates {
+    echo "@calling get_launchpad_coordinates"
+
     echo ""
     echo "Getting launchpad coordinates:"
     
@@ -378,6 +430,8 @@ function get_launchpad_coordinates {
 }
 
 function plan {
+    echo "@calling plan"
+
     echo "running terraform plan with ${tf_command}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
 
@@ -407,7 +461,8 @@ function plan {
 }
 
 function apply {
-    
+    echo "@calling apply"
+
     echo 'running terraform apply'
     rm -f $STDERR_FILE
 
@@ -431,6 +486,8 @@ function apply {
 }
 
 function validate {
+    echo "@calling validate"
+
     echo 'running terraform validate'
     terraform validate
 
@@ -450,6 +507,8 @@ function validate {
 }
 
 function destroy {
+    echo "@calling destroy"
+
     cd ${landingzone_name}
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
@@ -545,6 +604,8 @@ function destroy {
 }
 
 function other {
+    echo "@calling other"
+
     echo "running terraform ${tf_action} ${tf_command} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}""
     
     rm -f $STDERR_FILE
@@ -567,6 +628,8 @@ function other {
 }
 
 function deploy_landingzone {
+    echo "@calling deploy_landingzone"
+
     echo "Deploying '${landingzone_name}'"
 
     cd ${landingzone_name}
@@ -624,6 +687,7 @@ function deploy_landingzone {
 ##### workspace functions
 
 function workspace_list {
+    echo "@calling workspace_list"
 
     echo " Calling workspace_list function"
     stg=$(az storage account show --ids ${id} -o json)
@@ -642,6 +706,7 @@ function workspace_list {
 }
 
 function workspace_create {
+    echo "@calling workspace_create"
 
     echo " Calling workspace_create function"
     stg=$(az storage account show --ids ${id} -o json)
@@ -662,22 +727,26 @@ function workspace_create {
 
 
 function clean_up_variables {
-        echo "cleanup variables"
-        unset TF_VAR_lowerlevel_storage_account_name
-        unset TF_VAR_lowerlevel_resource_group_name
-        unset TF_VAR_lowerlevel_key
-        unset LAUNCHPAD_NAME
-        unset ARM_TENANT_ID
-        unset ARM_SUBSCRIPTION_ID
-        unset ARM_CLIENT_ID
-        unset TF_VAR_rover_pilot_application_id
-        unset ARM_CLIENT_SECRET
-        unset TF_VAR_logged_user_objectId
-        unset keyvault
+    echo "@calling clean_up_variables"
+
+    echo "cleanup variables"
+    unset TF_VAR_lowerlevel_storage_account_name
+    unset TF_VAR_lowerlevel_resource_group_name
+    unset TF_VAR_lowerlevel_key
+    unset LAUNCHPAD_NAME
+    unset ARM_TENANT_ID
+    unset ARM_SUBSCRIPTION_ID
+    unset ARM_CLIENT_ID
+    unset TF_VAR_rover_pilot_application_id
+    unset ARM_CLIENT_SECRET
+    unset TF_VAR_logged_user_objectId
+    unset keyvault
 }
 
 
 function get_logged_user_object_id {
+    echo "@calling_get_logged_user_object_id"
+
     export user_type=$(az account show --query user.type -o tsv)
     if [ ${user_type} == "user" ]; then
 

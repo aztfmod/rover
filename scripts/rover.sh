@@ -73,11 +73,6 @@ fi
 if [ "${id}" == "null" ]; then
         error ${LINENO} "You need to initialise a launchpad first with the command \n
                 launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1000
-else    
-        echo ""
-        echo "Launchpad already installed"
-        # get_remote_state_details
-        echo ""
 fi
 
 if [ "${landingzone_name}" == *"/tf/launchpads/launchpad_opensource"* ]; then
@@ -85,14 +80,23 @@ if [ "${landingzone_name}" == *"/tf/launchpads/launchpad_opensource"* ]; then
         error ${LINENO} "You need to manage the launchpad using the command \n
                 launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1001
 
+fi
+
+# Get the launchpad version
+caf_launchpad=$(az storage account show --ids $id | jq -r .tags.launchpad)
+echo ""
+echo "${caf_launchpad} already installed"
+echo ""
+
+
+if [ -z "${landingzone_name}" ]; then 
+        display_instructions
 else
-        if [ -z "${landingzone_name}" ]; then 
-                display_instructions
+        login_as_launchpad
+        
+        if [ "${tf_action}" == "destroy" ]; then
+                destroy_from_remote_state
         else
-                if [ "${tf_action}" == "destroy" ]; then
-                        destroy_from_remote_state
-                else
-                        deploy_from_remote_state
-                fi
+                deploy_from_remote_state
         fi
 fi
