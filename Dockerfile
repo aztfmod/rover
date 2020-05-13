@@ -1,3 +1,10 @@
+FROM centos:7 as rover_version
+
+ARG versionRover
+
+RUN echo ${versionRover} > version.txt
+
+
 # There is no latest git package for centos 7. So building it from source using docker multi-stage builds
 # also speed-up sub-sequent builds
 
@@ -18,6 +25,7 @@ RUN yum makecache fast && \
         bzip2 \
         make \
         openssh-clients \
+        openssl \
         man \
         ansible \
         which && \
@@ -42,8 +50,11 @@ RUN cd /tmp && \
 ###########################################################
 FROM golang:1.13 as azurecaf
 
+ARG versionAzureCafTerraform
+ENV versionAzureCafTerraform=${versionAzureCafTerraform}
+
 # to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/refs/heads/master version.json
+ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/ref/tags/${versionAzureCafTerraform} version.json
 RUN cd /tmp && \
     git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
     cd terraform-provider-azurecaf && \
@@ -114,7 +125,7 @@ RUN yum -y install \
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
     echo "Installing docker-compose ${versionDockerCompose}..." && \
-    curl -sSL -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
+    curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
     # Install Azure-cli
@@ -143,7 +154,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     # Install jq
     #
     echo "Installing jq ${versionJq}..." && \
-    curl -sSL -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
+    curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/bin/jq && \
     #
     # echo "Installing graphviz ..." && \
@@ -171,7 +182,9 @@ ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpa
 RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     mkdir -p /tf && \
     git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
-    chown -R ${USERNAME}:1000 /tf/launchpads
+    chown -R ${USERNAME}:1000 /tf/launchpads && \
+    chmod +x /tf/bootstrap/**/*.sh && \
+    chmod +x /tf/bootstrap/*.sh
 
 # Add Community terraform providers
 COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
@@ -181,12 +194,12 @@ WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
 COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
+COPY ./scripts/banner.sh .
+COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     chown -R ${USERNAME}:1000 /tf/rover
-
-
 
 USER ${USERNAME}

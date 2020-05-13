@@ -21,6 +21,8 @@ services:
         - versionJq
         - versionDockerCompose
         - versionLaunchpadOpensource
+        - versionAzureCafTerraform
+        - versionRover
 
     volumes:
       - ..:/tf

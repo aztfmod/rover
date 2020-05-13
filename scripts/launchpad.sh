@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # capture the current path
+export TF_VAR_rover_version="$(echo $(cat /tf/rover/version.txt))"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
@@ -27,7 +28,9 @@ done
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+echo ""
 echo "Launchpad management tool started with:"
+echo "  tool        is : '$(echo ${caf_command})'"
 echo "  tf_action   is : '$(echo ${tf_action})'"
 echo "  tf_command  is : '$(echo ${tf_command})'"
 echo "  landingzone is : '$(echo ${landingzone_name})'"
@@ -39,16 +42,14 @@ set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
 source /tf/rover/functions.sh
-
+source /tf/rover/banner.sh
 
 verify_azure_session
 
 
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='level0']" -o json | jq -r .[0].id)
-
-# Cannot execute the launchpad 
+id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
 
 function launchpad_opensource {
 
@@ -78,12 +79,18 @@ function launchpad_opensource {
                                 fi
                                 exit 0
                         else
-                                echo "Deploying from the launchpad"
-                                if [ "${tf_action}" == "destroy" ]; then
-                                        destroy_from_remote_state
-                                else
-                                        deploy_from_remote_state
-                                fi
+                                case "${tf_action}" in
+                                        "destroy")
+                                                destroy_from_remote_state
+                                                ;;
+                                        "plan"|"apply")
+                                                deploy_from_remote_state
+                                                ;;
+                                        *)
+                                                get_launchpad_coordinates
+                                                display_instructions
+                                                ;;
+                                esac
                         fi
                         ;;
         esac
@@ -127,26 +134,23 @@ function workspace {
 }
 
 case "${landingzone_name}" in
-        "/tf/launchpads/launchpad_opensource")
-                launchpad_opensource "level0"
-                ;;
-        "/tf/launchpads/launchpad_opensource_light")
-                launchpad_opensource "level0"
-                ;;
         "landing_zone")
                 landing_zone
                 ;;
         "workspace")
                 workspace
                 ;;
-        *)
+        "")
                 if [ "${id}" == "null" ]; then
                         display_launchpad_instructions
                         exit 1000
                 else
-                        verify_landingzone
+                        get_launchpad_coordinates
+                        display_instructions
                 fi
                 ;;
+        *)
+                launchpad_opensource "level0"
 esac
 
 clean_up_variables
