@@ -25,6 +25,7 @@ RUN yum makecache fast && \
         bzip2 \
         make \
         openssh-clients \
+        openssl \
         man \
         ansible \
         which && \
