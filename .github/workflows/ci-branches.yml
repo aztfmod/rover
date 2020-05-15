@@ -41,16 +41,18 @@ jobs:
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
 
         docker tag rover_rover aztfmod/roverdev:$docker_tag
+        docker tag rover_rover aztfmod/roverdev:latest
+        
         docker push aztfmod/roverdev:$docker_tag
+        docker push aztfmod/roverdev:latest
   
     - name: Create Release
-      if: github.event_name == 'pull_request' 
       id: create_release
       uses: actions/create-release@latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: aztfmod/roverdev:${{ github.ref }}
         draft: false
         prerelease: false
