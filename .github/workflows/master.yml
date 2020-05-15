@@ -27,7 +27,7 @@ jobs:
         tag=$(date +"%g%m.%d%H")
 
         # Build the rover base image
-        docker-compose build --build-arg versionRover=$tag
+        docker-compose build --build-arg versionRover="aztfmod/rover:$tag"
 
         docker tag rover_rover aztfmod/rover:$tag
         docker push aztfmod/rover:$tag
