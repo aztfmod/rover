@@ -24,13 +24,14 @@ jobs:
     - name: Build the rover
       run: |
         set -e
-        tag=$(date +"%g%m.%d%H")
+        docker_tag=$(date +"%g%m.%d%H")
+        echo ::set-env name=docker_tag::${docker_tag}
 
         # Build the rover base image
-        docker-compose build --build-arg versionRover="aztfmod/rover:$tag"
+        docker-compose build --build-arg versionRover="aztfmod/rover:$docker_tag"
 
-        docker tag rover_rover aztfmod/rover:$tag
-        docker push aztfmod/rover:$tag
+        docker tag rover_rover aztfmod/rover:$docker_tag
+        docker push aztfmod/rover:$docker_tag
 
     - name: Create Release
       id: create_release
