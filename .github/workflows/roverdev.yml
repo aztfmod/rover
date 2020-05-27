@@ -1,9 +1,9 @@
-name: ci-branches
+name: roverdev
 
 on:
   push:
-    branches-ignore:
-      - master
+    branches:
+      - roverdev
 
 env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
