@@ -178,6 +178,8 @@ function initialize_state {
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
+    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+    
     terraform init \
         -get-plugins=true \
         -upgrade=true
