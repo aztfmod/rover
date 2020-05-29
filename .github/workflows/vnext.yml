@@ -1,9 +1,8 @@
-name: ci-branches
+name: vnext
 
 on:
-  push:
-    branches-ignore:
-      - master
+  pull_request:
+    branches:
       - vnext
 
 env:
@@ -35,7 +34,7 @@ jobs:
     - name: Build the rover
       run: |        
         set -e
-        docker_tag=latest
+        docker_tag=$(date +"%g%m.%d%H%M")
         echo ::set-env name=docker_tag::${docker_tag}
 
         # Build the rover base image
