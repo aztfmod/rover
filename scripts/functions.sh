@@ -640,6 +640,8 @@ function deploy_landingzone {
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
+    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+
     get_remote_state_details
     export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} -o json | jq -r .[0].value)
 
