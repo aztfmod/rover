@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - vnext
+  push:
+    branches:
+      - vnext
 
 env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
