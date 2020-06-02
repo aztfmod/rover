@@ -509,7 +509,7 @@ function validate {
 }
 
 function destroy {
-    echo "@calling destroy"
+    echo "@calling destroy $1"
 
     cd ${landingzone_name}
 
@@ -552,24 +552,6 @@ function destroy {
             error ${LINENO} "Error running terraform destroy" $RETURN_CODE
         fi
 
-        # Delete tfstate
-        echo "Delete state file on storage account:"
-        stg_name=$(az storage account show --ids ${id} -o json | jq -r .name) && echo " -stg_name: ${stg_name}"
-        
-        fileExists=$(az storage blob exists \
-                --name ${TF_VAR_tf_name} \
-                --container-name ${TF_VAR_workspace} \
-                --auth-mode login \
-                --account-name ${stg_name} -o json | jq .exists)
-        
-        if [ "${fileExists}" == "true" ]; then
-            az storage blob delete \
-                --name ${TF_VAR_tf_name} \
-                --container-name ${TF_VAR_workspace} \
-                --auth-mode login \
-                --account-name ${stg_name}
-        fi
-
     else
         echo 'running terraform destroy with local tfstate'
         # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
@@ -603,12 +585,30 @@ function destroy {
     echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
+    # Delete tfstate
+    echo "Delete state file on storage account:"
+    stg_name=$(az storage account show --ids ${id} -o json | jq -r .name) && echo " -stg_name: ${stg_name}"
+    
+    fileExists=$(az storage blob exists \
+            --name ${TF_VAR_tf_name} \
+            --container-name ${TF_VAR_workspace} \
+            --auth-mode login \
+            --account-name ${stg_name} -o json | jq .exists)
+    
+    if [ "${fileExists}" == "true" ]; then
+        az storage blob delete \
+            --name ${TF_VAR_tf_name} \
+            --container-name ${TF_VAR_workspace} \
+            --auth-mode login \
+            --account-name ${stg_name}
+    fi
+
 }
 
 function other {
     echo "@calling other"
 
-    echo "running terraform ${tf_action} ${tf_command} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}""
+    echo "running terraform ${tf_action} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
     
     rm -f $STDERR_FILE
 
