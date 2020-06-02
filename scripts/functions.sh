@@ -610,8 +610,9 @@ function other {
     
     rm -f $STDERR_FILE
 
-    terraform ${tf_action} ${tf_command} \
-        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}" 2>$STDERR_FILE | tee ${tf_output_file}
+    terraform ${tf_action} \
+        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
 
     RETURN_CODE=$? && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
 
