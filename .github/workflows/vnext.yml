@@ -44,9 +44,11 @@ jobs:
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
 
         docker tag rover_rover aztfmod/roverdev:$docker_tag
-        
+        docker tag rover_rover aztfmod/roverdev:vnext
+
         docker push aztfmod/roverdev:$docker_tag
-  
+        docker tag rover_rover aztfmod/roverdev:vnext
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
@@ -57,3 +59,4 @@ jobs:
         release_name: aztfmod/roverdev:${{ env.docker_tag }}
         draft: true
         prerelease: false
+        body: You can also use the latest vnext by using aztfmod/roverdev:vnext
