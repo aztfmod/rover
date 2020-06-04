@@ -47,7 +47,7 @@ jobs:
         docker tag rover_rover aztfmod/roverdev:vnext
 
         docker push aztfmod/roverdev:$docker_tag
-        docker tag rover_rover aztfmod/roverdev:vnext
+        docker push rover_rover aztfmod/roverdev:vnext
 
     - name: Create Release
       id: create_release
