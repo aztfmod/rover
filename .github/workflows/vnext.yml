@@ -49,6 +49,21 @@ jobs:
         docker push aztfmod/roverdev:$docker_tag
         docker push aztfmod/roverdev:vnext
 
+    - name: Build the rover
+      run: |        
+        set -e
+        docker_tag=vnext-13-beta1
+        
+        # Override .env variable
+        export versionTerraform="0.13.0-beta1"
+
+        # Build the rover base image
+        docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
+
+        docker tag rover_rover aztfmod/roverdev:$docker_tag
+
+        docker push aztfmod/roverdev:$docker_tag
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
