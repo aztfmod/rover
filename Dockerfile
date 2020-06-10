@@ -32,6 +32,13 @@ RUN yum makecache fast && \
     yum -y update
 
 
+###########################################################
+# Getting latest version of tfsec
+###########################################################
+FROM golang:1.13 as tfsec
+
+# to force the docker cache to invalidate when there is a new version
+RUN env GO111MODULE=on go get -u github.com/liamg/tfsec/cmd/tfsec
 
 ###########################################################
 # Getting latest version of Azure DevOps Terraform provider
@@ -75,6 +82,7 @@ ARG versionGit
 ARG versionJq
 ARG versionDockerCompose
 ARG versionLaunchpadOpensource
+ARG versionTfsec
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -88,6 +96,7 @@ ENV versionTerraform=${versionTerraform} \
     versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
     versionLaunchpadOpensource=${versionLaunchpadOpensource} \
+    versionTfsec=${versionTfsec} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
      
@@ -157,11 +166,21 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/bin/jq && \
     #
-    # echo "Installing graphviz ..." && \
-    # yum -y install graphviz && \
-    # && echo "Installing tflint ..." \
-    # && curl -sSL -o /tmp/tflint.zip https://github.com/wata727/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip \
-    # && unzip -d /usr/local/bin /tmp/tflint.zip \
+    # Install pre-commit
+    #
+    echo "Installing pre-commit ..." \
+    python3 -m pip install pre-commit && \ 
+    #
+    # Install graphviz
+    #
+    echo "Installing graphviz ..." && \
+    yum -y install graphviz && \
+    #
+    # Install tflint
+    #
+    echo "Installing tflint ..." \
+    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip \
+    unzip -d /usr/local/bin /tmp/tflint.zip \
     #
     # Clean-up
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
@@ -189,6 +208,7 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
 # Add Community terraform providers
 COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
+COPY --from=tfsec /go/bin/tfsec /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
