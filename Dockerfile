@@ -168,19 +168,20 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     # Install pre-commit
     #
-    echo "Installing pre-commit ..." \
+    echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
     #
     # Install graphviz
     #
-    echo "Installing graphviz ..." && \
-    yum -y install graphviz && \
+    # echo "Installing graphviz ..." && \
+    # yum -y install graphviz && \
     #
     # Install tflint
     #
     echo "Installing tflint ..." \
-    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip \
-    unzip -d /usr/local/bin /tmp/tflint.zip \
+    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/${versionTflint}/tflint_linux_amd64.zip && \
+    unzip -d /usr/bin /tmp/tflint.zip && \
+    chmod +x /usr/bin/tflint && \
     #
     # Clean-up
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
