@@ -178,7 +178,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     # Install tflint
     #
-    echo "Installing tflint ..." \
+    echo "Installing tflint ..." && \
     curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/${versionTflint}/tflint_linux_amd64.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
