@@ -33,6 +33,16 @@ RUN yum makecache fast && \
 
 
 ###########################################################
+# Getting latest version of terraform-docs
+###########################################################
+FROM golang:1.13 as terraform-docs
+
+ARG versionTerraformDocs
+ENV versionTerraformDocs=${versionTerraformDocs}
+
+RUN GO111MODULE="on" go get github.com/segmentio/terraform-docs@${versionTerraformDocs}
+
+###########################################################
 # Getting latest version of tfsec
 ###########################################################
 FROM golang:1.13 as tfsec
@@ -210,6 +220,7 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
 COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
 COPY --from=tfsec /go/bin/tfsec /bin/
+COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
