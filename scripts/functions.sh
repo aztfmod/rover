@@ -58,7 +58,7 @@ function display_instructions {
 function display_launchpad_instructions {
     echo ""
     echo "You need to deploy the launchpad from the rover by running:"
-    echo " rover /tf/caf/launchpads/launchpad apply -launchpad"
+    echo " rover /tf/caf/landinzones/launchpad apply -launchpad"
     echo ""
 }
 
@@ -783,7 +783,7 @@ function deploy {
                 fi
             else
                 error ${LINENO} "You need to initialise a launchpad first with the command \n
-                rover /tf/launchpads/launchpad_opensource_light [plan | apply | destroy] -launchpad" 1000
+                rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
             fi
         ;;
         '')
