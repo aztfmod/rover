@@ -86,8 +86,7 @@ verify_azure_session
 verify_parameters
 
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].id)
-
+get_storage_id
 
 case "${landingzone_name}" in
   "landing_zone")

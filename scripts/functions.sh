@@ -185,12 +185,8 @@ function initialize_state {
             plan
             apply
             # Create sandpit workspace
-            id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
-            if [ ${id} == null ]; then
-                #1510 launchpad version
-                id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
-            fi
-            
+            get_storage_id
+
             workspace_create "sandpit"
             workspace_create ${TF_VAR_workspace}
             upload_tfstate
@@ -551,8 +547,8 @@ function destroy {
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
     # Delete tfstate
-    id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].id)
-    
+    get_storage_id
+
     if [ "$id" != "null" ]; then
         echo "Delete state file on storage account:"
         echo " -tfstate: ${TF_VAR_tf_name}"
@@ -866,4 +862,13 @@ function workspace {
                         echo "launchpad workspace [ list | create | delete ]"
                         ;;
         esac
+}
+
+function get_storage_id {
+    echo "@calling get_storage_id"
+    id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
+    if [ ${id} == null ]; then
+        #1510 launchpad version
+        id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
+    fi
 }
