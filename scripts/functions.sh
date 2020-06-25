@@ -186,6 +186,11 @@ function initialize_state {
             apply
             # Create sandpit workspace
             id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
+            if [ ${id} == null ]; then
+                #1510 launchpad version
+                id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
+            fi
+            
             workspace_create "sandpit"
             workspace_create ${TF_VAR_workspace}
             upload_tfstate
