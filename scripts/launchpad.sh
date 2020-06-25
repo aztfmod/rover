@@ -53,47 +53,54 @@ id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace
 
 function launchpad_opensource {
 
-        case "${id}" in 
-                "null")
-                        echo "No launchpad found."
-                        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+  case "${id}" in 
+    "null")
+      echo "No launchpad found."
 
-                        if [ "${tf_action}" == "destroy" ]; then
-                                echo "There is no launchpad in this subscription"
-                        else
-                                echo "Deploying from scratch the launchpad"
-                                initialize_state
-                        fi
-                        ;;
-                '')
-                        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
-                        ;;
-                *)
-                        
-                        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
-                                echo "Recover from an un-finished initialisation"
-                                if [ "${tf_action}" == "destroy" ]; then
-                                        destroy
-                                else
-                                        initialize_state
-                                fi
-                                exit 0
-                        else
-                                case "${tf_action}" in
-                                        "destroy")
-                                                destroy_from_remote_state
-                                                ;;
-                                        "plan"|"apply")
-                                                deploy_from_remote_state
-                                                ;;
-                                        *)
-                                                get_launchpad_coordinates
-                                                display_instructions
-                                                ;;
-                                esac
-                        fi
-                        ;;
+      if [ "${tf_action}" == "destroy" ]; then
+        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+          echo "Recover from an un-finished initialisation"
+          destroy
+        else
+          rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+          echo "There is no launchpad in this subscription"
+        fi
+      else
+        echo "Deploying from scratch the launchpad"
+        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}"
+        initialize_state
+        display_instructions
+      fi
+      ;;
+    '')
+      error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
+      ;;
+    *)
+            
+      if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}/$(basename ${landingzone_name}).tfstate" ]; then
+        echo "Recover from an un-finished initialisation"
+        if [ "${tf_action}" == "destroy" ]; then
+          destroy
+        else
+          initialize_state
+        fi
+        exit 0
+      else
+        case "${tf_action}" in
+          "destroy")
+            destroy_from_remote_state
+            ;;
+          "plan"|"apply")
+            deploy_from_remote_state
+            ;;
+          *)
+            get_launchpad_coordinates
+            display_instructions
+            ;;
         esac
+      fi
+      ;;
+  esac
 
 
 }

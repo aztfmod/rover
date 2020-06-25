@@ -5,24 +5,36 @@
 # deploy a landingzone with 
 # rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
 
-# capture the current path
-export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
-export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
-export caf_command="rover"
 current_path=$(pwd)
 landingzone_name=$1
 tf_action=$2
 shift 2
 
+cd ${landingzone_name}
+
+# capture the current path
+export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
+export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
+export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
+export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
+export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
+export TF_VAR_level=${TF_VAR_level:="level0"}
+export caf_command="rover"
+
+
 while (( "$#" )); do
-        case "$1" in
+        case "${1}" in
         -o|--output)
-                tf_output_file=$2
+                tf_output_file=${2}
                 shift 2
                 ;;
         -w|--workspace)
-                echo "configurting workspace"
-                export TF_VAR_workspace=$2
+                export TF_VAR_workspace=${2}
+                shift 2
+                echo "set workspace to ${TF_VAR_workspace}"
+                ;;
+        -env|--environment)
+                export TF_VAR_environment=${2}
                 shift 2
                 ;;
         -tfstate)
@@ -30,10 +42,20 @@ while (( "$#" )); do
                 export TF_VAR_tf_plan="${2}.tfplan"
                 shift 2
                 ;;
+        -level)
+                export TF_VAR_level=${2}
+                shift 2
+                ;;
+        -launchpad)
+                export caf_command="launchpad"
+                export TF_VAR_workspace="level0"
+                shift 1
+                echo "set rover to mode ${caf_command}"
+                echo "set workspace to level0"
+                ;;
         *) # preserve positional arguments
-                echo "else $1"
 
-                PARAMS+="$1 "
+                PARAMS+="${1} "
                 shift
                 ;;
         esac
@@ -49,54 +71,41 @@ tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 echo ""
 
-echo "tool                          : '$(echo ${caf_command})'"
+echo "mode                          : '$(echo ${caf_command})'"
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "tf_command                    : '$(echo ${tf_command})'"
 echo "landingzone                   : '$(echo ${landingzone_name})'"
 echo "terraform command output file : '$(echo ${tf_output_file})' "
-echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
+echo "level                         : '$(echo ${TF_VAR_level})'" 
+echo "environment                   : '$(echo ${TF_VAR_environment})'"
+# echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo ""
 
 verify_azure_session
 verify_parameters
 
-
 # Trying to retrieve the terraform state storage account id
-id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
-
-if [ "${id}" == '' ]; then
-        error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
-fi
-
-# Initialise storage account to store remote terraform state
-if [ "${id}" == "null" ]; then
-        error ${LINENO} "You need to initialise a launchpad first with the command \n
-                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1000
-fi
-
-if [ "${landingzone_name}" == *"/tf/launchpads/launchpad_opensource"* ]; then
-
-        error ${LINENO} "You need to manage the launchpad using the command \n
-                launchpad /tf/launchpads/launchpad_opensource_light [plan | apply | destroy]" 1001
-
-fi
-
-# Get the launchpad version
-caf_launchpad=$(az storage account show --ids $id | jq -r .tags.launchpad)
-echo ""
-echo "${caf_launchpad} already installed"
-echo ""
+id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].id)
 
 
-if [ -z "${landingzone_name}" ]; then 
-        display_instructions
-else
-        login_as_launchpad
-        
-        if [ "${tf_action}" == "destroy" ]; then
-                destroy_from_remote_state
-        else
-                deploy_from_remote_state
-        fi
-fi
+case "${landingzone_name}" in
+  "landing_zone")
+    landing_zone
+    ;;
+  "workspace")
+    workspace
+    ;;
+  "")
+    if [ "${id}" == "null" ]; then
+      display_launchpad_instructions
+      exit 1000
+    else
+      # login_as_launchpad
+      # get_launchpad_coordinates
+      display_instructions
+    fi
+    ;;
+  *)
+    deploy ${TF_VAR_workspace}
+esac

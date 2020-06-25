@@ -33,17 +33,17 @@ RUN yum makecache fast && \
 
 
 
-###########################################################
-# Getting latest version of Azure DevOps Terraform provider
-###########################################################
-FROM golang:1.13 as devops
+# ###########################################################
+# # Getting latest version of Azure DevOps Terraform provider
+# ###########################################################
+# FROM golang:1.13 as devops
 
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
-RUN cd /tmp && \
-    git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
-    cd terraform-provider-azuredevops && \
-    ./scripts/build.sh
+# # to force the docker cache to invalidate when there is a new version
+# ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
+# RUN cd /tmp && \
+#     git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
+#     cd terraform-provider-azuredevops && \
+#     ./scripts/build.sh
 
 ###########################################################
 # Getting latest version of Azure CAF Terraform provider
@@ -59,6 +59,19 @@ RUN cd /tmp && \
     git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
     cd terraform-provider-azurecaf && \
     go build -o terraform-provider-azurecaf
+
+###########################################################
+# Getting latest version of yaegashi/terraform-provider-msgraph
+###########################################################
+FROM golang:1.13 as msgraph
+
+# to force the docker cache to invalidate when there is a new version
+ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/ref/heads/master version.json
+RUN cd /tmp && \
+    git clone https://github.com/yaegashi/terraform-provider-msgraph.git && \
+    cd terraform-provider-msgraph && \
+    go build -o terraform-provider-msgraph
+
 
 
 ###########################################################
@@ -187,8 +200,9 @@ RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
     chmod +x /tf/bootstrap/*.sh
 
 # Add Community terraform providers
-COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
+# COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
+COPY --from=msgraph /tmp/terraform-provider-msgraph/terraform-provider-msgraph /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
