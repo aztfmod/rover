@@ -347,49 +347,81 @@ function login_as_launchpad {
     
     if [ "${keyvault}" == "null" ]; then
         export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].name)
+        login_as_launchpad_1510
+    else
+
+        echo " - keyvault_name: ${keyvault}"
+
+        export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
+            
+        # If the logged in user does not have access to the launchpad
+        if [ "${SECRET_PREFIX}" == "" ]; then
+            error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
+        fi
+
+        
+        stg=$(az storage account show --ids ${id} -o json)
+
+        echo ""
+        echo "Getting launchpad coordinates:"
+        export TF_VAR_lowerlevel_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
+        export TF_VAR_lowerlevel_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
+        export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
+        export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"  
+        export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+        launchpad_mode=$(az keyvault secret show -n launchpad-mode --vault-name ${keyvault} -o json | jq -r .value) && echo " - launchpad mode: ${launchpad_mode}"  
+
+        if [ ${launchpad_mode} != "launchpad_light" ]; then
+            echo "Set terraform provider context to Azure AD application launchpad "
+            export ARM_CLIENT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+            export ARM_CLIENT_SECRET=$(az keyvault secret show -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
+            export ARM_TENANT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+        fi 
+
+        if [ ${caf_command} == "rover" ] && [ ${launchpad_mode} != "launchpad_light" ]; then
+            
+            echo "rover mode"
+            if [ ${TF_VAR_lowerlevel_key} == ${TF_VAR_tf_name} ] && [ ${tf_action} == "destroy" ]; then
+                error "You must run the rover in launchpad mode to destroy the launchpad"
+            fi
+            
+            echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
+            
+            az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID} 
+        fi
+
+        az account set -s ${ARM_SUBSCRIPTION_ID}
+
     fi
+}
 
-    echo " - keyvault_name: ${keyvault}"
+function login_as_launchpad_1510 {
+    echo "@calling login_as_launchpad_1510"
 
-    export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    
+    export LAUNCHPAD_NAME=$(az keyvault secret show -n launchpad-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${LAUNCHPAD_NAME}"
         
     # If the logged in user does not have access to the launchpad
-    if [ "${SECRET_PREFIX}" == "" ]; then
+    if [ "${LAUNCHPAD_NAME}" == "" ]; then
         error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
     fi
 
-    
-    stg=$(az storage account show --ids ${id} -o json)
-
-    echo ""
-    echo "Getting launchpad coordinates:"
-    export TF_VAR_lowerlevel_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
-    export TF_VAR_lowerlevel_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
-    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
-    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"  
+    export ARM_CLIENT_ID=$(az keyvault secret show -n launchpad-application-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+    export TF_VAR_rover_pilot_client_id=$(az keyvault secret show -n launchpad-service-principal-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - rover client id: ${TF_VAR_rover_pilot_client_id}"
+    export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} -o json | jq -r .value)
+    export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
     export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    launchpad_mode=$(az keyvault secret show -n launchpad-mode --vault-name ${keyvault} -o json | jq -r .value) && echo " - launchpad mode: ${launchpad_mode}"  
 
-    if [ ${launchpad_mode} != "launchpad_light" ]; then
-        echo "Set terraform provider context to Azure AD application launchpad "
-        export ARM_CLIENT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-        export ARM_CLIENT_SECRET=$(az keyvault secret show -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
-        export ARM_TENANT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-    fi 
+    if [ "${caf_launchpad}" == "launchpad_opensource" ]; then
 
-    if [ ${caf_command} == "rover" ] && [ ${launchpad_mode} != "launchpad_light" ]; then
-        
-        echo "rover mode"
-        if [ ${TF_VAR_lowerlevel_key} == ${TF_VAR_tf_name} ] && [ ${tf_action} == "destroy" ]; then
-            error "You must run the rover in launchpad mode to destroy the launchpad"
-        fi
-        
-        echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
+        echo ""
+        echo "Impersonating with the launchpad service principal to deploy the landingzone"
         
         az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID} 
-    fi
+        az account set -s ${ARM_SUBSCRIPTION_ID}
 
-    az account set -s ${ARM_SUBSCRIPTION_ID}
+    fi
 }
 
 function plan {
