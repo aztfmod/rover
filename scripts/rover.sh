@@ -19,7 +19,6 @@ export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
 export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
 export TF_VAR_level=${TF_VAR_level:="level0"}
-export caf_impersonate=${caf_impersonate:=1}
 export caf_command="rover"
 
 
@@ -47,14 +46,9 @@ while (( "$#" )); do
                 export TF_VAR_level=${2}
                 shift 2
                 ;;
-        -donotimpersonate)
-                export caf_impersonate=0
-                shift 1
-                ;;
         -launchpad)
                 export caf_command="launchpad"
                 export TF_VAR_workspace="level0"
-                export caf_impersonate=1
                 shift 1
                 echo "set rover to mode ${caf_command}"
                 echo "set workspace to level0"

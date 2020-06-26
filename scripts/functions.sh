@@ -371,18 +371,14 @@ function login_as_launchpad {
         export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
         launchpad_mode=$(az keyvault secret show -n launchpad-mode --vault-name ${keyvault} -o json | jq -r .value) && echo " - launchpad mode: ${launchpad_mode}"  
 
-        if [ ${launchpad_mode} == "launchpad" ] && [ ${caf_impersonate} == 1 ]; then
+        if [ ${launchpad_mode} == "launchpad" ]; then
             echo "Set terraform provider context to Azure AD application launchpad "
             export ARM_CLIENT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
             export ARM_CLIENT_SECRET=$(az keyvault secret show -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
             export ARM_TENANT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-        else
-            unset ARM_CLIENT_ID
-            unset ARM_CLIENT_SECRET
-            unset ARM_TENANT_ID
         fi 
 
-        if [ ${caf_command} == "rover" ] && [ ${launchpad_mode} != "launchpad_light" ]; then
+        if [ ${caf_command} == "rover" ] && [ ${launchpad_mode} == "launchpad" ]; then
             
             echo "rover mode"
             if [ ${TF_VAR_lowerlevel_key} == ${TF_VAR_tf_name} ] && [ ${tf_action} == "destroy" ]; then
@@ -416,13 +412,6 @@ function login_as_launchpad_1510 {
     export ARM_CLIENT_SECRET=$(az keyvault secret show -n launchpad-service-principal-client-secret --vault-name ${keyvault} -o json | jq -r .value)
     export ARM_TENANT_ID=$(az keyvault secret show -n launchpad-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
     export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-
-    stg=$(az storage account show --ids ${id} -o json)
-
-    export TF_VAR_lowerlevel_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_lowerlevel_storage_account_name}"
-    export TF_VAR_lowerlevel_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_lowerlevel_resource_group_name}"
-    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
-    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"  
 
     if [ "${caf_launchpad}" == "launchpad_opensource" ]; then
 
@@ -527,7 +516,7 @@ function destroy {
 
     get_logged_user_object_id
 
-    if [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ]; then
+    if [ $(whoami) == "vscode" ] && [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ] && []; then
         error "You must be connected with the user who did the original launchpad initialization to destroy it"
     fi
 
