@@ -49,7 +49,7 @@ jobs:
         docker push aztfmod/roverdev:$docker_tag
         docker push aztfmod/roverdev:vnext
 
-    - name: Build the rover
+    - name: Build the rover (beta 0.13)
       run: |        
         set -e
         docker_tag=vnext-13-beta2
