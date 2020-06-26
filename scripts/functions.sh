@@ -343,8 +343,14 @@ function list_deployed_landingzones {
 function login_as_launchpad {
     echo "@calling login_as_launchpad"
 
-    export keyvault=$(az keyvault list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name) && echo " - keyvault_name: ${keyvault}"
+    export keyvault=$(az keyvault list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
     
+    if [ "${keyvault}" == "null" ]; then
+        export keyvault=$(az keyvault list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].name)
+    fi
+
+    echo " - keyvault_name: ${keyvault}"
+
     export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
         
     # If the logged in user does not have access to the launchpad
