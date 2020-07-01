@@ -23,6 +23,8 @@ services:
         - versionLaunchpadOpensource
         - versionAzureCafTerraform
         - versionRover
+        - versionTfsec
+        - versionTerraformDocs
 
     volumes:
       - ..:/tf

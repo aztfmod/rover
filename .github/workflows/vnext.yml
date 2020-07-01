@@ -1,9 +1,11 @@
-name: ci-branches
+name: vnext
 
 on:
+  pull_request:
+    branches:
+      - vnext
   push:
-    branches-ignore:
-      - master
+    branches:
       - vnext
 
 env:
@@ -35,16 +37,33 @@ jobs:
     - name: Build the rover
       run: |        
         set -e
-        docker_tag=latest
+        docker_tag=$(date +"%g%m.%d%H%M")
         echo ::set-env name=docker_tag::${docker_tag}
 
         # Build the rover base image
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
 
         docker tag rover_rover aztfmod/roverdev:$docker_tag
-        
+        docker tag rover_rover aztfmod/roverdev:vnext
+
         docker push aztfmod/roverdev:$docker_tag
-  
+        docker push aztfmod/roverdev:vnext
+
+    - name: Build the rover (beta 0.13)
+      run: |        
+        set -e
+        docker_tag=vnext-13-beta2
+        
+        # Override .env variable
+        export versionTerraform="0.13.0-beta2"
+
+        # Build the rover base image
+        docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
+
+        docker tag rover_rover aztfmod/roverdev:$docker_tag
+
+        docker push aztfmod/roverdev:$docker_tag
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
@@ -55,3 +74,4 @@ jobs:
         release_name: aztfmod/roverdev:${{ env.docker_tag }}
         draft: true
         prerelease: false
+        body: You can also use the latest vnext by using aztfmod/roverdev:vnext
