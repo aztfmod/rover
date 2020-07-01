@@ -58,7 +58,7 @@ function display_instructions {
 function display_launchpad_instructions {
     echo ""
     echo "You need to deploy the launchpad from the rover by running:"
-    echo " rover /tf/caf/landinzones/launchpad apply -launchpad"
+    echo " rover /tf/caf/landingzones/launchpad apply -launchpad"
     echo ""
 }
 
