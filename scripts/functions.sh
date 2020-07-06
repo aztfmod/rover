@@ -918,3 +918,22 @@ function get_storage_id {
         id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
     fi
 }
+
+
+function verify_clone_repository {
+     echo "@calling verify_clone_repository"
+
+    if [[ "${clone_landingzone}" == "true" || "${clone_launchpad}" == "true" ]]; then
+        echo "cloning respository"
+
+        if [ "${clone_launchpad}" == "true" ]; then
+            launchpad_path="caf-terraform-landingzones-${landingzone_branch}/landingzones/launchpad"
+        fi
+
+        rm -rf /tf/caf/landingzones
+        mkdir -p /tf/caf/landingzones
+        curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
+
+        exit 0
+    fi
+}
