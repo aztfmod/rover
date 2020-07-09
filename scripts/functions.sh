@@ -932,7 +932,7 @@ function verify_clone_repository {
 
         rm -rf /tf/caf/landingzones
         mkdir -p /tf/caf/landingzones
-        curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
+        curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} --fail --silent --show-error | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
 
         exit 0
     fi

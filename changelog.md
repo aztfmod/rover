@@ -1,4 +1,31 @@
-## 2002.dev (Unrelease)
+## 2007.dev (Unrelease)
+
+NEW COMMANDS
+* Launchpad commands moved into the rover with 
+```bash
+rover /tf/caf/landingzones/launchpad apply -launchpad 
+```
+
+* Clone the public launchpad folder
+```bash
+# Clone the public open source launchpad from master branch
+rover --clone-launchpad
+
+# Clone the public open source launchpad from vnext branch
+rover --clone-launchpad --clone-branch vnext
+```
+
+* Clone the public landingzones folder (includes the launchpad)
+```bash
+# Clone the public open source landingzones from master branch
+rover --clone-landingzones
+
+# Clone the public open source landingzones from vnext branch
+rover --clone-landingzones --clone-branch vnext
+```
+
+REMOVED COMMANDS
+* 
 
 # v2002 refresh
 
