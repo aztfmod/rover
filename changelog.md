@@ -25,7 +25,11 @@ rover --clone-landingzones --clone-branch vnext
 ```
 
 REMOVED COMMANDS
-* 
+* launchpad.sh as now been replaced with
+```
+# Clone the launchpad with the new clone command
+rover launchpad_path plan -launchpad
+```
 
 # v2002 refresh
 

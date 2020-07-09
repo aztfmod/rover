@@ -219,16 +219,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
-
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpadOpensource} version.json
-RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
-    mkdir -p /tf && \
-    git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
-    chown -R ${USERNAME}:1000 /tf/launchpads && \
-    chmod +x /tf/bootstrap/**/*.sh && \
-    chmod +x /tf/bootstrap/*.sh
-
 # Add Community terraform providers
 # COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
@@ -238,13 +228,11 @@ COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
-COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     chown -R ${USERNAME}:1000 /tf/rover
 
