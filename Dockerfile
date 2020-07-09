@@ -50,18 +50,6 @@ FROM golang:1.13 as tfsec
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/liamg/tfsec/cmd/tfsec
 
-# ###########################################################
-# # Getting latest version of Azure DevOps Terraform provider
-# ###########################################################
-# FROM golang:1.13 as devops
-
-# # to force the docker cache to invalidate when there is a new version
-# ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
-# RUN cd /tmp && \
-#     git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
-#     cd terraform-provider-azuredevops && \
-#     ./scripts/build.sh
-
 ###########################################################
 # Getting latest version of Azure CAF Terraform provider
 ###########################################################
@@ -220,7 +208,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # Add Community terraform providers
-# COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
 COPY --from=msgraph /tmp/terraform-provider-msgraph/terraform-provider-msgraph /bin/
 COPY --from=tfsec /go/bin/tfsec /bin/
