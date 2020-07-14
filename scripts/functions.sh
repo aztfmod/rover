@@ -66,7 +66,7 @@ function display_login_instructions {
 function display_instructions {
     echo ""
     echo "You can deploy a landingzone with the rover by running:"
-    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy]"
+    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate]"
     echo ""
     echo "List of the landingzones loaded in the rover:"
 
@@ -98,6 +98,10 @@ function verify_parameters {
 
     if [ -z "${landingzone_name}" ]; then
         echo "landingzone                   : '' (not specified)"
+        if [ ${caf_command} == "launchpad" ]; then
+            display_instructions
+            error ${LINENO} "action must be set when deploying a landing zone" 11
+        fi
     else
         echo "landingzone                   : '$(echo ${landingzone_name})'"
         cd ${landingzone_name}
@@ -940,12 +944,10 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan"|"apply")
+            "plan"|"apply"|"validate")
                 deploy_from_remote_state
                 ;;
             *)
-                login_as_launchpad
-                # get_launchpad_coordinates
                 display_instructions
                 ;;
             esac
@@ -984,7 +986,11 @@ function get_storage_id {
             id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{id:id}" -o json | jq -r .[0].id)
 
             if [ ${id} == null ]; then
-                display_launchpad_instructions
+                if [ ${TF_VAR_level} != "level0" ]; then
+                    echo "Multi-level support is not yet support. Coming soon."
+                else
+                    display_launchpad_instructions
+                fi
                 exit 1000
             else
                 echo "There is no launchpad in the environment: ${TF_VAR_environment}"
@@ -1006,9 +1012,9 @@ function clone_repository {
 
         if [ "${clone_launchpad}" == "true" ]; then
             launchpad_path="caf-terraform-landingzones-${landingzone_branch}/landingzones/launchpad"
+            rm -rf /tf/caf/landingzones/launchpad
         fi
 
-        rm -rf /tf/caf/landingzones
         mkdir -p /tf/caf/landingzones
         curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} --fail --silent --show-error | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
     fi
