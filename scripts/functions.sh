@@ -25,6 +25,32 @@ exit_if_error() {
     }
 }
 
+function process_actions {
+    echo "@calling process_actions"
+    verify_azure_session
+
+    case "${caf_command}" in
+        "workspace")
+            workspace ${tf_command}
+            exit 0
+            ;;
+        "clone")
+            clone_repository
+            exit 0
+            ;;
+        "landingzone_mgmt")
+            landing_zone ${tf_command}
+            exit 0
+            ;;
+        launchpad|landingzone)
+            verify_parameters
+            deploy ${TF_VAR_workspace}
+            ;;
+        *)
+            display_instructions
+    esac
+}
+
 function display_login_instructions {
     echo ""
     echo "To login the rover to azure:"
@@ -58,7 +84,11 @@ function display_instructions {
 function display_launchpad_instructions {
     echo ""
     echo "You need to deploy the launchpad from the rover by running:"
-    echo " rover /tf/caf/landingzones/launchpad apply -launchpad"
+    if [ -z "${TF_VAR_environment}" ]; then
+        echo " rover /tf/caf/landingzones/launchpad apply -launchpad"
+    else
+        echo " rover /tf/caf/landingzones/launchpad apply -launchpad -env ${TF_VAR_environment}"
+    fi
     echo ""
 }
 
@@ -66,10 +96,19 @@ function display_launchpad_instructions {
 function verify_parameters {
     echo "@calling verify_parameters"
 
-    # Must provide an action when the tf_command is set
-    if [ -z "${tf_action}" ] && [ ! -z "${tf_command}" ]; then
-        display_instructions
-        error ${LINENO} "landingzone and action must be set" 11
+    if [ -z "${landingzone_name}" ]; then
+        echo "landingzone                   : '' (not specified)"
+    else
+        echo "landingzone                   : '$(echo ${landingzone_name})'"
+        cd ${landingzone_name}
+        export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
+        export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
+
+        # Must provide an action when the tf_command is set
+        if [ -z "${tf_action}" ] && [ ! -z "${tf_command}" ]; then
+            display_instructions
+            error ${LINENO} "action and action must be set when deploying a landing zone" 11
+        fi
     fi
 }
 
@@ -78,7 +117,7 @@ function verify_parameters {
 function verify_azure_session {
     echo "@calling verify_azure_session"
 
-    if [ "${landingzone_name}" == "login" ]; then
+    if [ "${caf_command}" == "login" ]; then
         echo ""
         echo "Checking existing Azure session"
         session=$(az account show 2>/dev/null || true)
@@ -106,7 +145,7 @@ function verify_azure_session {
         exit
     fi
 
-    if [ "${landingzone_name}" == "logout" ]; then
+    if [ "${caf_command}" == "logout" ]; then
             echo "Closing Azure session"
             az logout || true
 
@@ -187,8 +226,8 @@ function initialize_state {
             # Create sandpit workspace
             get_storage_id
 
-            workspace_create "sandpit"
-            workspace_create ${TF_VAR_workspace}
+            workspace create "sandpit"
+            workspace create ${TF_VAR_workspace}
             upload_tfstate
             ;;
         "validate")
@@ -707,6 +746,32 @@ function deploy_landingzone {
 
 
 ##### workspace functions
+## Workspaces are used for an additional level of isolation. Mainly used by CI
+function workspace {
+
+        echo "@calling workspace function with $@"
+        get_storage_id
+
+        if [ "${id}" == "null" ]; then
+                display_launchpad_instructions
+                exit 1000
+        fi
+
+        case "${1}" in 
+                "list")
+                        workspace_list
+                        ;;
+                "create")
+                        workspace_create ${2}
+                        ;;
+                "delete")
+                        workspace_delete ${2}
+                        ;;
+                *)
+                        echo "launchpad workspace [ list | create | delete ]"
+                        ;;
+        esac
+}
 
 function workspace_list {
     echo "@calling workspace_list"
@@ -746,6 +811,26 @@ function workspace_create {
 
     echo ""
 }
+
+function workspace_delete {
+    echo "@calling workspace_delete"
+
+    stg=$(az storage account show --ids ${id} -o json)
+
+    export storage_account_name=$(echo ${stg} | jq -r .name)
+
+    echo " Delete $1 workspace"
+    echo  ""
+    az storage container delete \
+            --name $1 \
+            --auth-mode login \
+            --account-name ${storage_account_name}
+
+    mkdir -p ${TF_DATA_DIR}/tfstates/${TF_VAR_workspace}
+
+    echo ""
+}
+
 
 
 function clean_up_variables {
@@ -804,6 +889,7 @@ function get_logged_user_object_id {
 
 function deploy {
 
+    get_storage_id
 
     case "${id}" in 
         "null")
@@ -876,39 +962,21 @@ function deploy {
 }
 
 function landing_zone {
-        case "${tf_action}" in 
-                "list")
-                        echo "Listing the deployed landing zones"
-                        list_deployed_landingzones
-                        ;;
-                *)
-                        echo "launchpad landing_zone [ list | unlock [landing_zone_tfstate_name]]"
-                        ;;
-        esac
+    echo "@calling landing_zone"
+    
+    get_storage_id
+
+    case "${1}" in 
+        "list")
+            echo "Listing the deployed landing zones"
+            list_deployed_landingzones
+                ;;
+        *)
+            echo "rover landingzone [ list ]"
+            ;;
+    esac
 }
 
-## Workspaces are used to isolate environments like sandpit, dev, sit, production
-function workspace {
-
-        if [ "${id}" == "null" ]; then
-                display_launchpad_instructions
-                exit 1000
-        fi
-
-        case "${tf_action}" in 
-                "list")
-                        workspace_list
-                        ;;
-                "create")
-                        workspace_create ${tf_command}
-                        ;;
-                "delete")     
-                        ;;
-                *)
-                        echo "launchpad workspace [ list | create | delete ]"
-                        ;;
-        esac
-}
 
 function get_storage_id {
     echo "@calling get_storage_id"
@@ -916,11 +984,26 @@ function get_storage_id {
     id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
     if [ ${id} == null ]; then
         id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
+        if [ ${id} == null ] && [ "${caf_action}" != "launchpad" } ]; then
+            # Check if other launchpad are installed
+            id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{id:id}" -o json | jq -r .[0].id)
+
+            if [ ${id} == null ]; then
+                display_launchpad_instructions
+                exit 1000
+            else
+                echo "There is no launchpad in the environment: ${TF_VAR_environment}"
+                echo "List of the other launchpad deployed"
+                az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{name:name,environment:tags.environment, launchpad:tags.launchpad}" -o table
+                
+                exit 0
+            fi
+        fi
     fi
 }
 
 
-function verify_clone_repository {
+function clone_repository {
      echo "@calling verify_clone_repository"
 
     if [[ "${clone_landingzone}" == "true" || "${clone_launchpad}" == "true" ]]; then
@@ -933,7 +1016,6 @@ function verify_clone_repository {
         rm -rf /tf/caf/landingzones
         mkdir -p /tf/caf/landingzones
         curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} --fail --silent --show-error | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
-
-        exit 0
     fi
 }
+
