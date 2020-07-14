@@ -3,7 +3,7 @@
 
 # Initialize the launchpad first with rover
 # deploy a landingzone with 
-# rover [landingzone_folder_name] [plan | apply | destroy] [parameters]
+# rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
@@ -60,6 +60,14 @@ while (( "$#" )); do
         login)
                 shift 1
                 export caf_command="login"
+                ;;
+        -t|--tenant)
+                export tenant=${2}
+                shift 2
+                ;;
+        -s|--subscription)
+                export subscription=${2}
+                shift 2
                 ;;
         logout)
                 shift 1
