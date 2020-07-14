@@ -984,7 +984,7 @@ function get_storage_id {
     id=$(az storage account list --query "[?tags.tfstate=='level0' && tags.workspace=='level0']" -o json | jq -r .[0].id)
     if [ ${id} == null ]; then
         id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | jq -r .[0].id)
-        if [ ${id} == null ] && [ "${caf_action}" != "launchpad" } ]; then
+        if [ ${id} == null ] && [ "${caf_action}" != "launchpad" ]; then
             # Check if other launchpad are installed
             id=$(az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{id:id}" -o json | jq -r .[0].id)
 
