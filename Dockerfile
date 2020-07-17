@@ -217,6 +217,7 @@ WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
+COPY ./scripts/clone.sh .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \

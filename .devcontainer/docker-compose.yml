@@ -6,8 +6,8 @@
   version: '3.7'
   services:
     rover:
-      image: aztfmod/roverdev:vnext
-    
+      image: aztfmod/rover:latest
+   
       labels:
         - "caf=Azure CAF"
    

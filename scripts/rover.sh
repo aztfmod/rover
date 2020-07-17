@@ -5,6 +5,7 @@
 # deploy a landingzone with 
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
+source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
@@ -12,13 +13,17 @@ export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
-export caf_command="rover"
 
 
 current_path=$(pwd)
 
 while (( "$#" )); do
     case "${1}" in
+        --clone|--clone-branch|--clone-folder|--clone-destination|--clone-folder-strip)
+            export caf_command="clone"
+            process_clone_parameter $@
+            shift 2
+            ;;
         -lz|--landingzone)
             export caf_command="landingzone"
             export landingzone_name=${2}
@@ -36,19 +41,6 @@ while (( "$#" )); do
             export clone_landingzone="false"
             echo "cloning launchpad"
             shift 1
-            ;;
-        --clone-landingzones)
-            export caf_command="clone"
-            export landingzone_branch=${landingzone_branch:="master"}
-            export clone_landingzone="true"
-            export clone_launchpad="false"
-            echo "cloning landingzone"
-            shift 1
-            ;;
-        --clone-branch)
-            export landingzone_branch=${2}
-            echo "cloning branch ${landingzone_branch}"
-            shift 2
             ;;
         workspace)
             shift 1

@@ -373,7 +373,7 @@ function list_deployed_landingzones {
             -c ${TF_VAR_workspace} \
             --account-key ${access_key} \
             --account-name ${storage_account_name} -o json |  \
-    jq -r '["lnanding zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
+    jq -r '["landing zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
     awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1'  | \
     column -t -s ','
 
@@ -1004,23 +1004,6 @@ function get_storage_id {
                 exit 0
             fi
         fi
-    fi
-}
-
-
-function clone_repository {
-     echo "@calling verify_clone_repository"
-
-    if [[ "${clone_landingzone}" == "true" || "${clone_launchpad}" == "true" ]]; then
-        echo "cloning respository"
-
-        if [ "${clone_launchpad}" == "true" ]; then
-            launchpad_path="caf-terraform-landingzones-${landingzone_branch}/landingzones/launchpad"
-            rm -rf /tf/caf/landingzones/launchpad
-        fi
-
-        mkdir -p /tf/caf/landingzones
-        curl https://codeload.github.com/Azure/caf-terraform-landingzones/tar.gz/${landingzone_branch} --fail --silent --show-error | tar -zxv --strip=2 -C /tf/caf/landingzones ${launchpad_path}
     fi
 }
 
