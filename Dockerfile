@@ -235,7 +235,8 @@ COPY --from=rover_version version.txt /tf/rover/version.txt
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     mkdir -p /tf/caf && \
-    chown -R ${USERNAME}:1000 /tf/rover /tf/caf
+    chown -R ${USERNAME}:1000 /tf/rover /tf/caf && \
+    chmod +x /tf/rover/sshd.sh
 
 USER ${USERNAME}
 
