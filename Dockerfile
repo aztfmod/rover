@@ -229,6 +229,7 @@ COPY ./scripts/rover.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
+COPY ./scripts/sshd.sh .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
@@ -239,4 +240,4 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
 USER ${USERNAME}
 
 EXPOSE 22
-CMD ["/usr/sbin/sshd", "-D"]
+CMD ["/tf/rover/sshd.sh"]
