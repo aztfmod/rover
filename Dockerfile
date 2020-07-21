@@ -209,13 +209,14 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
 
 # ssh server for Azure ACI
 ENV SSH_PASSWD "vscode:Caf!"
+
 RUN yum install -y openssh-server && \
-    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key && \
-    ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_ecdsa_key && \
-    ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && \
-    ssh-keygen -A && \
-    echo "$SSH_PASSWD" | chpasswd 
-COPY ./scripts/sshd_config /etc/ssh
+    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key /home/${USERNAME}/.ssh/ssh_host_rsa_key && \
+    ssh-keygen -q -N "" -t rsa -b 4096 -f /home/${USERNAME}/.ssh/ssh_host_rsa_key && \
+    echo "$SSH_PASSWD" | chpasswd && \
+    mkdir -p /home/${USERNAME}/.ssh
+
+COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
 
 # Add Community terraform providers
@@ -235,10 +236,10 @@ COPY --from=rover_version version.txt /tf/rover/version.txt
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     mkdir -p /tf/caf && \
-    chown -R ${USERNAME}:1000 /tf/rover /tf/caf && \
+    chown -R ${USERNAME}:1000 /tf/rover /tf/caf /home/${USERNAME}/.ssh && \
     chmod +x /tf/rover/sshd.sh
 
 USER ${USERNAME}
 
 EXPOSE 22
-CMD ["/tf/rover/sshd.sh"]
+CMD  ["/tf/rover/sshd.sh"]

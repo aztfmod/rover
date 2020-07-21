@@ -2,11 +2,8 @@
 set -Eeo pipefail
 
 # Generate unique ssh keys , if needed
-if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
-    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ''
-fi
-if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-    ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ''
+if [ ! -f /home/vscode/.ssh/ssh_host_rsa_key ]; then
+    ssh-keygen -t rsa -b 4096 -f /home/vscode/.ssh/ssh_host_rsa_key -N ''
 fi
 
-exec /usr/sbin/sshd -D -e
+sudo /usr/sbin/sshd -f /home/vscode/.ssh/sshd_config -D -e
