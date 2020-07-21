@@ -90,6 +90,7 @@ function clone_repository {
     echo "clone_url             : ${url}"
     echo ""
 
+    rm -rf ${clone_destination}/$(basename ${clone_folder})
     mkdir -p ${clone_destination}
 
     curl https://codeload.github.com/${clone_project_name}/tar.gz/${landingzone_branch} --fail --silent --show-error | tar -zxv --strip=${clone_folder_strip} -C ${clone_destination} "$(basename ${clone_project_name})-${landingzone_branch}${clone_folder}"
@@ -150,27 +151,3 @@ function process_clone_parameter {
             ;;
     esac
 }
-
-
-# echo "running rover with $#"
-# if [ $# -eq 0 ]; then
-#     display_clone_instructions
-#     exit 20
-# fi
-
-# while (( "$#" )); do
-#     case "${1}" in
-#         --clone|--clone-branch|--clone-folder|--clone-destination|--clone-folder-strip)
-#             export caf_command="clone"
-#             process_clone_parameter $@
-#             shift 2
-#             ;;
-#         *) # preserve positional arguments
-#                 PARAMS+="${1} "
-#                 shift
-#                 ;;
-#         esac
-# done
-
-
-# clone_repository

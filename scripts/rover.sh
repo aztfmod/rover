@@ -13,7 +13,8 @@ export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
-
+export TF_DATA_DIR=${TF_DATA_DIR:="/home/vscode"}
+export LC_ALL=en_US.UTF-8
 
 current_path=$(pwd)
 
