@@ -238,5 +238,5 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
 
 USER ${USERNAME}
 
-EXPOSE 2222
+EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
