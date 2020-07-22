@@ -134,6 +134,8 @@ RUN yum -y install \
     #
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
+    touch /var/run/docker.sock && \
+    chmod 666 /var/run/docker.sock && \
     #
     # Install Terraform
     #
