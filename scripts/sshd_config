@@ -16,6 +16,6 @@ PasswordAuthentication 	yes
 PermitEmptyPasswords 	  no
 PermitRootLogin 	      no
 UsePrivilegeSeparation  no
-UsePam                  no
+#UsePam                  no
 LogLevel                VERBOSE
-HostKey                 /home/vscode/.ssh/ssh_host_rsa_key
+HostKey                 /home/vscode/.ssh/ssh_host_ecdsa_key

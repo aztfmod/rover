@@ -92,21 +92,22 @@ ARG versionTflint
 ARG versionGit
 ARG versionJq
 ARG versionDockerCompose
-ARG versionLaunchpadOpensource
 ARG versionTfsec
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
+ARG SSH_PASSWD
 
-ENV versionTerraform=${versionTerraform} \
+ENV SSH_PASSWD=${SSH_PASSWD} \
+    USERNAME=${USERNAME} \
+    versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
     versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
-    versionLaunchpadOpensource=${versionLaunchpadOpensource} \
     versionTfsec=${versionTfsec} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
@@ -184,11 +185,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
     #
-    # Install graphviz
-    #
-    # echo "Installing graphviz ..." && \
-    # yum -y install graphviz && \
-    #
     # Install tflint
     #
     echo "Installing tflint ..." && \
@@ -210,12 +206,9 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # ssh server for Azure ACI
-ENV SSH_PASSWD "vscode:Caf!"
-
 RUN yum install -y openssh-server && \
-    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key /home/${USERNAME}/.ssh/ssh_host_rsa_key && \
-    ssh-keygen -q -N "" -t rsa -b 4096 -f /home/${USERNAME}/.ssh/ssh_host_rsa_key && \
-    echo "$SSH_PASSWD" | chpasswd && \
+    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
     mkdir -p /home/${USERNAME}/.ssh
 
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
