@@ -52,10 +52,10 @@ jobs:
     - name: Build the rover (beta 0.13)
       run: |        
         set -e
-        docker_tag=vnext-13-beta3
+        docker_tag=vnext-13-rc1
         
         # Override .env variable
-        export versionTerraform="0.13.0-beta3"
+        export versionTerraform="0.13.0-rc1"
 
         # Build the rover base image
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
