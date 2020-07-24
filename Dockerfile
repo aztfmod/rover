@@ -50,18 +50,6 @@ FROM golang:1.13 as tfsec
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/liamg/tfsec/cmd/tfsec
 
-# ###########################################################
-# # Getting latest version of Azure DevOps Terraform provider
-# ###########################################################
-# FROM golang:1.13 as devops
-
-# # to force the docker cache to invalidate when there is a new version
-# ADD https://api.github.com/repos/microsoft/terraform-provider-azuredevops/git/refs/heads/master version.json
-# RUN cd /tmp && \
-#     git clone https://github.com/microsoft/terraform-provider-azuredevops.git && \
-#     cd terraform-provider-azuredevops && \
-#     ./scripts/build.sh
-
 ###########################################################
 # Getting latest version of Azure CAF Terraform provider
 ###########################################################
@@ -104,21 +92,22 @@ ARG versionTflint
 ARG versionGit
 ARG versionJq
 ARG versionDockerCompose
-ARG versionLaunchpadOpensource
 ARG versionTfsec
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
+ARG SSH_PASSWD
 
-ENV versionTerraform=${versionTerraform} \
+ENV SSH_PASSWD=${SSH_PASSWD} \
+    USERNAME=${USERNAME} \
+    versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
     versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
-    versionLaunchpadOpensource=${versionLaunchpadOpensource} \
     versionTfsec=${versionTfsec} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
@@ -146,6 +135,8 @@ RUN yum -y install \
     #
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
+    touch /var/run/docker.sock && \
+    chmod 666 /var/run/docker.sock && \
     #
     # Install Terraform
     #
@@ -194,11 +185,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
     #
-    # Install graphviz
-    #
-    # echo "Installing graphviz ..." && \
-    # yum -y install graphviz && \
-    #
     # Install tflint
     #
     echo "Installing tflint ..." && \
@@ -219,18 +205,16 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
 
+# ssh server for Azure ACI
+RUN yum install -y openssh-server && \
+    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+    mkdir -p /home/${USERNAME}/.ssh
 
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/level0/git/refs/heads/${versionLaunchpadOpensource} version.json
-RUN echo "cloning the launchpads version ${versionLaunchpadOpensource}" && \
-    mkdir -p /tf && \
-    git clone https://github.com/aztfmod/level0.git /tf --branch ${versionLaunchpadOpensource} && \
-    chown -R ${USERNAME}:1000 /tf/launchpads && \
-    chmod +x /tf/bootstrap/**/*.sh && \
-    chmod +x /tf/bootstrap/*.sh
+COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
+
 
 # Add Community terraform providers
-# COPY --from=devops /tmp/terraform-provider-azuredevops/bin /bin/
 COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
 COPY --from=msgraph /tmp/terraform-provider-msgraph/terraform-provider-msgraph /bin/
 COPY --from=tfsec /go/bin/tfsec /bin/
@@ -238,14 +222,19 @@ COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
-COPY ./scripts/launchpad.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
+COPY ./scripts/clone.sh .
+COPY ./scripts/sshd.sh .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias launchpad=/tf/rover/launchpad.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
-    chown -R ${USERNAME}:1000 /tf/rover
+    mkdir -p /tf/caf && \
+    chown -R ${USERNAME}:1000 /tf/rover /tf/caf /home/${USERNAME}/.ssh && \
+    chmod +x /tf/rover/sshd.sh
 
 USER ${USERNAME}
+
+EXPOSE 22
+CMD  ["/tf/rover/sshd.sh"]
