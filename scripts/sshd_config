@@ -1,0 +1,21 @@
+#
+# /etc/ssh/sshd_config
+#
+
+Port 			              22
+ListenAddress 		      0.0.0.0
+LoginGraceTime 		      180
+X11Forwarding 		      yes
+Ciphers                 aes256-ctr,aes128-ctr,aes192-ctr
+KexAlgorithms           ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha256
+StrictModes 		        no
+SyslogFacility 		      DAEMON
+PrintMotd 		          no
+IgnoreRhosts 		        no
+PasswordAuthentication 	yes
+PermitEmptyPasswords 	  no
+PermitRootLogin 	      no
+UsePrivilegeSeparation  no
+#UsePam                  no
+LogLevel                VERBOSE
+HostKey                 /home/vscode/.ssh/ssh_host_ecdsa_key
