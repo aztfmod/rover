@@ -21,7 +21,7 @@ export LC_ALL=en_US.UTF-8
 
 current_path=$(pwd)
 
-mkdir -p /home/vscode/.terraform.cache/plugin-cache
+mkdir -p ~/.terraform.cache/plugin-cache
 
 while (( "$#" )); do
     case "${1}" in
