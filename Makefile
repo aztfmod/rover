@@ -9,3 +9,6 @@ local:
 
 dev:
 	@bash "$(CURDIR)/scripts/build_image.sh" "dev"
+
+alpha:
+	@bash "$(CURDIR)/scripts/build_image.sh" "alpha"

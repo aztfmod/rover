@@ -9,14 +9,19 @@ source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
-export TF_VAR_workspace=${TF_VAR_workspace:="sandpit"}
+export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
-export TF_DATA_DIR=${TF_DATA_DIR:="/home/vscode"}
+export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
+export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
+export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
+export impersonate=${impersonate:=false}
 export LC_ALL=en_US.UTF-8
 
 current_path=$(pwd)
+
+mkdir -p /home/vscode/.terraform.cache/plugin-cache
 
 while (( "$#" )); do
     case "${1}" in
@@ -82,7 +87,6 @@ while (( "$#" )); do
                 ;;
         -launchpad)
                 export caf_command="launchpad"
-                export TF_VAR_workspace="level0"
                 shift 1
                 ;;
         -o|--output)
@@ -96,6 +100,10 @@ while (( "$#" )); do
         -l|-level)
                 export TF_VAR_level=${2}
                 shift 2
+                ;;
+        --impersonate)
+                export impersonate=true
+                shift 1
                 ;;
         *) # preserve positional arguments
                 PARAMS+="${1} "
@@ -120,5 +128,10 @@ echo "environment                   : '$(echo ${TF_VAR_environment})'"
 echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo ""
+
+if [ $(whoami) != "vscode" ] && [ "${caf_command}" == "landingzone" ]; then
+    export impersonate=true
+    echo "Impersonating the rover to service principal"
+fi
 
 process_actions
