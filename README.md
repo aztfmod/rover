@@ -1,5 +1,7 @@
 ![](https://github.com/aztfmod/rover/workflows/master/badge.svg)
 ![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
+[![VScodespaces](https://img.shields.io/endpoint?url=https%3A%2F%2Faka.ms%2Fvso-badge)](https://online.visualstudio.com/environments/new?name=rover=aztfmod/rover)
+[![Gitter](https://badges.gitter.im/aztfmod/community.svg)](https://gitter.im/aztfmod/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ## Introduction
 
