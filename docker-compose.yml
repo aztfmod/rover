@@ -20,7 +20,6 @@ services:
         - versionTflint
         - versionJq
         - versionDockerCompose
-        - versionAzureCafTerraform
         - versionRover
         - versionTfsec
         - versionTerraformDocs
