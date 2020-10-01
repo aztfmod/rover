@@ -23,6 +23,7 @@ services:
         - versionRover
         - versionTfsec
         - versionTerraformDocs
+        - versionAnsible
 
     volumes:
       - ..:/tf

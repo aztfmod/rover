@@ -65,6 +65,7 @@ ARG versionGit
 ARG versionJq
 ARG versionDockerCompose
 ARG versionTfsec
+ARG versionAnsible
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -81,6 +82,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
+    versionAnsible=${versionAnsible} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
      
@@ -156,6 +158,11 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
+    #
+    # Install Ansible
+    #
+    echo "Installing Ansible ..." && \
+    pip3 install --user https://github.com/ansible/ansible/archive/stable-${versionAnsible}.tar.gz && \ 
     #
     # Install tflint
     #
