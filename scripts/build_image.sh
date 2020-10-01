@@ -17,6 +17,10 @@ case "$1" in
         tag=$(date +"%g%m.%d%H%M")
         rover="aztfmod/roverdev:${tag}"
         ;;
+    "local")
+        tag=$(date +"%g%m.%d%H%M")
+        rover="roverlocal:${tag}"
+        ;;
 esac
 
 echo "Creating version ${rover}"
@@ -34,6 +38,10 @@ case "$1" in
         git tag ${tag} master
         git push --follow-tags
         echo "Version aztfmod/rover:${tag} created."
+        ;;
+    "local")
+        sudo docker tag rover_rover ${rover}
+        echo "Version ${rover} created."
         ;;
     *)
         sudo docker tag rover_rover ${rover}
