@@ -40,7 +40,7 @@ FROM golang:1.13 as terraform-docs
 ARG versionTerraformDocs
 ENV versionTerraformDocs=${versionTerraformDocs}
 
-RUN GO111MODULE="on" go get github.com/segmentio/terraform-docs@${versionTerraformDocs}
+RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTerraformDocs}
 
 ###########################################################
 # Getting latest version of tfsec
@@ -49,34 +49,6 @@ FROM golang:1.13 as tfsec
 
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/liamg/tfsec/cmd/tfsec
-
-###########################################################
-# Getting latest version of Azure CAF Terraform provider
-###########################################################
-FROM golang:1.13 as azurecaf
-
-ARG versionAzureCafTerraform
-ENV versionAzureCafTerraform=${versionAzureCafTerraform}
-
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/ref/tags/${versionAzureCafTerraform} version.json
-RUN cd /tmp && \
-    git clone https://github.com/aztfmod/terraform-provider-azurecaf.git && \
-    cd terraform-provider-azurecaf && \
-    go build -o terraform-provider-azurecaf
-
-###########################################################
-# Getting latest version of yaegashi/terraform-provider-msgraph
-###########################################################
-FROM golang:1.13 as msgraph
-
-# to force the docker cache to invalidate when there is a new version
-ADD https://api.github.com/repos/aztfmod/terraform-provider-azurecaf/git/ref/heads/master version.json
-RUN cd /tmp && \
-    git clone https://github.com/yaegashi/terraform-provider-msgraph.git && \
-    cd terraform-provider-msgraph && \
-    go build -o terraform-provider-msgraph
-
 
 
 ###########################################################
@@ -93,6 +65,7 @@ ARG versionGit
 ARG versionJq
 ARG versionDockerCompose
 ARG versionTfsec
+ARG versionAnsible
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -109,6 +82,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
+    versionAnsible=${versionAnsible} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
      
@@ -185,6 +159,11 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
     #
+    # Install Ansible
+    #
+    echo "Installing Ansible ..." && \
+    pip3 install --user https://github.com/ansible/ansible/archive/stable-${versionAnsible}.tar.gz && \ 
+    #
     # Install tflint
     #
     echo "Installing tflint ..." && \
@@ -215,8 +194,6 @@ COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
 
 # Add Community terraform providers
-COPY --from=azurecaf /tmp/terraform-provider-azurecaf/terraform-provider-azurecaf /bin/
-COPY --from=msgraph /tmp/terraform-provider-msgraph/terraform-provider-msgraph /bin/
 COPY --from=tfsec /go/bin/tfsec /bin/
 COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
