@@ -27,7 +27,6 @@ RUN yum makecache fast && \
         openssh-clients \
         openssl \
         man \
-        ansible \
         which && \
     yum -y update
 
@@ -118,6 +117,7 @@ RUN yum -y install \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
+    mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
@@ -158,11 +158,10 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     echo "Installing pre-commit ..." && \
     python3 -m pip install pre-commit && \ 
-    #
     # Install Ansible
     #
-    echo "Installing Ansible ..." && \
-    pip3 install --user https://github.com/ansible/ansible/archive/stable-${versionAnsible}.tar.gz && \ 
+    echo "Installing Ansible ${versionAnsible}..." && \
+    pip3 install ansible==${versionAnsible} && \
     #
     # Install tflint
     #
