@@ -105,6 +105,10 @@ while (( "$#" )); do
                 export impersonate=true
                 shift 1
                 ;;
+        -var-folder)
+                expand_tfvars_folder ${2}
+                shift 2
+                ;;
         *) # preserve positional arguments
                 PARAMS+="${1} "
                 shift

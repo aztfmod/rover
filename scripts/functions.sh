@@ -374,19 +374,24 @@ function login_as_launchpad {
     echo ""
     echo "Getting launchpad coordinates:"
 
-    export TF_VAR_lower_storage_account_name=$(az keyvault secret show -n lower-storage-account-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - storage_account_name (lower): ${TF_VAR_lower_storage_account_name}"
+    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+    
     # If the logged in user does not have access to the launchpad
-    if [ "${TF_VAR_lower_storage_account_name}" == "" ]; then
+    if [ "${ARM_SUBSCRIPTION_ID}" == "" ]; then
         error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
     fi
 
     export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name (current): ${TF_VAR_tfstate_storage_account_name}"
+    export TF_VAR_lower_storage_account_name=$(az keyvault secret show -n lower-storage-account-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - storage_account_name (lower): ${TF_VAR_lower_storage_account_name}"
+
     export TF_VAR_tfstate_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group (current): ${TF_VAR_tfstate_resource_group_name}"
     export TF_VAR_lower_resource_group_name=$(az keyvault secret show -n lower-resource-group-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - resource_group (lower): ${TF_VAR_lower_resource_group_name}"
+
     export TF_VAR_tfstate_container_name=${TF_VAR_workspace}
     export TF_VAR_lower_container_name=${TF_VAR_workspace}
+
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
-    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+    
 
     if [ ${caf_command} == "landingzone" ]; then
         
@@ -538,7 +543,10 @@ function destroy {
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
-        terraform destroy ${tf_command} ${landingzone_name}
+        terraform destroy \
+            -refresh=false \
+            ${tf_command} \
+            ${landingzone_name}
 
         RETURN_CODE=$?
         if [ $RETURN_CODE != 0 ]; then
@@ -567,8 +575,9 @@ function destroy {
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
         terraform destroy ${tf_command} \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                ${landingzone_name}
+            -refresh=false \
+            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+            ${landingzone_name}
 
         RETURN_CODE=$?
         if [ $RETURN_CODE != 0 ]; then
@@ -966,4 +975,14 @@ function get_storage_id {
             exit 0
         fi
     fi
+}
+
+function expand_tfvars_folder {
+
+  echo " Expanding variable files: ${1}/*.tfvars"
+
+  for filename in "${1}"/*.tfvars; do
+    PARAMS+="-var-file ${filename} "
+  done
+
 }
