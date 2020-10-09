@@ -314,7 +314,6 @@ function upload_tfstate {
     export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
     # end=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'`
     # sas=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${storage_account_name} --permissions aclruw)
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
 
     az storage blob upload -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
             -c ${TF_VAR_workspace} \
@@ -509,9 +508,9 @@ function destroy {
 
     get_logged_user_object_id
 
-    if [ $(whoami) == "vscode" ] && [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ]; then
-        error "You must be connected with the user who did the original launchpad initialization to destroy it"
-    fi
+    # if [ $(whoami) == "vscode" ] && [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ]; then
+    #     error "You must be connected with the user who did the original launchpad initialization to destroy it"
+    # fi
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
@@ -824,6 +823,8 @@ function clean_up_variables {
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
+    export TF_VAR_tenant_id=$(az account show | jq -r .tenantId) && echo " Logged in rover user tenant_id : ${TF_VAR_tenant_id}
+
     export TF_VAR_user_type=$(az account show --query user.type -o tsv)
     if [ ${TF_VAR_user_type} == "user" ]; then
 
@@ -847,11 +848,15 @@ function get_logged_user_object_id {
                 echo " - logged in Azure with System Assigned Identity"
                 ;;
             "userAssignedIdentity")
-                echo " - logged in Azure wiht User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
+                echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
+                msi=$(az account show | jq -r .user.assignedIdentityInfo)
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
                 ;;
         esac
