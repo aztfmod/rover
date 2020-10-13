@@ -823,7 +823,8 @@ function clean_up_variables {
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
-    export TF_VAR_tenant_id=$(az account show | jq -r .tenantId) && echo " Logged in rover user tenant_id : ${TF_VAR_tenant_id}
+    export TF_VAR_tenant_id=$(az account show | jq -r .tenantId) && echo " - logged in user tenant_id : ${TF_VAR_tenant_id}"
+    export ARM_CLIENT_ID=${TF_VAR_tenant_id}
 
     export TF_VAR_user_type=$(az account show --query user.type -o tsv)
     if [ ${TF_VAR_user_type} == "user" ]; then
