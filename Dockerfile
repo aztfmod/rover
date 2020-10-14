@@ -65,10 +65,7 @@ ARG versionJq
 ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
-<<<<<<< HEAD
 ARG versionPacker
-=======
->>>>>>> origin/master
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -86,10 +83,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
-<<<<<<< HEAD
     versionPacker=${versionPacker} \
-=======
->>>>>>> origin/master
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
      
