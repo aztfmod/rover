@@ -135,9 +135,4 @@ echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo ""
 
-if [ $(whoami) != "vscode" ] && [ "${caf_command}" == "landingzone" ]; then
-    export impersonate=true
-    echo "Impersonating the rover to service principal"
-fi
-
 process_actions

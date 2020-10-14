@@ -380,9 +380,7 @@ function login_as_launchpad {
         error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
     fi
 
-    export ARM_TENANT_ID=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
-    export TF_VAR_tenant_id=${ARM_TENANT_ID}
-
+    export TF_VAR_tenant_id=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${TF_VAR_tenant_id}"
 
     export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name (current): ${TF_VAR_tfstate_storage_account_name}"
     export TF_VAR_lower_storage_account_name=$(az keyvault secret show -n lower-storage-account-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - storage_account_name (lower): ${TF_VAR_lower_storage_account_name}"
@@ -397,11 +395,7 @@ function login_as_launchpad {
     
 
     if [ ${caf_command} == "landingzone" ]; then
-        
-        # if [ ${TF_VAR_lowerlevel_key} == ${TF_VAR_tf_name} ] && [ ${tf_action} == "destroy" ]; then
-        #     error "You must run the rover in launchpad mode to destroy the launchpad"
-        # fi
-        
+
         if [ ${impersonate} = true ]; then
             export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
             echo "Set terraform provider context to Azure AD application launchpad "
@@ -845,6 +839,8 @@ function get_logged_user_object_id {
         unset TF_VAR_logged_user_objectId
         export clientId=$(az account show --query user.name -o tsv)
 
+        export keyvault=$(az keyvault list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
+
         case "${clientId}" in 
             "systemAssignedIdentity")
                 echo " - logged in Azure with System Assigned Identity"
@@ -854,6 +850,7 @@ function get_logged_user_object_id {
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_TENANT_ID=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
