@@ -374,11 +374,15 @@ function login_as_launchpad {
     echo "Getting launchpad coordinates:"
 
     export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    
+
     # If the logged in user does not have access to the launchpad
     if [ "${ARM_SUBSCRIPTION_ID}" == "" ]; then
         error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
     fi
+
+    export ARM_TENANT_ID=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
+    export TF_VAR_tenant_id=${ARM_TENANT_ID}
+
 
     export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name (current): ${TF_VAR_tfstate_storage_account_name}"
     export TF_VAR_lower_storage_account_name=$(az keyvault secret show -n lower-storage-account-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - storage_account_name (lower): ${TF_VAR_lower_storage_account_name}"
@@ -822,9 +826,6 @@ function clean_up_variables {
 
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
-
-    export TF_VAR_tenant_id=$(az account show | jq -r .tenantId) && echo " - logged in user tenant_id : ${TF_VAR_tenant_id}"
-    export ARM_CLIENT_ID=${TF_VAR_tenant_id}
 
     export TF_VAR_user_type=$(az account show --query user.type -o tsv)
     if [ ${TF_VAR_user_type} == "user" ]; then
