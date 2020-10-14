@@ -860,6 +860,8 @@ function get_logged_user_object_id {
                 ;;
         esac
 
+        export TF_VAR_tenant_id=${ARM_TENANT_ID}
+
     fi
 }
 
