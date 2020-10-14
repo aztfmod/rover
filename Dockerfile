@@ -65,6 +65,7 @@ ARG versionJq
 ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
+ARG versionPacker
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -82,6 +83,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
+    versionPacker=${versionPacker} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
      
@@ -118,6 +120,13 @@ RUN yum -y install \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    #
+    # Install Packer
+    #
+    echo "Installing Packer ${versionPacker}..." && \
+    curl -sSL -o /tmp/packer.zip https://releases.hashicorp.com/packer/${versionPacker}/packer_${versionPacker}_linux_amd64.zip 2>&1 && \
+    unzip -d /usr/local/bin /tmp/packer.zip && \
+    chmod +x /usr/local/bin/packer && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
@@ -178,7 +187,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
     # sudo usermod -aG docker ${USERNAME} && \
     mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates && \
-    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates  && \
+    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates /home/${USERNAME}/.terraform.cache/plugin-cache  && \
     yum install -y sudo && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
