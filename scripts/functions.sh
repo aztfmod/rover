@@ -993,3 +993,19 @@ function expand_tfvars_folder {
   done
 
 }
+
+#
+# This function verifies the vscode container is running the version specified in the docker-compose 
+# of the .devcontainer sub-folder
+#
+function verify_rover_version {
+    required_version=$(cat ./.devcontainer/docker-compose.yml | yq | jq -r .services.rover.image)
+    running_version=$(cat /tf/rover/version.txt)
+    user=$(whoami)
+
+    if [ ${user} == "vscode" ] && [ ${required_version} != ${running_version} ]; then
+        echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
+        echo "Click on the Dev Container buttom on the left bottom corner and select rebuild container from the options."
+        exit
+    fi
+}

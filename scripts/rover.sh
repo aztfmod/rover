@@ -9,6 +9,8 @@ source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
+verify_rover_version
+
 export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
