@@ -48,7 +48,7 @@ RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTe
 FROM golang:1.13 as tfsec
 
 # to force the docker cache to invalidate when there is a new version
-RUN env GO111MODULE=on go get -u github.com/liamg/tfsec/cmd/tfsec
+RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 
 
 ###########################################################
