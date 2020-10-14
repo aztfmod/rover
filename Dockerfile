@@ -163,6 +163,11 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/bin/jq && \
     #
+    # Install yq
+    #
+    echo "Installing yq ..." && \
+    pip3 install yq && \
+    #
     # Install pre-commit
     #
     echo "Installing pre-commit ..." && \
