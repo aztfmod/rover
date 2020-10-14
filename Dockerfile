@@ -177,11 +177,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     echo "Installing Ansible ${versionAnsible}..." && \
     pip3 install ansible==${versionAnsible} && \
     #
-    # Install Ansible
-    #
-    echo "Installing Ansible ..." && \
-    pip3 install --user https://github.com/ansible/ansible/archive/stable-${versionAnsible}.tar.gz && \ 
-    #
     # Install tflint
     #
     echo "Installing tflint ..." && \
