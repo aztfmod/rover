@@ -989,9 +989,11 @@ function expand_tfvars_folder {
   echo " Expanding variable files: ${1}/*.tfvars"
 
   for filename in "${1}"/*.tfvars; do
-    PARAMS+="-var-file ${filename} "
+    if [ "${filename}" != "${1}/*.tfvars" ]; then
+        PARAMS+="-var-file ${filename} "
+    fi
   done
-
+  
 }
 
 #
