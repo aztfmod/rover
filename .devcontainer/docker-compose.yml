@@ -7,7 +7,8 @@
   services:
     rover:
       image: aztfmod/roverdev:vnext
-   
+      user:vscode 
+      
       labels:
         - "caf=Azure CAF"
    

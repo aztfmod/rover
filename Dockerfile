@@ -27,7 +27,6 @@ RUN yum makecache fast && \
         openssh-clients \
         openssl \
         man \
-        ansible \
         which && \
     yum -y update
 
@@ -66,6 +65,7 @@ ARG versionJq
 ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
+ARG versionPacker
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -83,9 +83,12 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
+    versionPacker=${versionPacker} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
-     
+
+
+
 RUN yum -y install \
         make \
         zlib-devel \
@@ -93,7 +96,9 @@ RUN yum -y install \
         gettext \
         bzip2 \
         gcc \
-        unzip && \
+        unzip \
+        sudo \
+        openssh-server && \
     #
     # Install git from source code
     #
@@ -112,12 +117,25 @@ RUN yum -y install \
     touch /var/run/docker.sock && \
     chmod 666 /var/run/docker.sock && \
     #
+    # Create USERNAME
+    #
+    echo "Creating ${USERNAME} user..." && \
+    useradd --uid $USER_UID -m -G docker ${USERNAME} && \
+    #
     # Install Terraform
     #
     echo "Installing terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
+    mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    #
+    # Install Packer
+    #
+    echo "Installing Packer ${versionPacker}..." && \
+    curl -sSL -o /tmp/packer.zip https://releases.hashicorp.com/packer/${versionPacker}/packer_${versionPacker}_linux_amd64.zip 2>&1 && \
+    unzip -d /usr/local/bin /tmp/packer.zip && \
+    chmod +x /usr/local/bin/packer && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
@@ -154,16 +172,6 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     curl -L -o /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-${versionJq}/jq-linux64 && \
     chmod +x /usr/bin/jq && \
     #
-    # Install pre-commit
-    #
-    echo "Installing pre-commit ..." && \
-    python3 -m pip install pre-commit && \ 
-    #
-    # Install Ansible
-    #
-    echo "Installing Ansible ..." && \
-    pip3 install --user https://github.com/ansible/ansible/archive/stable-${versionAnsible}.tar.gz && \ 
-    #
     # Install tflint
     #
     echo "Installing tflint ..." && \
@@ -171,27 +179,44 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
     #
+    # Install Ansible
+    #
+    echo "Installing Ansible ${versionAnsible}..." && \
+    pip3 install ansible==${versionAnsible} && \
+    #
+    # Install pre-commit
+    #
+    echo "Installing pre-commit ..." && \
+    pip3 install pre-commit && \ 
+    #
+    # Install yq
+    #
+    echo "Installing yq ..." && \
+    pip3 install yq && \
+    #
     # Clean-up
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
     rm -rfd /tmp/git-${versionGit} && \
-    # 
-    echo "Creating ${USERNAME} user..." && \
-    useradd --uid $USER_UID -m -G docker ${USERNAME} && \
-    # sudo usermod -aG docker ${USERNAME} && \
-    mkdir -p /home/${USERNAME}/.vscode-server /home/${USERNAME}/.vscode-server-insiders /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates && \
-    chown ${USER_UID}:${USER_GID} /home/${USERNAME}/.vscode-server* /home/${USERNAME}/.ssh /home/${USERNAME}/.ssh-localhost /home/${USERNAME}/.azure /home/${USERNAME}/.terraform.cache /home/${USERNAME}/.terraform.cache/tfstates  && \
-    yum install -y sudo && \
+    #
+    # Create USERNAME home folder structure
+    #
+    mkdir -p /tf/caf \
+        /tf/rover \
+        /home/${USERNAME}/.ansible \
+        /home/${USERNAME}/.azure \
+        /home/${USERNAME}/.gnupg \
+        /home/${USERNAME}/.packer.d \
+        /home/${USERNAME}/.ssh \
+        /home/${USERNAME}/.ssh-localhost \
+        /home/${USERNAME}/.terraform.cache \
+        /home/${USERNAME}/.terraform.cache/tfstates \
+        /home/${USERNAME}/.vscode-server \
+        /home/${USERNAME}/.vscode-server-insiders && \
+    chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
+    chmod 777 -R /home/${USERNAME} /tf/caf && \
+    chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
-
-# ssh server for Azure ACI
-RUN yum install -y openssh-server && \
-    rm -f /etc/ssh/ssh_host_ecdsa_key /etc/ssh/ssh_host_rsa_key /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
-    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
-    mkdir -p /home/${USERNAME}/.ssh
-
-COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
-
 
 # Add Community terraform providers
 COPY --from=tfsec /go/bin/tfsec /bin/
@@ -205,13 +230,24 @@ COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
-RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
-    mkdir -p /tf/caf && \
-    chown -R ${USERNAME}:1000 /tf/rover /tf/caf /home/${USERNAME}/.ssh && \
-    chmod +x /tf/rover/sshd.sh
+#
+# Switch to ${USERNAME} context
+#
 
 USER ${USERNAME}
+
+
+COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
+
+RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    # chmod +x /tf/rover/sshd.sh && \
+    #
+    # ssh server for Azure ACI
+    #
+    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key
+
+
 
 EXPOSE 22
 CMD  ["/tf/rover/sshd.sh"]
