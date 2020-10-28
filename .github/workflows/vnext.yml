@@ -34,12 +34,12 @@ jobs:
         password: ${{ secrets.docker_registry_password }}
         # Container registry server url
         login-server: https://index.docker.io/v1/
+    - name: Set the rover version
+      run: |
+        echo "docker_tag=$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
     - name: Build the rover
       run: |        
         set -e
-        docker_tag=$(date +"%g%m.%d%H%M")
-        echo ::set-env name=docker_tag::${docker_tag}
-
         # Build the rover base image
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
 
@@ -56,8 +56,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ env.docker_tag }}
-        release_name: aztfmod/roverdev:${{ env.docker_tag }}
+        tag_name: $docker_tag
+        release_name: aztfmod/roverdev:$docker_tag
         draft: true
         prerelease: false
         body: You can also use the latest vnext by using aztfmod/roverdev:vnext

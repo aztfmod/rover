@@ -9,6 +9,8 @@ source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
+verify_rover_version
+
 export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
@@ -18,6 +20,7 @@ export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export LC_ALL=en_US.UTF-8
+unset PARAMS
 
 current_path=$(pwd)
 
@@ -105,6 +108,10 @@ while (( "$#" )); do
                 export impersonate=true
                 shift 1
                 ;;
+        -var-folder)
+                expand_tfvars_folder ${2}
+                shift 2
+                ;;
         *) # preserve positional arguments
                 PARAMS+="${1} "
                 shift
@@ -128,10 +135,5 @@ echo "environment                   : '$(echo ${TF_VAR_environment})'"
 echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo ""
-
-if [ $(whoami) != "vscode" ] && [ "${caf_command}" == "landingzone" ]; then
-    export impersonate=true
-    echo "Impersonating the rover to service principal"
-fi
 
 process_actions
