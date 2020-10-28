@@ -4,9 +4,7 @@ on:
   pull_request:
     branches:
       - vnext
-  push:
-    branches:
-      - vnext
+
 
 env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
@@ -29,7 +27,7 @@ jobs:
       uses: Azure/docker-login@v1
       with:
         # Container registry username
-        username: aztfmod 
+        username: aztfmod
         # Container registry password
         password: ${{ secrets.docker_registry_password }}
         # Container registry server url
@@ -38,7 +36,7 @@ jobs:
       run: |
         echo "docker_tag=$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
     - name: Build the rover
-      run: |        
+      run: |
         set -e
         # Build the rover base image
         docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
