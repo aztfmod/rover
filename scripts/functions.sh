@@ -206,11 +206,8 @@ function initialize_state {
             echo "calling plan and apply"
             plan
             apply
-            # Create sandpit workspace
+            
             get_storage_id
-
-            # workspace create "sandpit"
-            # workspace create ${TF_VAR_workspace}
             upload_tfstate
             ;;
         "validate")
@@ -225,6 +222,8 @@ function initialize_state {
             other
             ;;
     esac
+
+    rm -rf backend.azurerm.tf
 
     cd "${current_path}"
 }
@@ -244,6 +243,8 @@ function deploy_from_remote_state {
 
     deploy_landingzone
     
+    rm -rf backend.azurerm.tf
+
     cd "${current_path}"
 }
 
@@ -313,7 +314,6 @@ function upload_tfstate {
     export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
     # end=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'`
     # sas=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${storage_account_name} --permissions aclruw)
-    export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
 
     az storage blob upload -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
             -c ${TF_VAR_workspace} \
@@ -368,46 +368,42 @@ function login_as_launchpad {
 
     echo " - keyvault_name: ${keyvault}"
 
-    export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
-        
-    # If the logged in user does not have access to the launchpad
-    if [ "${SECRET_PREFIX}" == "" ]; then
-        error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
-    fi
-
-    
     stg=$(az storage account show --ids ${id} -o json)
 
     echo ""
     echo "Getting launchpad coordinates:"
-    export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${TF_VAR_tfstate_storage_account_name}"
-    export TF_VAR_lowerlevel_storage_account_name=${TF_VAR_tfstate_storage_account_name}
 
-    export TF_VAR_tfstate_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${TF_VAR_tfstate_resource_group_name}"
-    export TF_VAR_lowerlevel_resource_group_name=${TF_VAR_tfstate_resource_group_name}
+    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
+
+    # If the logged in user does not have access to the launchpad
+    if [ "${ARM_SUBSCRIPTION_ID}" == "" ]; then
+        error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
+    fi
+
+    export TF_VAR_tenant_id=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${TF_VAR_tenant_id}"
+
+    export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name (current): ${TF_VAR_tfstate_storage_account_name}"
+    export TF_VAR_lower_storage_account_name=$(az keyvault secret show -n lower-storage-account-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - storage_account_name (lower): ${TF_VAR_lower_storage_account_name}"
+
+    export TF_VAR_tfstate_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group (current): ${TF_VAR_tfstate_resource_group_name}"
+    export TF_VAR_lower_resource_group_name=$(az keyvault secret show -n lower-resource-group-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - resource_group (lower): ${TF_VAR_lower_resource_group_name}"
 
     export TF_VAR_tfstate_container_name=${TF_VAR_workspace}
-    export TF_VAR_lowerlevel_container_name=$(az keyvault secret show -n launchpad-blob-container --vault-name ${keyvault} -o json | jq -r .value) && echo " - container: ${TF_VAR_lowerlevel_container_name}"
-    
+    export TF_VAR_lower_container_name=${TF_VAR_workspace}
+
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
-    export TF_VAR_lowerlevel_key=$(az keyvault secret show -n launchpad-blob-name --vault-name ${keyvault} -o json | jq -r .value) && echo " - tfstate file: ${TF_VAR_lowerlevel_key}"  
+    
 
-    export ARM_SUBSCRIPTION_ID=$(az keyvault secret show -n launchpad-subscription-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - subscription id: ${ARM_SUBSCRIPTION_ID}"
-    launchpad_mode=$(az keyvault secret show -n launchpad-mode --vault-name ${keyvault} -o json | jq -r .value) && echo " - launchpad mode: ${launchpad_mode}"  
+    if [ ${caf_command} == "landingzone" ]; then
 
-    if [ ${caf_command} == "landingzone" ] && [ ${launchpad_mode} == "launchpad" ]; then
-        
-        echo "Set terraform provider context to Azure AD application launchpad "
-        export ARM_CLIENT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
-        export ARM_CLIENT_SECRET=$(az keyvault secret show -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
-        export ARM_TENANT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-        export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
-
-        if [ ${TF_VAR_lowerlevel_key} == ${TF_VAR_tf_name} ] && [ ${tf_action} == "destroy" ]; then
-            error "You must run the rover in launchpad mode to destroy the launchpad"
-        fi
-        
         if [ ${impersonate} = true ]; then
+            export SECRET_PREFIX=$(az keyvault secret show -n launchpad-secret-prefix --vault-name ${keyvault} -o json | jq -r .value) && echo " - Name: ${SECRET_PREFIX}"
+            echo "Set terraform provider context to Azure AD application launchpad "
+            export ARM_CLIENT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
+            export ARM_CLIENT_SECRET=$(az keyvault secret show -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
+            export ARM_TENANT_ID=$(az keyvault secret show -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+            export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
+
             echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
             az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID} 
         fi
@@ -510,9 +506,9 @@ function destroy {
 
     get_logged_user_object_id
 
-    if [ $(whoami) == "vscode" ] && [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ]; then
-        error "You must be connected with the user who did the original launchpad initialization to destroy it"
-    fi
+    # if [ $(whoami) == "vscode" ] && [ ${TF_VAR_user_type} != "user" ] && [ "${caf_command}" == "launchpad" ]; then
+    #     error "You must be connected with the user who did the original launchpad initialization to destroy it"
+    # fi
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
@@ -524,7 +520,7 @@ function destroy {
         fi
 
         if [ -z "${ARM_USE_MSI}" ]; then
-            export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} -o json | jq -r .[0].value)
+            export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
             # end=`date -u -d "600 minutes" '+%Y-%m-%dT%H:%MZ'`
             # export ARM_SAS_TOKEN=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdplruw)
             # export ARM_SAS_TOKEN=$(az storage container generate-sas --name ${TF_VAR_workspace} --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdlrw --auth-mode login --as-user)
@@ -536,14 +532,18 @@ function destroy {
             -backend=true \
             -get-plugins=true \
             -upgrade=true \
-            -backend-config storage_account_name=${TF_VAR_lowerlevel_storage_account_name} \
+            -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
+            -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
             -backend-config container_name=${TF_VAR_workspace} \
             -backend-config key=${TF_VAR_tf_name} \
             ${landingzone_name}
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
-        terraform destroy ${tf_command} ${landingzone_name}
+        terraform destroy \
+            -refresh=false \
+            ${tf_command} \
+            ${landingzone_name}
 
         RETURN_CODE=$?
         if [ $RETURN_CODE != 0 ]; then
@@ -572,8 +572,9 @@ function destroy {
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
         terraform destroy ${tf_command} \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                ${landingzone_name}
+            -refresh=false \
+            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+            ${landingzone_name}
 
         RETURN_CODE=$?
         if [ $RETURN_CODE != 0 ]; then
@@ -655,22 +656,22 @@ function deploy_landingzone {
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-    if [ -z "${ARM_USE_MSI}" ]; then
-        export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_lowerlevel_storage_account_name} --resource-group ${TF_VAR_lowerlevel_resource_group_name} -o json | jq -r .[0].value)
-        # end=`date -u -d "600 minutes" '+%Y-%m-%dT%H:%MZ'`
-        # export ARM_SAS_TOKEN=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdplruw)
-        # export ARM_SAS_TOKEN=$(az storage container generate-sas --name ${TF_VAR_workspace} --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdlrw --auth-mode login --as-user)
-    fi
+    # if [ -z "${ARM_USE_MSI}" ]; then
+    #     # export ARM_ACCESS_KEY=$(az storage account keys list --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
+    #     # end=`date -u -d "600 minutes" '+%Y-%m-%dT%H:%MZ'`
+    #     # export ARM_SAS_TOKEN=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdplruw)
+    #     # export ARM_SAS_TOKEN=$(az storage container generate-sas --name ${TF_VAR_workspace} --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdlrw --auth-mode login --as-user)
+    # fi
 
     terraform init \
         -reconfigure=true \
         -backend=true \
         -get-plugins=true \
         -upgrade=true \
-        -backend-config storage_account_name=${TF_VAR_lowerlevel_storage_account_name} \
+        -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
+        -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
         -backend-config container_name=${TF_VAR_workspace} \
         -backend-config key=${TF_VAR_tf_name} \
-        -backend-config access_key=${ARM_ACCESS_KEY} \
         ${landingzone_name}
     
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
@@ -797,9 +798,9 @@ function clean_up_variables {
     echo "@calling clean_up_variables"
 
     echo "cleanup variables"
-    unset TF_VAR_lowerlevel_storage_account_name
-    unset TF_VAR_lowerlevel_resource_group_name
-    unset TF_VAR_lowerlevel_key
+    unset TF_VAR_lower_storage_account_name
+    unset TF_VAR_lower_resource_group_name
+    unset TF_VAR_lower_key
     unset LAUNCHPAD_NAME
     unset ARM_TENANT_ID
     unset ARM_SUBSCRIPTION_ID
@@ -829,6 +830,7 @@ function get_logged_user_object_id {
         unset ARM_CLIENT_SECRET
         unset TF_VAR_logged_aad_app_objectId
 
+        export TF_VAR_tenant_id=$(az account show | jq -r .tenantId)
         export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
         export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
         echo " - logged in user objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
@@ -838,19 +840,28 @@ function get_logged_user_object_id {
         unset TF_VAR_logged_user_objectId
         export clientId=$(az account show --query user.name -o tsv)
 
+        export keyvault=$(az keyvault list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
+
         case "${clientId}" in 
             "systemAssignedIdentity")
                 echo " - logged in Azure with System Assigned Identity"
                 ;;
             "userAssignedIdentity")
-                echo " - logged in Azure wiht User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
+                echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
+                msi=$(az account show | jq -r .user.assignedIdentityInfo)
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_TENANT_ID=$(az keyvault secret show -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
                 ;;
         esac
+
+        export TF_VAR_tenant_id=${ARM_TENANT_ID}
 
     fi
 }
@@ -961,11 +972,45 @@ function get_storage_id {
             fi
             exit 1000
         else
-            echo "There is no launchpad in the environment: ${TF_VAR_environment}"
+            echo
+            echo "There is no remote state for ${TF_VAR_level} in the environment: ${TF_VAR_environment}"
+            echo "You need to update the launchpad configuration and add an additional level or deploy in the level0."
+            echo
             echo "List of the other launchpad deployed"
             az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{name:name,environment:tags.environment, launchpad:tags.launchpad}" -o table
             
             exit 0
+        fi
+    fi
+}
+
+function expand_tfvars_folder {
+
+  echo " Expanding variable files: ${1}/*.tfvars"
+
+  for filename in "${1}"/*.tfvars; do
+    if [ "${filename}" != "${1}/*.tfvars" ]; then
+        PARAMS+="-var-file ${filename} "
+    fi
+  done
+  
+}
+
+#
+# This function verifies the vscode container is running the version specified in the docker-compose 
+# of the .devcontainer sub-folder
+#
+function verify_rover_version {
+    user=$(whoami)
+
+    if [ "${user}" = "vscode" ]; then
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r .services.rover.image)
+        running_version=$(cat /tf/rover/version.txt)
+
+        if [ "${required_version}" != "${running_version}" ]; then
+            echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
+            echo "Click on the Dev Container buttom on the left bottom corner and select rebuild container from the options."
+            exit
         fi
     fi
 }
