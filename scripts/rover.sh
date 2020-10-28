@@ -20,6 +20,7 @@ export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export LC_ALL=en_US.UTF-8
+unset PARAMS
 
 current_path=$(pwd)
 
