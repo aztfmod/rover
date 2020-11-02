@@ -144,7 +144,7 @@ function verify_azure_session {
             echo "Set default subscription to ${subscription}"
             az account set -s ${subscription}
         fi
-        
+
         az account show
         exit
     fi
@@ -189,15 +189,15 @@ function initialize_state {
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    
+
     terraform init \
         -get-plugins=true \
         -upgrade=true \
         ${landingzone_name}
 
     RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
-    
-    case "${tf_action}" in 
+
+    case "${tf_action}" in
         "plan")
             echo "calling plan"
             plan
@@ -206,7 +206,7 @@ function initialize_state {
             echo "calling plan and apply"
             plan
             apply
-            
+
             get_storage_id
             upload_tfstate
             ;;
@@ -242,7 +242,7 @@ function deploy_from_remote_state {
     login_as_launchpad
 
     deploy_landingzone
-    
+
     rm -rf backend.azurerm.tf
 
     cd "${current_path}"
@@ -257,7 +257,7 @@ function destroy_from_remote_state {
 
     get_logged_user_object_id
     login_as_launchpad
-    
+
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
@@ -275,7 +275,7 @@ function destroy_from_remote_state {
         --container-name ${TF_VAR_workspace} \
         --auth-mode 'login' \
         --account-name ${stg_name} -o json | jq .exists)
-    
+
     if [ "${fileExists}" == "true" ]; then
         if [ ${caf_command} == "launchpad" ]; then
             az storage blob download \
@@ -285,7 +285,7 @@ function destroy_from_remote_state {
                 --auth-mode "login" \
                 --account-name ${stg_name} \
                 --no-progress
-            
+
             RETURN_CODE=$?
             if [ $RETURN_CODE != 0 ]; then
                 error ${LINENO} "Error downloading the blob storage" $RETURN_CODE
@@ -335,15 +335,10 @@ function upload_tfstate {
 
 function list_deployed_landingzones {
     echo "@calling list_deployed_landingzones"
-    
+
     stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    # export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    # export access_key=$(az storage account keys list --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
-    end=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'`
-    sas=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${storage_account_name} --permissions l)
-    
 
     echo ""
     echo "Landing zones deployed:"
@@ -351,7 +346,7 @@ function list_deployed_landingzones {
 
     az storage blob list \
             -c ${TF_VAR_workspace} \
-            --sas-token $sas \
+            --auth-mode login \
             --account-name ${storage_account_name} -o json |  \
     jq -r '["landing zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
     awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1'  | \
@@ -392,7 +387,7 @@ function login_as_launchpad {
     export TF_VAR_lower_container_name=${TF_VAR_workspace}
 
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
-    
+
 
     if [ ${caf_command} == "landingzone" ]; then
 
@@ -405,9 +400,9 @@ function login_as_launchpad {
             export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
 
             echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
-            az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID} 
+            az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID}
         fi
-        
+
     fi
 
     az account set -s ${ARM_SUBSCRIPTION_ID}
@@ -424,7 +419,7 @@ function plan {
 
     pwd
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    
+
 
     rm -f $STDERR_FILE
 
@@ -432,7 +427,7 @@ function plan {
             -refresh=true \
             -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
             -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
-    
+
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
@@ -469,7 +464,7 @@ function apply {
     if [ $RETURN_CODE != 0 ]; then
         error ${LINENO} "Error running terraform apply" $RETURN_CODE
     fi
-    
+
 }
 
 function validate {
@@ -524,7 +519,7 @@ function destroy {
             # end=`date -u -d "600 minutes" '+%Y-%m-%dT%H:%MZ'`
             # export ARM_SAS_TOKEN=$(az storage account generate-sas --services b --resource-types sco --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdplruw)
             # export ARM_SAS_TOKEN=$(az storage container generate-sas --name ${TF_VAR_workspace} --expiry $end --account-name ${TF_VAR_lowerlevel_storage_account_name} --permissions acdlrw --auth-mode login --as-user)
-        fi    
+        fi
 
         echo 'running terraform destroy remote'
         terraform init \
@@ -593,13 +588,13 @@ function destroy {
         echo "Delete state file on storage account:"
         echo " -tfstate: ${TF_VAR_tf_name}"
         stg_name=$(az storage account show --ids ${id} -o json | jq -r .name) && echo " -stg_name: ${stg_name}"
-        
+
         fileExists=$(az storage blob exists \
                 --name ${TF_VAR_tf_name} \
                 --container-name ${TF_VAR_workspace} \
                 --auth-mode login \
                 --account-name ${stg_name} -o json | jq .exists)
-        
+
         if [ "${fileExists}" == "true" ]; then
             echo " - found"
             az storage blob delete \
@@ -621,7 +616,7 @@ function other {
     echo "@calling other"
 
     echo "running terraform ${tf_action} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
-    
+
     rm -f $STDERR_FILE
 
     terraform ${tf_action} \
@@ -648,7 +643,7 @@ function deploy_landingzone {
     echo "Deploying '${landingzone_name}'"
 
     cd ${landingzone_name}
-    
+
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
@@ -673,10 +668,10 @@ function deploy_landingzone {
         -backend-config container_name=${TF_VAR_workspace} \
         -backend-config key=${TF_VAR_tf_name} \
         ${landingzone_name}
-    
+
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
-    case "${tf_action}" in 
+    case "${tf_action}" in
         "plan")
             echo "calling plan"
             plan
@@ -718,7 +713,7 @@ function workspace {
                 exit 1000
         fi
 
-        case "${1}" in 
+        case "${1}" in
                 "list")
                         workspace_list
                         ;;
@@ -842,7 +837,7 @@ function get_logged_user_object_id {
 
         export keyvault=$(az keyvault list --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
 
-        case "${clientId}" in 
+        case "${clientId}" in
             "systemAssignedIdentity")
                 echo " - logged in Azure with System Assigned Identity"
                 ;;
@@ -872,10 +867,10 @@ function deploy {
 
     get_storage_id
 
-    case "${id}" in 
+    case "${id}" in
         "null")
             echo "No launchpad found."
-            if [ "${caf_command}" == "launchpad" ]; then 
+            if [ "${caf_command}" == "launchpad" ]; then
                 if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
                     echo "Recover from an un-finished previous execution"
                     if [ "${tf_action}" == "destroy" ]; then
@@ -903,7 +898,7 @@ function deploy {
             error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
             ;;
         *)
-        
+
         # Get the launchpad version
         caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
         echo ""
@@ -913,7 +908,7 @@ function deploy {
         if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
             echo "Recover from an un-finished previous execution"
             if [ "${tf_action}" == "destroy" ]; then
-                if [ "${caf_command}" == "landingzone" ]; then 
+                if [ "${caf_command}" == "landingzone" ]; then
                     login_as_launchpad
                 fi
                 destroy
@@ -942,10 +937,10 @@ function deploy {
 
 function landing_zone {
     echo "@calling landing_zone"
-    
+
     get_storage_id
 
-    case "${1}" in 
+    case "${1}" in
         "list")
             echo "Listing the deployed landing zones"
             list_deployed_landingzones
@@ -978,7 +973,7 @@ function get_storage_id {
             echo
             echo "List of the other launchpad deployed"
             az storage account list --query "[?tags.tfstate=='${TF_VAR_level}'].{name:name,environment:tags.environment, launchpad:tags.launchpad}" -o table
-            
+
             exit 0
         fi
     fi
@@ -993,11 +988,11 @@ function expand_tfvars_folder {
         PARAMS+="-var-file ${filename} "
     fi
   done
-  
+
 }
 
 #
-# This function verifies the vscode container is running the version specified in the docker-compose 
+# This function verifies the vscode container is running the version specified in the docker-compose
 # of the .devcontainer sub-folder
 #
 function verify_rover_version {
