@@ -27,8 +27,11 @@ RUN yum makecache fast && \
         openssh-clients \
         openssl \
         man \
+        zsh \
+        curl \
         which && \
-    yum -y update
+    yum -y update && \
+    yum clean all
 
 
 ###########################################################
@@ -87,18 +90,17 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
 
-
-
 RUN yum -y install \
         make \
         zlib-devel \
-        curl-devel \ 
+        curl-devel \
         gettext \
         bzip2 \
         gcc \
         unzip \
         sudo \
         openssh-server && \
+    yum clean all && \
     #
     # Install git from source code
     #
@@ -121,6 +123,16 @@ RUN yum -y install \
     #
     echo "Creating ${USERNAME} user..." && \
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
+    #
+    # Install Oh My Zsh
+    #
+    chsh -s /bin/zsh vscode && \
+    runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
+    sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/${USERNAME}/.zshrc && \
+    git clone https://github.com/powerline/fonts.git && \
+    cd fonts && \
+    ./install.sh && \
+    rm -rf fonts && \
     #
     # Install Terraform
     #
@@ -187,7 +199,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     # Install pre-commit
     #
     echo "Installing pre-commit ..." && \
-    pip3 install pre-commit && \ 
+    pip3 install pre-commit && \
     #
     # Install yq
     #
@@ -214,6 +226,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         /home/${USERNAME}/.vscode-server-insiders && \
     chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
     chmod 777 -R /home/${USERNAME} /tf/caf && \
+    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}
@@ -236,11 +249,12 @@ COPY --from=rover_version version.txt /tf/rover/version.txt
 
 USER ${USERNAME}
 
-
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
     # chmod +x /tf/rover/sshd.sh && \
     #
     # ssh server for Azure ACI
