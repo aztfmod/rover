@@ -520,9 +520,9 @@ function destroy {
             sudo cp -f backend.azurerm backend.azurerm.tf
         fi
 
-        if [ -z "${ARM_USE_MSI}" ]; then
-            export ARM_ACCESS_KEY=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
-        fi
+        # if [ -z "${ARM_USE_MSI}" ]; then
+        #     export ARM_ACCESS_KEY=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
+        # fi
 
         echo 'running terraform destroy remote'
         terraform init \
@@ -660,8 +660,7 @@ function deploy_landingzone {
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-    terraform init \
-        -reconfigure=true \
+    terraform init  -reconfigure=true \
         -backend=true \
         -get-plugins=true \
         -upgrade=true \
@@ -858,6 +857,7 @@ function get_logged_user_object_id {
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids ${msi//MSIResource-} | jq -r .clientId)
                 export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
                 ;;
             *)
@@ -980,7 +980,7 @@ function get_storage_id {
 
         if [ ${id} == null ]; then
             if [ ${TF_VAR_level} != "level0" ]; then
-                echo "You need to initialize that level first before using it."
+                echo "You need to initialize that level first before using it or you do not have permission to that level."
             else
                 display_launchpad_instructions
             fi
