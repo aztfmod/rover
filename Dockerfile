@@ -92,7 +92,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
 RUN yum -y install \
         make \
         zlib-devel \
-        curl-devel \ 
+        curl-devel \
         gettext \
         bzip2 \
         gcc \
@@ -187,7 +187,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     # Install pre-commit
     #
     echo "Installing pre-commit ..." && \
-    pip3 install pre-commit && \ 
+    pip3 install pre-commit && \
     #
     # Install yq
     #
@@ -213,7 +213,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         /home/${USERNAME}/.vscode-server \
         /home/${USERNAME}/.vscode-server-insiders && \
     chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
-    chmod 777 -R /home/${USERNAME} /tf/caf && \
+    chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME}

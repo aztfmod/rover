@@ -27,7 +27,6 @@ exit_if_error() {
 
 function process_actions {
     echo "@calling process_actions"
-    verify_azure_session
 
     case "${caf_command}" in
         workspace)
@@ -167,22 +166,6 @@ function verify_azure_session {
             display_login_instructions
             error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
     fi
-
-    current_account=$(az account show --output json)
-    export ARM_SUBSCRIPTION_ID=$(echo ${current_account} | jq -r .id)
-
-    echo "Resources from this landing zone are going to be deployed in the following subscription:"
-    echo ${current_account} | jq -r
-
-    # Verify if the TF_VAR_tfstate_subscription_id variable has been set
-    if [ -z ${TF_VAR_tfstate_subscription_id+x} ]; then
-        echo "Set TF_VAR_tfstate_subscription_id variable to current session's subscription."
-        export TF_VAR_tfstate_subscription_id=${ARM_SUBSCRIPTION_ID}
-    fi
-
-    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json | jq -r .name)
-    echo "Tfstates subscription set to ${TF_VAR_tfstate_subscription_id} (${tfstate_subscription_name})"
-    echo ""
 
 }
 
@@ -1030,4 +1013,49 @@ function verify_rover_version {
             exit
         fi
     fi
+}
+
+
+function process_target_subscription {
+    echo "@calling process_target_subscription"
+
+    if [ ! -z "${target_subscription}" ]; then
+        echo "Set subscription to -target_subscription ${target_subscription}"
+        az account set -s "${target_subscription}"
+    fi
+
+    account=$(az account show -o json)
+
+    target_subscription_name=$( echo ${account} | jq -r .name)
+    target_subscription_id=$( echo ${account} | jq -r .id)
+
+    export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
+
+    # Verify if the TF_VAR_tfstate_subscription_id variable has been set
+    if [ -z ${TF_VAR_tfstate_subscription_id+x} ]; then
+        echo "Set TF_VAR_tfstate_subscription_id variable to current session's subscription."
+        export TF_VAR_tfstate_subscription_id=${ARM_SUBSCRIPTION_ID}
+    fi
+
+    export target_subscription_name=$( echo ${account} | jq -r .name)
+    export target_subscription_id=$( echo ${account} | jq -r .id)
+
+    echo "caf_command ${caf_command}"
+    echo "target_subscription_id ${target_subscription_id}"
+    echo "TF_VAR_tfstate_subscription_id ${TF_VAR_tfstate_subscription_id}"
+
+    # Check if rover mode is set to launchpad
+    if [[ ( "${caf_command}" == "launchpad" ) && ( "${target_subscription_id}" != "${TF_VAR_tfstate_subscription_id}" ) ]]; then
+        error 51 "To deploy the launchpad, the target and tfstate subscription must be the same."
+    fi
+
+    echo "Resources from this landing zone are going to be deployed in the following subscription:"
+    echo ${account} | jq -r
+
+
+    echo "debug: ${TF_VAR_tfstate_subscription_id}"
+    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json | jq -r .name)
+    echo "Tfstates subscription set to ${TF_VAR_tfstate_subscription_id} (${tfstate_subscription_name})"
+    echo ""
+
 }
