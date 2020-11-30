@@ -120,6 +120,7 @@ while (( "$#" )); do
                 export target_subscription=${2}
                 shift 2
                 ;;
+
         *) # preserve positional arguments
                 PARAMS+="${1} "
                 shift
