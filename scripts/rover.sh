@@ -2,7 +2,7 @@
 
 
 # Initialize the launchpad first with rover
-# deploy a landingzone with 
+# deploy a landingzone with
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 source /tf/rover/clone.sh
@@ -112,6 +112,15 @@ while (( "$#" )); do
                 expand_tfvars_folder ${2}
                 shift 2
                 ;;
+        -tfstate_subscription_id)
+                export TF_VAR_tfstate_subscription_id=${2}
+                shift 2
+                ;;
+        -target_subscription)
+                export target_subscription=${2}
+                shift 2
+                ;;
+
         *) # preserve positional arguments
                 PARAMS+="${1} "
                 shift
@@ -125,15 +134,21 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+verify_azure_session
+process_target_subscription
+
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"
 echo "terraform command output file : '$(echo ${tf_output_file})'"
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "command and parameters        : '$(echo ${tf_command})'"
-echo "level (current)               : '$(echo ${TF_VAR_level})'" 
+echo ""
+echo "level (current)               : '$(echo ${TF_VAR_level})'"
 echo "environment                   : '$(echo ${TF_VAR_environment})'"
 echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
+echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
+echo "target subscription           : '$(echo ${target_subscription_name})'"
 echo ""
 
 process_actions
