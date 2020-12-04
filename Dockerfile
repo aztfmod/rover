@@ -1,4 +1,4 @@
-FROM centos:7 as rover_version
+FROM centos:8 as rover_version
 
 ARG versionRover
 
@@ -12,7 +12,7 @@ RUN echo ${versionRover} > version.txt
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM centos:7 as base
+FROM centos:8 as base
 
 RUN yum makecache fast && \
     yum -y install \
