@@ -14,7 +14,7 @@
 
       volumes:
         - ..:/tf/rover
-        - volume-caf-vscode:/home/vscode
+        - volume-caf-vscode:~
         - ~/.ssh:/tmp/.ssh-localhost:ro
 
         - /var/run/docker.sock:/var/run/docker.sock
