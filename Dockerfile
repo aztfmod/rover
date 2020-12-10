@@ -106,7 +106,7 @@ RUN yum -y install \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
-    ./configure --exec-prefix="/usr" && \
+    ./configure --exec-prefix="/usr/local" && \
     make -j && \
     make install && \
     #
