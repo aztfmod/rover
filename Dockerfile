@@ -124,7 +124,7 @@ RUN yum -y install \
     #
     # Install Terraform
     #
-    echo "Installing Terraform ${versionTerraform} ${versionTerraformCloudAgent} ..." && \
+    echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
