@@ -34,7 +34,7 @@ RUN yum makecache fast && \
 ###########################################################
 # Getting latest version of terraform-docs
 ###########################################################
-FROM golang:1.13 as terraform-docs
+FROM golang:1.15.6 as terraform-docs
 
 ARG versionTerraformDocs
 ENV versionTerraformDocs=${versionTerraformDocs}
@@ -44,7 +44,7 @@ RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTe
 ###########################################################
 # Getting latest version of tfsec
 ###########################################################
-FROM golang:1.13 as tfsec
+FROM golang:1.15.6 as tfsec
 
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
@@ -66,6 +66,7 @@ ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
 ARG versionPacker
+ARG versionTerraformCloudAgent
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -84,10 +85,9 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
     versionPacker=${versionPacker} \
+    versionTerraformCloudAgent=${versionTerraformCloudAgent} \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
-
-
 
 RUN yum -y install \
         make \
@@ -106,7 +106,7 @@ RUN yum -y install \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
-    ./configure --exec-prefix="/usr" && \
+    ./configure --exec-prefix="/usr/local" && \
     make -j && \
     make install && \
     #
@@ -124,11 +124,19 @@ RUN yum -y install \
     #
     # Install Terraform
     #
-    echo "Installing terraform ${versionTerraform}..." && \
+    echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    #
+    # Install Terraform Cloud Agents
+    #
+    echo "Installing Terraform Cloud Agents ${versionTerraformCloudAgent}..." && \
+    curl -sSL -o /tmp/tfc-agent.zip https://releases.hashicorp.com/tfc-agent/${versionTerraformCloudAgent}/tfc-agent_${versionTerraformCloudAgent}_linux_amd64.zip 2>&1 && \
+    unzip -d /usr/bin /tmp/tfc-agent.zip && \
+    chmod +x /usr/bin/tfc-agent && \
+    chmod +x /usr/bin/tfc-agent-core && \
     #
     # Install Packer
     #
