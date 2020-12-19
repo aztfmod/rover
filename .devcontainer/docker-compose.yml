@@ -6,7 +6,7 @@
   version: '3.7'
   services:
     rover:
-      image: aztfmod/roverdev:2012.100915
+      image: aztfmod/roveralpha:2012.181622
       user:  vscode
 
       labels:
@@ -15,6 +15,7 @@
       volumes:
         - ..:/tf/rover
         - volume-caf-vscode:/home/vscode
+        - volume-caf-vscode-bashhistory:/commandhistory
         - ~/.ssh:/tmp/.ssh-localhost:ro
 
         - /var/run/docker.sock:/var/run/docker.sock
@@ -23,8 +24,9 @@
       command: /bin/sh -c "while sleep 1000; do :; done"
 
   volumes:
-     volume-caf-vscode:
+    volume-caf-vscode:
       labels:
         - "caf=Azure CAF"
+    volume-caf-vscode-bashhistory:
 
 
