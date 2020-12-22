@@ -99,6 +99,7 @@ RUN yum -y install \
         unzip \
         sudo \
         yum-utils \
+        perl \
         openssh-server && \
     yum clean all && \
     #
