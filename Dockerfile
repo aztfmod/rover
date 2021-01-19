@@ -27,6 +27,7 @@ RUN yum makecache && \
         openssh-clients \
         openssl \
         man \
+        perl \
         which && \
     yum clean all
 
@@ -99,7 +100,6 @@ RUN yum -y install \
         unzip \
         sudo \
         yum-utils \
-        perl \
         openssh-server && \
     yum clean all && \
     #
@@ -252,6 +252,8 @@ COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
+COPY ./scripts/tfc.sh .
+COPY ./scripts/backend.hcl.tf .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 #

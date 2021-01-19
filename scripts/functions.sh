@@ -1,3 +1,5 @@
+source /tf/rover/tfc.sh
+
 error() {
     local parent_lineno="$1"
     local message="$2"
@@ -44,6 +46,10 @@ function process_actions {
         launchpad|landingzone)
             verify_parameters
             deploy ${TF_VAR_workspace}
+            ;;
+        tfc)
+            verify_parameters
+            deploy_tfc ${TF_VAR_workspace}
             ;;
         *)
             display_instructions
@@ -169,9 +175,20 @@ function verify_azure_session {
 
 }
 
+function check_subscription_required_role {
+    echo "@checking if current user is ${1} of the subscription - only for launchpad"
+    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId})
+
+    if [ "${role}" == "[]" ]; then
+           error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
+    fi
+}
 
 function initialize_state {
     echo "@calling initialize_state"
+
+    echo "Checking required permissions"
+    check_subscription_required_role "Owner"
 
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
@@ -223,6 +240,8 @@ function initialize_state {
 
     cd "${current_path}"
 }
+
+
 
 function deploy_from_remote_state {
     echo "@calling deploy_from_remote_state"

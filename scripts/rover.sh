@@ -8,6 +8,7 @@
 source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
+source /tf/rover/tfc.sh
 
 verify_rover_version
 
@@ -63,6 +64,10 @@ while (( "$#" )); do
         login)
             shift 1
             export caf_command="login"
+            ;;
+        -tfc|--tfc)
+            shift 1
+            export caf_command="tfc"
             ;;
         -t|--tenant)
             export tenant=${2}
