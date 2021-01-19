@@ -28,6 +28,7 @@ RUN yum makecache && \
         openssl \
         man \
         perl \
+        bash-completion \
         which && \
     yum clean all
 
