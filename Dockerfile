@@ -88,6 +88,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionPacker=${versionPacker} \
     versionTerraformCloudAgent=${versionTerraformCloudAgent} \
     versionCheckov=${versionCheckov} \
+    PATH="${PATH}:/opt/mssql-tools/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
 
@@ -190,6 +191,12 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/${versionTflint}/tflint_linux_amd64.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
+    #
+    # Install sqlcmd
+    #
+    echo "Installing sqlcmd ..." && \
+    curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/msprod.repo && \
+    sudo ACCEPT_EULA=Y yum install -y mssql-tools && \
     #
     # Install Ansible
     #
