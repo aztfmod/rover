@@ -1,4 +1,3 @@
-source /tf/rover/tfc.sh
 
 error() {
     local parent_lineno="$1"
@@ -176,11 +175,13 @@ function verify_azure_session {
 }
 
 function check_subscription_required_role {
-    echo "@checking if current user is ${1} of the subscription - only for launchpad"
+    echo "@checking if current user (object_id: ${TF_VAR_logged_user_objectId}) is ${1} of the subscription - only for launchpad"
     role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId})
 
     if [ "${role}" == "[]" ]; then
            error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
+    else
+        echo "User is ${1} of the subscription"
     fi
 }
 
@@ -195,8 +196,6 @@ function initialize_state {
 
     sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
     rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
-
-    get_logged_user_object_id
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
@@ -253,7 +252,6 @@ function deploy_from_remote_state {
         sudo cp backend.azurerm backend.azurerm.tf
     fi
 
-    get_logged_user_object_id
     login_as_launchpad
 
     deploy_landingzone
@@ -270,7 +268,6 @@ function destroy_from_remote_state {
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
-    get_logged_user_object_id
     login_as_launchpad
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
@@ -510,7 +507,6 @@ function destroy {
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -TF_VAR_tf_name: ${TF_VAR_tf_name}"
 
-    get_logged_user_object_id
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
@@ -879,6 +875,7 @@ function deploy {
     echo "@calling_deploy"
 
     get_storage_id
+    get_logged_user_object_id
 
     case "${id}" in
         "null")
