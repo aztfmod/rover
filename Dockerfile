@@ -14,7 +14,7 @@ RUN echo ${versionRover} > version.txt
 ###########################################################
 FROM centos:7 as base
 
-RUN yum makecache fast && \
+RUN yum makecache && \
     yum -y install \
         libtirpc \
         python3 \
@@ -28,16 +28,16 @@ RUN yum makecache fast && \
         openssl \
         man \
         zsh \
+        perl \
+        bash-completion \
         curl \
         which && \
-    yum -y update && \
     yum clean all
-
 
 ###########################################################
 # Getting latest version of terraform-docs
 ###########################################################
-FROM golang:1.13 as terraform-docs
+FROM golang:1.15.6 as terraform-docs
 
 ARG versionTerraformDocs
 ENV versionTerraformDocs=${versionTerraformDocs}
@@ -47,11 +47,10 @@ RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTe
 ###########################################################
 # Getting latest version of tfsec
 ###########################################################
-FROM golang:1.13 as tfsec
+FROM golang:1.15.6 as tfsec
 
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
-
 
 ###########################################################
 # CAF rover image
@@ -69,6 +68,8 @@ ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
 ARG versionPacker
+ARG versionTerraformCloudAgent
+ARG versionCheckov
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
@@ -87,6 +88,9 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
     versionPacker=${versionPacker} \
+    versionTerraformCloudAgent=${versionTerraformCloudAgent} \
+    versionCheckov=${versionCheckov} \
+    PATH="${PATH}:/opt/mssql-tools/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache"
 
@@ -99,6 +103,7 @@ RUN yum -y install \
         gcc \
         unzip \
         sudo \
+        yum-utils \
         openssh-server && \
     yum clean all && \
     #
@@ -108,13 +113,13 @@ RUN yum -y install \
     curl -sSL -o /tmp/git.tar.gz https://www.kernel.org/pub/software/scm/git/git-${versionGit}.tar.gz && \
     tar xvf /tmp/git.tar.gz -C /tmp && \
     cd /tmp/git-${versionGit} && \
-    ./configure --exec-prefix="/usr" && \
+    ./configure --exec-prefix="/usr/local" && \
     make -j && \
     make install && \
     #
     # Install Docker CE CLI.
     #
-    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
+    yum-config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
     yum -y install docker-ce-cli && \
     touch /var/run/docker.sock && \
     chmod 666 /var/run/docker.sock && \
@@ -136,11 +141,19 @@ RUN yum -y install \
     #
     # Install Terraform
     #
-    echo "Installing terraform ${versionTerraform}..." && \
+    echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    #
+    # Install Terraform Cloud Agents
+    #
+    echo "Installing Terraform Cloud Agents ${versionTerraformCloudAgent}..." && \
+    curl -sSL -o /tmp/tfc-agent.zip https://releases.hashicorp.com/tfc-agent/${versionTerraformCloudAgent}/tfc-agent_${versionTerraformCloudAgent}_linux_amd64.zip 2>&1 && \
+    unzip -d /usr/bin /tmp/tfc-agent.zip && \
+    chmod +x /usr/bin/tfc-agent && \
+    chmod +x /usr/bin/tfc-agent-core && \
     #
     # Install Packer
     #
@@ -191,20 +204,31 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
     #
+    # Install sqlcmd
+    #
+    echo "Installing sqlcmd ..." && \
+    curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/msprod.repo && \
+    sudo ACCEPT_EULA=Y yum install -y mssql-tools && \
+    #
     # Install Ansible
     #
     echo "Installing Ansible ${versionAnsible}..." && \
-    pip3 install ansible==${versionAnsible} && \
+    pip3 install --no-cache-dir ansible==${versionAnsible} && \
     #
     # Install pre-commit
     #
     echo "Installing pre-commit ..." && \
-    pip3 install pre-commit && \
+    pip3 install --no-cache-dir pre-commit && \
     #
     # Install yq
     #
     echo "Installing yq ..." && \
-    pip3 install yq && \
+    pip3 install --no-cache-dir yq && \
+    #
+    # Install checkov
+    #
+    echo "Installing Checkov ${versionCheckov} ..." && \
+    pip3 install --no-cache-dir checkov==${versionCheckov} && \
     #
     # Clean-up
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
@@ -225,13 +249,21 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         /home/${USERNAME}/.vscode-server \
         /home/${USERNAME}/.vscode-server-insiders && \
     chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
-    chmod 777 -R /home/${USERNAME} /tf/caf && \
+    chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
     chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
-    chmod 0440 /etc/sudoers.d/${USERNAME}
+    chmod 0440 /etc/sudoers.d/${USERNAME} && \
 
-# Add Community terraform providers
+    SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" && \
+    echo $SNIPPET >> "/root/.bashrc" && \
+    # [Optional] If you have a non-root user
+    mkdir /commandhistory && \
+    touch /commandhistory/.bash_history && \
+    chown -R $USERNAME /commandhistory && \
+    echo $SNIPPET >> "/home/$USERNAME/.bashrc"
+
+# Add additional components
 COPY --from=tfsec /go/bin/tfsec /bin/
 COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
@@ -241,6 +273,8 @@ COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
+COPY ./scripts/tfc.sh .
+COPY ./scripts/backend.hcl.tf .
 COPY --from=rover_version version.txt /tf/rover/version.txt
 
 #
@@ -252,9 +286,11 @@ USER ${USERNAME}
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
+    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
+    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
     # chmod +x /tf/rover/sshd.sh && \
     #
     # ssh server for Azure ACI
