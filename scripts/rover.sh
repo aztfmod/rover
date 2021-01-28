@@ -8,6 +8,7 @@
 source /tf/rover/clone.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
+source /tf/rover/tfc.sh
 
 verify_rover_version
 
@@ -20,6 +21,7 @@ export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export LC_ALL=en_US.UTF-8
+
 unset PARAMS
 
 current_path=$(pwd)
@@ -62,6 +64,10 @@ while (( "$#" )); do
         login)
             shift 1
             export caf_command="login"
+            ;;
+        -tfc|--tfc)
+            shift 1
+            export caf_command="tfc"
             ;;
         -t|--tenant)
             export tenant=${2}

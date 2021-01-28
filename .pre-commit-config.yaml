@@ -1,14 +1,15 @@
 # See http://pre-commit.com for more information
 # See http://pre-commit.com/hooks.html for more hooks
 repos:
+  - repo: git://github.com/IamTheFij/docker-pre-commit
+    rev: v2.0.0
+    hooks:
+    - id: docker-compose-check
   - repo: git://github.com/pre-commit/pre-commit-hooks
-    rev: v3.3.0
+    rev: v3.4.0
     hooks:
       - id: check-merge-conflict
       - id: trailing-whitespace
       - id: check-yaml
       - id: check-added-large-files
-  # - repo: git://github.com/markdownlint/markdownlint
-  #   rev: v0.9.0
-  #   hooks:
-  #     - id: markdownlint
+      - id: detect-private-key
