@@ -27,8 +27,10 @@ RUN yum makecache && \
         openssh-clients \
         openssl \
         man \
+        zsh \
         perl \
         bash-completion \
+        curl \
         which && \
     yum clean all
 
@@ -126,6 +128,16 @@ RUN yum -y install \
     #
     echo "Creating ${USERNAME} user..." && \
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
+    #
+    # Install Oh My Zsh
+    #
+    chsh -s /bin/zsh vscode && \
+    runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
+    sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/${USERNAME}/.zshrc && \
+    git clone https://github.com/powerline/fonts.git && \
+    cd fonts && \
+    ./install.sh && \
+    rm -rf fonts && \
     #
     # Install Terraform
     #
@@ -238,6 +250,7 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
         /home/${USERNAME}/.vscode-server-insiders && \
     chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
     chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
+    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
@@ -270,11 +283,13 @@ COPY --from=rover_version version.txt /tf/rover/version.txt
 
 USER ${USERNAME}
 
-
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
 RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
+    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
     # chmod +x /tf/rover/sshd.sh && \
     #
