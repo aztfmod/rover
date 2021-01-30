@@ -176,7 +176,7 @@ function verify_azure_session {
 
 function check_subscription_required_role {
     echo "@checking if current user (object_id: ${TF_VAR_logged_user_objectId}) is ${1} of the subscription - only for launchpad"
-    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId})
+    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups)
 
     if [ "${role}" == "[]" ]; then
            error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
