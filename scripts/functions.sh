@@ -26,6 +26,41 @@ exit_if_error() {
     }
 }
 
+#
+# Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
+#
+function execute_with_backoff {
+  local max_attempts=${ATTEMPTS-5}
+  local timeout=${TIMEOUT-20}
+  local attempt=0
+  local exitCode=0
+
+  while [[ $attempt < $max_attempts ]]
+  do
+    set +e
+    "$@"
+    exitCode=$?
+    set -e
+
+    if [[ $exitCode == 0 ]]
+    then
+      break
+    fi
+
+    echo "Failure! Return code ${exitCode} - Retrying in $timeout.." 1>&2
+    sleep $timeout
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 2 ))
+  done
+
+  if [[ $exitCode != 0 ]]
+  then
+    echo "Hit the max retry count ($@)" 1>&2
+  fi
+
+  return $exitCode
+}
+
 function process_actions {
     echo "@calling process_actions"
 
@@ -95,7 +130,6 @@ function display_launchpad_instructions {
     fi
     echo ""
 }
-
 
 function verify_parameters {
     echo "@calling verify_parameters"
@@ -185,165 +219,6 @@ function check_subscription_required_role {
     fi
 }
 
-function initialize_state {
-    echo "@calling initialize_state"
-
-    echo "Checking required permissions"
-    check_subscription_required_role "Owner"
-
-    echo "Installing launchpad from ${landingzone_name}"
-    cd ${landingzone_name}
-
-    sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
-    rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
-
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
-    export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
-
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-    terraform init \
-        -get-plugins=true \
-        -upgrade=true \
-        ${landingzone_name}
-
-    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
-
-    case "${tf_action}" in
-        "plan")
-            echo "calling plan"
-            plan
-            ;;
-        "apply")
-            echo "calling plan and apply"
-            plan
-            apply
-            get_storage_id
-            upload_tfstate
-            ;;
-        "validate")
-            echo "calling validate"
-            validate
-            ;;
-        "destroy")
-            echo "No more tfstate file"
-            exit
-            ;;
-        *)
-            other
-            ;;
-    esac
-
-    rm -rf backend.azurerm.tf
-
-    cd "${current_path}"
-}
-
-
-
-function deploy_from_remote_state {
-    echo "@calling deploy_from_remote_state"
-
-    echo 'Connecting to the launchpad'
-    cd ${landingzone_name}
-
-    if [ -f "backend.azurerm" ]; then
-        sudo cp backend.azurerm backend.azurerm.tf
-    fi
-
-    login_as_launchpad
-
-    deploy_landingzone
-
-    rm -rf backend.azurerm.tf
-
-    cd "${current_path}"
-}
-
-function destroy_from_remote_state {
-    echo "@calling destroy_from_remote_state"
-
-    echo "Destroying from remote state"
-    echo 'Connecting to the launchpad'
-    cd ${landingzone_name}
-
-    login_as_launchpad
-
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
-    export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
-
-    # Cleanup previous deployments
-    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    rm -rf "${TF_DATA_DIR}/tfstates/terraform.tfstate"
-
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-    stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
-
-    fileExists=$(az storage blob exists \
-        --subscription ${TF_VAR_tfstate_subscription_id} \
-        --name ${TF_VAR_tf_name} \
-        --container-name ${TF_VAR_workspace} \
-        --auth-mode 'login' \
-        --account-name ${stg_name} -o json | jq .exists)
-
-    if [ "${fileExists}" == "true" ]; then
-        if [ ${caf_command} == "launchpad" ]; then
-            az storage blob download \
-                --subscription ${TF_VAR_tfstate_subscription_id} \
-                --name ${TF_VAR_tf_name} \
-                --file "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                --container-name ${TF_VAR_workspace} \
-                --auth-mode "login" \
-                --account-name ${stg_name} \
-                --no-progress
-
-            RETURN_CODE=$?
-            if [ $RETURN_CODE != 0 ]; then
-                error ${LINENO} "Error downloading the blob storage" $RETURN_CODE
-            fi
-
-            destroy
-        else
-            destroy "remote"
-        fi
-    else
-        echo "landing zone already deleted"
-    fi
-
-    cd "${current_path}"
-}
-
-function upload_tfstate {
-    echo "@calling upload_tfstate"
-
-    echo "Moving launchpad to the cloud"
-
-    stg=$(az storage account show --ids ${id} -o json)
-
-    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
-    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
-    export access_key=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
-
-    az storage blob upload -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        --container-name ${TF_VAR_workspace} \
-        --name ${TF_VAR_tf_name} \
-        --account-name ${storage_account_name} \
-        --auth-mode key \
-        --account-key ${access_key} \
-        --no-progress
-
-    RETURN_CODE=$?
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error uploading the blob storage" $RETURN_CODE
-    fi
-
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-
-}
-
 function list_deployed_landingzones {
     echo "@calling list_deployed_landingzones"
 
@@ -366,7 +241,6 @@ function list_deployed_landingzones {
 
     echo ""
 }
-
 
 function login_as_launchpad {
     echo "@calling login_as_launchpad"
@@ -415,232 +289,6 @@ function login_as_launchpad {
 
     fi
 
-}
-
-function plan {
-    echo "@calling plan"
-
-    echo "running terraform plan with ${tf_command}"
-    echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
-    echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-    echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
-
-    pwd
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-
-    rm -f $STDERR_FILE
-
-    terraform plan ${tf_command} \
-        -refresh=true \
-        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
-
-    RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
-
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2000
-    fi
-
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform plan" $RETURN_CODE
-    fi
-}
-
-function apply {
-    echo "@calling apply"
-
-    echo 'running terraform apply'
-    rm -f $STDERR_FILE
-
-    terraform apply \
-        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
-
-    RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
-
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2001
-    fi
-
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform apply" $RETURN_CODE
-    fi
-
-}
-
-function validate {
-    echo "@calling validate"
-
-    echo 'running terraform validate'
-    terraform validate
-
-    RETURN_CODE=$? && echo "Terraform validate return code: ${RETURN_CODE}"
-
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2002
-    fi
-
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform validate" $RETURN_CODE
-    fi
-
-}
-
-function destroy {
-    echo "@calling destroy $1"
-
-    cd ${landingzone_name}
-
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
-
-    echo "Calling function destroy"
-    echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
-    echo " -TF_VAR_tf_name: ${TF_VAR_tf_name}"
-
-
-    rm -f "${TF_DATA_DIR}/terraform.tfstate"
-    sudo rm -f ${landingzone_name}/backend.azurerm.tf
-
-    if [ "$1" == "remote" ]; then
-
-        if [ -e backend.azurerm ]; then
-            sudo cp -f backend.azurerm backend.azurerm.tf
-        fi
-
-        # if [ -z "${ARM_USE_MSI}" ]; then
-        #     export ARM_ACCESS_KEY=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
-        # fi
-
-        echo 'running terraform destroy remote'
-        terraform init \
-            -reconfigure=true \
-            -backend=true \
-            -get-plugins=true \
-            -upgrade=true \
-            -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
-            -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
-            -backend-config container_name=${TF_VAR_workspace} \
-            -backend-config key=${TF_VAR_tf_name} \
-            -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
-            ${landingzone_name}
-
-        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
-
-        terraform destroy \
-            -refresh=false \
-            ${tf_command} \
-            ${landingzone_name}
-
-        RETURN_CODE=$?
-        if [ $RETURN_CODE != 0 ]; then
-            error ${LINENO} "Error running terraform destroy" $RETURN_CODE
-        fi
-
-    else
-        echo 'running terraform destroy with local tfstate'
-        # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
-        if [ ${TF_VAR_user_type} == "user" ]; then
-            unset ARM_TENANT_ID
-            unset ARM_SUBSCRIPTION_ID
-            unset ARM_CLIENT_ID
-            unset ARM_CLIENT_SECRET
-        fi
-
-        terraform init \
-            -reconfigure=true \
-            -get-plugins=true \
-            -upgrade=true \
-            ${landingzone_name}
-
-        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
-
-        echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-        mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-        terraform destroy ${tf_command} \
-            -refresh=false \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-            ${landingzone_name}
-
-        RETURN_CODE=$?
-        if [ $RETURN_CODE != 0 ]; then
-            error ${LINENO} "Error running terraform destroy" $RETURN_CODE
-        fi
-    fi
-
-
-    echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-
-    # Delete tfstate
-    get_storage_id
-
-    if [ "$id" != "null" ]; then
-        echo "Delete state file on storage account:"
-        echo " -tfstate: ${TF_VAR_tf_name}"
-        stg_name=$(az storage account show \
-            --ids ${id} -o json | \
-            jq -r .name) && echo " -stg_name: ${stg_name}"
-
-        fileExists=$(az storage blob exists \
-            --subscription ${TF_VAR_tfstate_subscription_id} \
-            --name ${TF_VAR_tf_name} \
-            --container-name ${TF_VAR_workspace} \
-            --auth-mode login \
-            --account-name ${stg_name} -o json | \
-            jq .exists)
-
-        if [ "${fileExists}" == "true" ]; then
-            echo " -found"
-            az storage blob delete \
-                --subscription ${TF_VAR_tfstate_subscription_id} \
-                --name ${TF_VAR_tf_name} \
-                --container-name ${TF_VAR_workspace} \
-                --delete-snapshots include \
-                --auth-mode login \
-                --account-name ${stg_name}
-            echo " -deleted"
-        fi
-    fi
-
-    rm -rf  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
-
-    clean_up_variables
-}
-
-function other {
-    echo "@calling other"
-
-    echo "running terraform ${tf_action} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
-
-    rm -f $STDERR_FILE
-
-    terraform ${tf_action} \
-        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
-
-    RETURN_CODE=$? && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
-
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2003
-    fi
-
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform ${tf_action}" $RETURN_CODE
-    fi
 }
 
 function deploy_landingzone {
@@ -698,7 +346,6 @@ function deploy_landingzone {
 
     cd "${current_path}"
 }
-
 
 ##### workspace functions
 ## Workspaces are used for an additional level of isolation. Mainly used by CI
@@ -793,8 +440,6 @@ function workspace_delete {
     echo ""
 }
 
-
-
 function clean_up_variables {
     echo "@calling clean_up_variables"
 
@@ -817,7 +462,6 @@ function clean_up_variables {
     find /tf/caf -name  backend.azurerm.tf -delete
 
 }
-
 
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
@@ -877,8 +521,8 @@ function deploy {
     get_storage_id
     get_logged_user_object_id
 
-    case "${id}" in
-        "null")
+    case ${id} in
+        "")
             echo "No launchpad found."
             if [ "${caf_command}" == "launchpad" ]; then
                 if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
@@ -904,9 +548,6 @@ function deploy {
                 rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
             fi
         ;;
-        '')
-            error ${LINENO} "you must login to an Azure subscription first or logout / login again" 2
-            ;;
         *)
 
         # Get the launchpad version
@@ -961,44 +602,6 @@ function landing_zone {
     esac
 }
 
-
-function get_storage_id {
-    echo "@calling get_storage_id"
-    id=$(az storage account list \
-        --subscription ${TF_VAR_tfstate_subscription_id} \
-        --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}" -o json | \
-        jq -r .[0].id)
-
-    if [ ${id} == null ] && [ "${caf_command}" != "launchpad" ]; then
-        # Check if other launchpad are installed
-        id=$(az storage account list \
-            --subscription ${TF_VAR_tfstate_subscription_id} \
-            --query "[?tags.tfstate=='${TF_VAR_level}'].{id:id}" -o json | \
-            jq -r .[0].id)
-
-        if [ ${id} == null ]; then
-            if [ ${TF_VAR_level} != "level0" ]; then
-                echo "You need to initialize that level first before using it or you do not have permission to that level."
-            else
-                display_launchpad_instructions
-            fi
-            exit 1000
-        else
-            echo
-            echo "There is no remote state for ${TF_VAR_level} in the environment ${TF_VAR_environment} in the subscription ${TF_VAR_tfstate_subscription_id}"
-            echo "You need to update the launchpad configuration and add an additional level or deploy in the level0."
-            echo "Or you do not have permissions to access the launchpad."
-            echo
-            echo "List of the other launchpad deployed"
-            az storage account list \
-                --subscription ${TF_VAR_tfstate_subscription_id} \
-                --query "[?tags.tfstate=='${TF_VAR_level}'].{name:name,environment:tags.environment, launchpad:tags.launchpad}" -o table
-
-            exit 0
-        fi
-    fi
-}
-
 function expand_tfvars_folder {
 
   echo " Expanding variable files: ${1}/*.tfvars"
@@ -1029,7 +632,6 @@ function verify_rover_version {
         fi
     fi
 }
-
 
 function process_target_subscription {
     echo "@calling process_target_subscription"

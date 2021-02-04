@@ -7,6 +7,7 @@
 
 source /tf/rover/clone.sh
 source /tf/rover/functions.sh
+source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/banner.sh
 source /tf/rover/tfc.sh
 

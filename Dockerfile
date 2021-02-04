@@ -268,6 +268,7 @@ COPY --from=terraform-docs /go/bin/terraform-docs /bin/
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
+COPY ./scripts/tfstate_azurerm.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
