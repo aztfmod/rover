@@ -208,16 +208,17 @@ gpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azu
     #
     echo "Installing sqlcmd ..." && \
     curl https://packages.microsoft.com/config/rhel/7/prod.repo > /etc/yum.repos.d/msprod.repo && \
-    sudo ACCEPT_EULA=Y yum install -y mssql-tools && \
+    sudo ACCEPT_EULA=Y yum install -y mssql-tools
     #
     # Install Ansible
     #
-    echo "Installing Ansible ${versionAnsible}..." && \
-    pip3 install --no-cache-dir ansible==${versionAnsible} && \
+RUN echo "Installing Ansible ${versionAnsible}..." && \
+    pip3 install setuptools_rust && \
+    pip3 install ansible==${versionAnsible}
     #
     # Install pre-commit
     #
-    echo "Installing pre-commit ..." && \
+RUN echo "Installing pre-commit ..." && \
     pip3 install --no-cache-dir pre-commit && \
     #
     # Install yq

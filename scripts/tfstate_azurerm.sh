@@ -285,6 +285,8 @@ function destroy {
             error ${LINENO} "Error running terraform destroy" $RETURN_CODE
         fi
 
+        get_storage_id
+
     else
         echo 'running terraform destroy with local tfstate'
         # Destroy is performed with the logged in user who last ran the launchap .. apply from the rover. Only this user has permission in the kv access policy
@@ -320,9 +322,6 @@ function destroy {
 
     echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-
-    # Delete tfstate
-    get_storage_id
 
     if [[ ${id} != null ]]; then
         echo "Delete state file on storage account:"
