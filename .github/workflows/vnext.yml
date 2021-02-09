@@ -2,11 +2,6 @@ name: vnext
 
 on:
   pull_request:
-    branches:
-      - vnext
-  push:
-    branches:
-      - vnext
 
 env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
@@ -50,14 +45,14 @@ jobs:
         docker push aztfmod/roverdev:vnext
 
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: $docker_tag
-        release_name: aztfmod/roverdev:$docker_tag
-        draft: true
-        prerelease: false
-        body: You can also use the latest vnext by using aztfmod/roverdev:vnext
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@latest
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    #   with:
+    #     tag_name: $docker_tag
+    #     release_name: aztfmod/roverdev:$docker_tag
+    #     draft: true
+    #     prerelease: false
+    #     body: You can also use the latest vnext by using aztfmod/roverdev:vnext
