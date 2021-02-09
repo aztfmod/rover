@@ -32,7 +32,7 @@ jobs:
     - name: Set the rover version
       run: |
         echo "versionTerraform=0.15.0-alpha20210127" >> $GITHUB_ENV
-        echo "docker_tag=${versionTerraform}-$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
+        echo "docker_tag=$versionTerraform-$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
     - name: Build the rover
       run: |
         set -e
