@@ -26,6 +26,7 @@ services:
         - versionAnsible
         - versionPacker
         - versionTerraformCloudAgent
+        - versionMssqlTools
 
     volumes:
       - ..:/tf
