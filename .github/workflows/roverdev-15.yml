@@ -31,7 +31,7 @@ jobs:
         login-server: https://index.docker.io/v1/
     - name: Set the rover version
       run: |
-        echo "versionTerraform=0.14.6" >> $GITHUB_ENV
+        echo "versionTerraform=0.15.0-alpha20210127" >> $GITHUB_ENV
         echo "docker_tag=${versionTerraform}-$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
     - name: Build the rover
       run: |
