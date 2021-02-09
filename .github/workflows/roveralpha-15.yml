@@ -37,8 +37,8 @@ jobs:
         set -e
         # Build the rover base image
         docker-compose build \
-          --build-arg versionRover="aztfmod/roverdev:$docker_tag" \
+          --build-arg versionRover="aztfmod/roveralpha:$docker_tag" \
           --build-arg versionTerraform=0.15.0-alpha20210127
 
-        docker tag rover_rover aztfmod/roverdev:$docker_tag
-        docker push aztfmod/roverdev:$docker_tag
+        docker tag rover_rover aztfmod/roveralpha:$docker_tag
+        docker push aztfmod/roveralpha:$docker_tag
