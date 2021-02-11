@@ -612,6 +612,13 @@ function expand_tfvars_folder {
     fi
   done
 
+  echo " Expanding variable files: ${1}/*.tfvars.json"
+
+   for filename in "${1}"/*.tfvars.json; do
+    if [ "${filename}" != "${1}/*.tfvars.json" ]; then
+        PARAMS+="-var-file ${filename} "
+    fi
+  done
 }
 
 #
