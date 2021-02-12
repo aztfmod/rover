@@ -1,7 +1,3 @@
-FROM ubuntu:20.04 as rover_version
-ARG versionRover
-RUN echo ${versionRover} > version.txt
-
 ###########################################################
 # Getting latest version of terraform-docs
 ###########################################################
@@ -22,12 +18,55 @@ RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM ubuntu:20.04 as base
+FROM ubuntu:20.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Arguments set during docker-compose build -b --build from .env file
+ARG versionRover
+ARG versionTerraform
+ARG versionAzureCli
+ARG versionKubectl
+ARG versionTflint
+ARG versionGit
+ARG versionJq
+ARG versionDockerCompose
+ARG versionTfsec
+ARG versionAnsible
+ARG versionPacker
+ARG versionTerraformCloudAgent
+ARG versionCheckov
+ARG versionMssqlTools
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+ARG SSH_PASSWD
+
+ENV versionRover=${versionRover}
+    SSH_PASSWD=${SSH_PASSWD} \
+    USERNAME=${USERNAME} \
+    versionTerraform=${versionTerraform} \
+    versionAzureCli=${versionAzureCli} \
+    versionKubectl=${versionKubectl} \
+    versionTflint=${versionTflint} \
+    versionJq=${versionJq} \
+    versionGit=${versionGit} \
+    versionDockerCompose=${versionDockerCompose} \
+    versionTfsec=${versionTfsec} \
+    versionAnsible=${versionAnsible} \
+    versionPacker=${versionPacker} \
+    versionTerraformCloudAgent=${versionTerraformCloudAgent} \
+    versionCheckov=${versionCheckov} \
+    versionMssqlTools=${versionMssqlTools} \
+    PATH="${PATH}:/opt/mssql-tools/bin" \
+    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
+    TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive
 
 # installation tools
-RUN apt-get update && \
+RUN echo ${versionRover} > version.txt && \
+    apt-get update && \
     apt-get install -y \
     apt-utils \
     curl \
@@ -39,13 +78,13 @@ RUN apt-get update && \
     unzip \
     sudo \
     locales \
+    vim \
     gpg \
     gpg-agent && \
     # ############### APT Repositories ###################
     #
     # Add Azure repository
     #
-    echo "Installing azure-cli ${versionAzureCli}..." && \
     curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
     gpg --dearmor | \
     tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null && \
@@ -71,62 +110,12 @@ RUN apt-get update && \
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && \
     #
-    apt-get update
-
-
-###########################################################
-# CAF rover image
-###########################################################
-FROM base
-
-# Arguments set during docker-compose build -b --build from .env file
-ARG versionTerraform
-ARG versionAzureCli
-ARG versionKubectl
-ARG versionTflint
-ARG versionGit
-ARG versionJq
-ARG versionDockerCompose
-ARG versionTfsec
-ARG versionAnsible
-ARG versionPacker
-ARG versionTerraformCloudAgent
-ARG versionCheckov
-ARG versionMssqlTools
-
-ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=${USER_UID}
-ARG SSH_PASSWD
-
-ENV SSH_PASSWD=${SSH_PASSWD} \
-    USERNAME=${USERNAME} \
-    versionTerraform=${versionTerraform} \
-    versionAzureCli=${versionAzureCli} \
-    versionKubectl=${versionKubectl} \
-    versionTflint=${versionTflint} \
-    versionJq=${versionJq} \
-    versionGit=${versionGit} \
-    versionDockerCompose=${versionDockerCompose} \
-    versionTfsec=${versionTfsec} \
-    versionAnsible=${versionAnsible} \
-    versionPacker=${versionPacker} \
-    versionTerraformCloudAgent=${versionTerraformCloudAgent} \
-    versionCheckov=${versionCheckov} \
-    versionMssqlTools=${versionMssqlTools} \
-    PATH="${PATH}:/opt/mssql-tools/bin" \
-    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
-    TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US:en \
-    LC_ALL=en_US.UTF-8
-
-RUN apt-get upgrade -y
-
+    apt-get update -y && \
+    apt-get upgrade -y && \
     #
     # Create USERNAME
     #
-RUN echo "Creating ${USERNAME} user..." && \
+    echo "Creating ${USERNAME} user..." && \
     groupadd docker && \
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
     #
@@ -169,6 +158,11 @@ RUN echo "Creating ${USERNAME} user..." && \
     curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/${versionTflint}/tflint_linux_amd64.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
+    # #
+    # # Install Ansbile Azure modules
+    # #
+    # echo "Installing Ansible Azure modules ..." && \
+    # pip3 install --no-cache-dir ansible[azure] && \
     #
     # Install pre-commit
     #
@@ -183,10 +177,9 @@ RUN echo "Creating ${USERNAME} user..." && \
     # Install checkov
     #
     echo "Installing Checkov ${versionCheckov} ..." && \
-    pip3 install --no-cache-dir checkov==${versionCheckov}
+    pip3 install --no-cache-dir checkov==${versionCheckov} && \
     #
-
-RUN ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
+    ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
         azure-cli=${versionAzureCli}-1~focal \
         mssql-tools=${versionMssqlTools}-1 \
         kubectl=${versionKubectl}-00 \
@@ -200,10 +193,10 @@ RUN ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
     #
     # Clean-up
     #
-    # apt-get remove -y \
-    #     apt-utils \
-    #     python3-pip && \
-    # apt-get autoremove -y && \
+    apt-get remove -y \
+        apt-utils \
+        python3-pip && \
+    apt-get autoremove -y && \
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
     rm -rf /var/lib/apt/lists/* && \
     #
@@ -247,7 +240,6 @@ COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/tfc.sh .
 COPY ./scripts/backend.hcl.tf .
-COPY --from=rover_version version.txt /tf/rover/version.txt
 
 #
 # Switch to non-root ${USERNAME} context
@@ -282,5 +274,5 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
 
 
 
-EXPOSE 22
-CMD  ["/tf/rover/sshd.sh"]
+# EXPOSE 22
+# CMD  ["/tf/rover/sshd.sh"]
