@@ -1,0 +1,43 @@
+FROM rover_rover:latest
+
+ARG VSTS_AGENT_INPUT_URL
+ARG VSTS_AGENT_INPUT_POOL
+ARG VSTS_AGENT_INPUT_TOKEN
+ARG VSTS_AGENT_INPUT_AGENT
+ARG VSTS_AGENT_INPUT_SECRET
+ARG VSTS_AGENT_KEYVAULT_NAME
+ARG SUBSCRIPTION_ID
+ARG SECRET_NAME
+ARG VAULT_NAME
+ARG MSI_ID
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    VSTS_AGENT_INPUT_URL=${VSTS_AGENT_INPUT_URL} \
+    VSTS_AGENT_INPUT_AUTH="pat" \
+    VSTS_AGENT_INPUT_POOL=${VSTS_AGENT_INPUT_POOL} \
+    VSTS_AGENT_INPUT_AGENT=${VSTS_AGENT_INPUT_AGENT} \
+    VSTS_AGENT_INPUT_TOKEN=${VSTS_AGENT_INPUT_TOKEN} \
+    VSTS_AGENT_KEYVAULT_NAME=${VSTS_AGENT_KEYVAULT_NAME} \
+    VSTS_AGENT_INPUT_SECRET=${VSTS_AGENT_INPUT_SECRET} \
+    SUBSCRIPTION_ID=${SUBSCRIPTION_ID} \
+    SECRET_NAME=${SECRET_NAME} \
+    VAULT_NAME=${VAULT_NAME} \
+    MSI_ID=${MSI_ID}
+
+RUN mkdir /home/vscode/agent
+
+WORKDIR /home/vscode/agent
+
+COPY ./azdo.sh .
+
+RUN AGENTRELEASE="$(curl -s https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest | grep -oP '"tag_name": "v\K(.*)(?=")')" && \
+    AGENTURL="https://vstsagentpackage.azureedge.net/agent/${AGENTRELEASE}/vsts-agent-linux-x64-${AGENTRELEASE}.tar.gz" && \
+    echo "Release "${AGENTRELEASE}" appears to be latest" && \
+    echo "Downloading..." && \
+    curl -s ${AGENTURL} -o agent_package.tar.gz && \
+    tar zxvf agent_package.tar.gz && \
+    sudo ./bin/installdependencies.sh && \
+    echo "dependencies installed" && \
+    sudo chmod +x ./azdo.sh
+
+CMD /bin/bash -c ./azdo.sh

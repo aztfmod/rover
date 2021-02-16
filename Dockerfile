@@ -20,6 +20,8 @@ RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
 ###########################################################
 FROM ubuntu:20.04
 
+SHELL ["/bin/bash", "-c"]
+
 # Arguments set during docker-compose build -b --build from .env file
 ARG versionRover
 ARG versionTerraform
@@ -40,7 +42,7 @@ ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
 ARG SSH_PASSWD
 
-ENV versionRover=${versionRover}
+ENV versionRover=${versionRover} \
     SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \
     versionTerraform=${versionTerraform} \
@@ -65,8 +67,7 @@ ENV versionRover=${versionRover}
     DEBIAN_FRONTEND=noninteractive
 
 # installation tools
-RUN echo ${versionRover} > version.txt && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -y \
     apt-utils \
     curl \
@@ -133,14 +134,14 @@ RUN echo ${versionRover} > version.txt && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
-    #
-    # Install Terraform Cloud Agents
-    #
-    echo "Installing Terraform Cloud Agents ${versionTerraformCloudAgent}..." && \
-    curl -sSL -o /tmp/tfc-agent.zip https://releases.hashicorp.com/tfc-agent/${versionTerraformCloudAgent}/tfc-agent_${versionTerraformCloudAgent}_linux_amd64.zip 2>&1 && \
-    unzip -d /usr/bin /tmp/tfc-agent.zip && \
-    chmod +x /usr/bin/tfc-agent && \
-    chmod +x /usr/bin/tfc-agent-core && \
+    # #
+    # # Install Terraform Cloud Agents
+    # #
+    # echo "Installing Terraform Cloud Agents ${versionTerraformCloudAgent}..." && \
+    # curl -sSL -o /tmp/tfc-agent.zip https://releases.hashicorp.com/tfc-agent/${versionTerraformCloudAgent}/tfc-agent_${versionTerraformCloudAgent}_linux_amd64.zip 2>&1 && \
+    # unzip -d /usr/bin /tmp/tfc-agent.zip && \
+    # chmod +x /usr/bin/tfc-agent && \
+    # chmod +x /usr/bin/tfc-agent-core && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
@@ -219,13 +220,14 @@ RUN echo ${versionRover} > version.txt && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
-    SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" && \
-    echo ${SNIPPET} >> "/root/.bashrc" && \
     # for non-root user
     mkdir /commandhistory && \
     touch /commandhistory/.bash_history && \
     chown -R ${USERNAME} /commandhistory && \
-    echo ${SNIPPET} >> "/home/${USERNAME}/.bashrc"
+    echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
+    echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r" >> "/home/${USERNAME}/.bashrc" && \
+    echo ${versionRover} > /tf/rover/version.txt
 
 # Add additional components
 COPY --from=tfsec /go/bin/tfsec /bin/
