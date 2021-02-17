@@ -37,7 +37,7 @@ RUN yum makecache && \
 ###########################################################
 # Getting latest version of terraform-docs
 ###########################################################
-FROM golang:1.15.7 as terraform-docs
+FROM golang:1.16.0 as terraform-docs
 
 ARG versionTerraformDocs
 ENV versionTerraformDocs=${versionTerraformDocs}
@@ -47,7 +47,7 @@ RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTe
 ###########################################################
 # Getting latest version of tfsec
 ###########################################################
-FROM golang:1.15.7 as tfsec
+FROM golang:1.16.0 as tfsec
 
 # to force the docker cache to invalidate when there is a new version
 RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
