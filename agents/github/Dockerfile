@@ -10,6 +10,7 @@ ARG AGENT_NAME
 ARG USERNAME
 
 ENV DEBIAN_FRONTEND=noninteractive \
+    ROVER_RUNNER=true \
     versionGithubRunner=${versionGithubRunner} \
     AGENT_TOKEN=${AGENT_TOKEN} \
     URL=${URL} \
@@ -25,7 +26,7 @@ RUN mkdir /home/${USERNAME}/agent
 
 WORKDIR /home/${USERNAME}/agent
 
-COPY ./github.sh .
+COPY ./github/github.sh .
 
 RUN echo "Installing Github self-hosted runner ${versionGithubRunner}..." && \
     sudo curl -sSL -o ./github-runner.tar.gz https://github.com/actions/runner/releases/download/v${versionGithubRunner}/actions-runner-linux-x64-${versionGithubRunner}.tar.gz 2>&1 && \

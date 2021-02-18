@@ -34,7 +34,6 @@ ARG versionDockerCompose
 ARG versionTfsec
 ARG versionAnsible
 ARG versionPacker
-ARG versionTerraformCloudAgent
 ARG versionCheckov
 ARG versionMssqlTools
 ARG USERNAME=vscode
@@ -55,7 +54,6 @@ ENV versionRover=${versionRover} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
     versionPacker=${versionPacker} \
-    versionTerraformCloudAgent=${versionTerraformCloudAgent} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
     PATH="${PATH}:/opt/mssql-tools/bin" \
@@ -134,14 +132,6 @@ RUN apt-get update && \
     unzip -d /usr/bin /tmp/terraform.zip && \
     chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
-    # #
-    # # Install Terraform Cloud Agents
-    # #
-    # echo "Installing Terraform Cloud Agents ${versionTerraformCloudAgent}..." && \
-    # curl -sSL -o /tmp/tfc-agent.zip https://releases.hashicorp.com/tfc-agent/${versionTerraformCloudAgent}/tfc-agent_${versionTerraformCloudAgent}_linux_amd64.zip 2>&1 && \
-    # unzip -d /usr/bin /tmp/tfc-agent.zip && \
-    # chmod +x /usr/bin/tfc-agent && \
-    # chmod +x /usr/bin/tfc-agent-core && \
     #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #

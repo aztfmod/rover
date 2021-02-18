@@ -11,6 +11,8 @@ source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/banner.sh
 source /tf/rover/tfc.sh
 
+export ROVER_RUNNER=${ROVER_RUNNER:=false}
+
 verify_rover_version
 
 export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}

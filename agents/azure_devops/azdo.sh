@@ -14,8 +14,8 @@ if [ -n "${VSTS_AGENT_INPUT_TOKEN}" ]; then
 else
   echo "Connect to Azure AD using MSI ${MSI_ID}"
   az login --identity -u ${MSI_ID} --allow-no-subscriptions
-  # Get PAT token from KeyVault if not provided from the VSTS_AGENT_INPUT_TOKEN
-  VSTS_AGENT_INPUT_TOKEN=$(az keyvault secret show -n ${VSTS_AGENT_INPUT_SECRET} --vault-name ${VSTS_AGENT_KEYVAULT_NAME} -o json | jq -r .value)
+  # Get PAT token from KeyVault if not provided from the AGENT_KEYVAULT_SECRET
+  VSTS_AGENT_INPUT_TOKEN=$(az keyvault secret show -n ${AGENT_KEYVAULT_SECRET} --vault-name ${AGENT_KEYVAULT_NAME} -o json | jq -r .value)
 fi
 
 # Most of the variables are retrieved from VSTS_AGENT_INPUT_*

@@ -9,20 +9,31 @@
       image: rover-aci:github
       build:
         context: .
-        dockerfile: Dockerfile.github
+        dockerfile: ./github/Dockerfile
         args:
           - versionGithubRunner
+          - USERNAME
     azdo:
       image: rover-aci:azdo
       build:
         context: .
-        dockerfile: Dockerfile.azdo
+        dockerfile: ./azure_devops/Dockerfile
+        args:
+          - USERNAME
     tfc:
       image: rover-aci:tfc
       build:
         context: .
-        dockerfile: Dockerfile.tfc
+        dockerfile: ./tfc/Dockerfile
         args:
           - versionTerraformCloudAgent
+          - USERNAME
+    gitlab:
+      image: rover-aci:gitlab
+      build:
+        context: .
+        dockerfile: ./gitlab/Dockerfile
+        args:
+          - USERNAME
 
 

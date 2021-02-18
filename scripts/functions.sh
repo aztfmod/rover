@@ -621,7 +621,7 @@ function expand_tfvars_folder {
 function verify_rover_version {
     user=$(whoami)
 
-    if [ "${user}" = "vscode" ]; then
+    if [ "${ROVER_RUNNER}" = false ]; then
         required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r .services.rover.image)
         running_version=$(cat /tf/rover/version.txt)
 
