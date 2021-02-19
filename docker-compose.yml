@@ -25,7 +25,6 @@ services:
         - versionTerraformDocs
         - versionAnsible
         - versionPacker
-        - versionTerraformCloudAgent
         - versionMssqlTools
 
     volumes:
