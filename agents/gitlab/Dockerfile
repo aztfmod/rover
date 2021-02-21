@@ -1,4 +1,5 @@
-FROM rover_rover:latest
+ARG versionRover=${versionRover}
+FROM ${versionRover}
 
 ARG AGENT_TOKEN
 ARG AGENT_KEYVAULT_NAME

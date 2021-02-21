@@ -1,4 +1,5 @@
-FROM rover_rover:latest
+ARG versionRover=${versionRover}
+FROM ${versionRover}
 
 ARG versionGithubRunner
 ARG AGENT_TOKEN
@@ -29,8 +30,9 @@ WORKDIR /home/${USERNAME}/agent
 COPY ./github/github.sh .
 
 RUN echo "Installing Github self-hosted runner ${versionGithubRunner}..." && \
-    sudo curl -sSL -o ./github-runner.tar.gz https://github.com/actions/runner/releases/download/v${versionGithubRunner}/actions-runner-linux-x64-${versionGithubRunner}.tar.gz 2>&1 && \
+    sudo curl -L -o ./github-runner.tar.gz https://github.com/actions/runner/releases/download/v${versionGithubRunner}/actions-runner-linux-x64-${versionGithubRunner}.tar.gz 2>&1 && \
     sudo tar xzf ./github-runner.tar.gz && \
+    sudo rm ./github-runner.tar.gz && \
     sudo chmod +x ./config.sh ./run.sh ./env.sh ./github.sh && \
     sudo chown -R ${USERNAME} ./
 

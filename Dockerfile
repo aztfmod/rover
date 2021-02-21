@@ -1,30 +1,13 @@
 ###########################################################
-# Getting latest version of terraform-docs
-###########################################################
-FROM golang:1.15.7 as terraform-docs
-
-ARG versionTerraformDocs
-ENV versionTerraformDocs=${versionTerraformDocs}
-RUN GO111MODULE="on" go get github.com/terraform-docs/terraform-docs@${versionTerraformDocs}
-
-###########################################################
-# Getting latest version of tfsec
-###########################################################
-FROM golang:1.15.7 as tfsec
-
-# to force the docker cache to invalidate when there is a new version
-RUN env GO111MODULE=on go get -u github.com/tfsec/tfsec/cmd/tfsec
-
-###########################################################
 # base tools and dependencies
 ###########################################################
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
 # Arguments set during docker-compose build -b --build from .env file
+
 ARG versionRover
-ARG versionTerraform
 ARG versionAzureCli
 ARG versionKubectl
 ARG versionTflint
@@ -36,15 +19,14 @@ ARG versionAnsible
 ARG versionPacker
 ARG versionCheckov
 ARG versionMssqlTools
+ARG versionTerraformDocs
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
 ARG SSH_PASSWD
 
-ENV versionRover=${versionRover} \
-    SSH_PASSWD=${SSH_PASSWD} \
+ENV SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \
-    versionTerraform=${versionTerraform} \
     versionAzureCli=${versionAzureCli} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
@@ -56,6 +38,8 @@ ENV versionRover=${versionRover} \
     versionPacker=${versionPacker} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
+    versionTerraformDocs=${versionTerraformDocs} \
+    versionRover=${versionRover} \
     PATH="${PATH}:/opt/mssql-tools/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
@@ -124,15 +108,6 @@ RUN apt-get update && \
     # ################# Install clients ###################
     #
     #
-    # Install Terraform
-    #
-    # Keeping this method to support alpha build installations
-    echo "Installing Terraform ${versionTerraform}..." && \
-    curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
-    unzip -d /usr/bin /tmp/terraform.zip && \
-    chmod +x /usr/bin/terraform && \
-    mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
-    #
     # Install Docker-Compose - required to rebuild the rover from the rover ;)
     #
     echo "Installing docker-compose ${versionDockerCompose}..." && \
@@ -145,15 +120,22 @@ RUN apt-get update && \
     #
     # Install tflint
     #
-    echo "Installing tflint ..." && \
-    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/${versionTflint}/tflint_linux_amd64.zip && \
+    echo "Installing tflint ${versionTflint}..." && \
+    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
-    # #
-    # # Install Ansbile Azure modules
-    # #
-    # echo "Installing Ansible Azure modules ..." && \
-    # pip3 install --no-cache-dir ansible[azure] && \
+    #
+    # Install tfsec
+    #
+    echo "Installing tfsec ${versionTfsec} ..." && \
+    curl -sSL -o /bin/tfsec https://github.com/tfsec/tfsec/releases/download/v${versionTfsec}/tfsec-linux-amd64 && \
+    chmod +x /bin/tfsec && \
+    #
+    # Install terraform docs
+    #
+    echo "Installing terraform docs ${versionTerraformDocs}..." && \
+    curl -sSL -o /bin/terraform-docs https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v0.11.1-linux-amd64 && \
+    chmod +x /bin/terraform-docs && \
     #
     # Install pre-commit
     #
@@ -216,12 +198,7 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r" >> "/home/${USERNAME}/.bashrc" && \
-    echo ${versionRover} > /tf/rover/version.txt
-
-# Add additional components
-COPY --from=tfsec /go/bin/tfsec /bin/
-COPY --from=terraform-docs /go/bin/terraform-docs /bin/
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r" >> "/home/${USERNAME}/.bashrc"
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
@@ -230,7 +207,6 @@ COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
-COPY ./scripts/tfc.sh .
 COPY ./scripts/backend.hcl.tf .
 
 #
@@ -260,11 +236,27 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     #
     # chsh -s /bin/zsh ${USERNAME} && \
     sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
-    # sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="agnoster"/g' /home/${USERNAME}/.zshrc && \
     chmod 700 -R /home/${USERNAME}/.oh-my-zsh
 
 
+from base
 
+ARG versionTerraform
+ARG USERNAME=vscode
+ARG versionRover
 
-# EXPOSE 22
-# CMD  ["/tf/rover/sshd.sh"]
+ENV versionRover=${versionRover} \
+    versionTerraform=${versionTerraform}
+
+    #
+    # Install Terraform
+    #
+    # Keeping this method to support alpha build installations
+RUN echo "Installing Terraform ${versionTerraform}..." && \
+    curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
+    sudo unzip -d /usr/bin /tmp/terraform.zip && \
+    sudo chmod +x /usr/bin/terraform && \
+    mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    rm /tmp/terraform.zip && \
+    #
+    echo ${versionRover} > /tf/rover/version.txt

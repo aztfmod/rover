@@ -1,5 +1,7 @@
-FROM rover_rover:latest
+ARG versionRover=${versionRover}
+FROM ${versionRover}
 
+ARG versionAzdo
 ARG VSTS_AGENT_INPUT_URL
 ARG VSTS_AGENT_INPUT_POOL
 ARG VSTS_AGENT_INPUT_TOKEN
@@ -15,6 +17,7 @@ ARG USERNAME
 
 ENV DEBIAN_FRONTEND=noninteractive \
     ROVER_RUNNER=true \
+    versionAzdo=${versionAzdo} \
     VSTS_AGENT_INPUT_URL=${VSTS_AGENT_INPUT_URL} \
     VSTS_AGENT_INPUT_AUTH=${VSTS_AGENT_INPUT_AUTH} \
     VSTS_AGENT_INPUT_POOL=${VSTS_AGENT_INPUT_POOL} \
@@ -28,18 +31,22 @@ ENV DEBIAN_FRONTEND=noninteractive \
     MSI_ID=${MSI_ID} \
     USERNAME=${USERNAME}
 
+
 RUN mkdir /home/${USERNAME}/agent
 
 WORKDIR /home/${USERNAME}/agent
 
 COPY ./azure_devops/azdo.sh .
 
-RUN AGENTRELEASE="$(curl -s https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest | grep -oP '"tag_name": "v\K(.*)(?=")')" && \
-    AGENTURL="https://vstsagentpackage.azureedge.net/agent/${AGENTRELEASE}/vsts-agent-linux-x64-${AGENTRELEASE}.tar.gz" && \
-    echo "Release "${AGENTRELEASE}" appears to be latest" && \
-    echo "Downloading..." && \
+RUN echo "versionRover=${versionRover}" && \
+    echo "CAF Rover Agent for Azure Devops" && \
+    latestAzdo="$(curl -s https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest | grep -oP '"tag_name": "v\K(.*)(?=")')" && \
+    AGENTURL="https://vstsagentpackage.azureedge.net/agent/${versionAzdo}/vsts-agent-linux-x64-${versionAzdo}.tar.gz" && \
+    echo "Release "${latestAzdo}" appears to be latest" && \
+    echo "Downloading Azure devops agent version ${versionAzdo}..." && \
     curl -s ${AGENTURL} -o agent_package.tar.gz && \
     tar zxvf agent_package.tar.gz && \
+    rm agent_package.tar.gz && \
     sudo ./bin/installdependencies.sh && \
     echo "dependencies installed" && \
     sudo chmod +x ./azdo.sh

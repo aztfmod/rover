@@ -9,6 +9,8 @@ function finally {
 
 trap finally EXIT SIGTERM
 
+AGENT_NAME=${AGENT_NAME:="agent"}
+
 if [ -n "${AGENT_TOKEN}" ]; then
   echo "Connect to GitHub using AGENT_TOKEN environment variable."
 else
