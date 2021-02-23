@@ -7,7 +7,6 @@ SHELL ["/bin/bash", "-c"]
 
 # Arguments set during docker-compose build -b --build from .env file
 
-ARG versionRover
 ARG versionAzureCli
 ARG versionKubectl
 ARG versionTflint
@@ -39,7 +38,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
-    versionRover=${versionRover} \
     PATH="${PATH}:/opt/mssql-tools/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \

@@ -26,4 +26,4 @@ RUN echo "Installing Terraform Cloud Agents ${versionTfc}..." && \
     sudo chmod +x /usr/bin/tfc-agent-core
 
 
-ENTRYPOINT ["/usr/bin/tfc-agent"]
+ENTRYPOINT ["/usr/bin/tfc-agent -single"]
