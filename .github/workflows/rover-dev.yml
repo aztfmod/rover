@@ -25,7 +25,7 @@ jobs:
     - name: Build the rover
       run: |
         set -e
-        docker login -u "aztfmod" -p ${{ secrets.docker_registry_password }}
+        sudo docker login -u "aztfmod" -p ${{ secrets.docker_registry_password }}
         # Build the rover base image
         make dev
 
