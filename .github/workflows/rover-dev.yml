@@ -10,22 +10,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Docker Hub Login
-      uses: Azure/docker-login@v1
-      with:
-        # Container registry username
-        username: aztfmod
-        # Container registry password
-        password: ${{ secrets.docker_registry_password }}
-        # Container registry server url
-        login-server: https://index.docker.io/v1/
+    # - name: Docker Hub Login
+    #   uses: Azure/docker-login@v1
+    #   with:
+    #     # Container registry username
+    #     username: aztfmod
+    #     # Container registry password
+    #     password: ${{ secrets.docker_registry_password }}
+    #     # Container registry server url
+    #     login-server: https://index.docker.io/v1/
     # - name: Set the rover version
     #   run: |
     #     echo "docker_tag=$(date +"%g%m.%d%H")" >> $GITHUB_ENV
     - name: Build the rover
       run: |
         set -e
-
+        docker login -u "aztfmod" -p ${{ secrets.docker_registry_password }}
         # Build the rover base image
         make dev
 
