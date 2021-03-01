@@ -1,0 +1,41 @@
+name: Build Rover dev images
+
+on:
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    # - name: Docker Hub Login
+    #   uses: Azure/docker-login@v1
+    #   with:
+    #     # Container registry username
+    #     username: aztfmod
+    #     # Container registry password
+    #     password: ${{ secrets.docker_registry_password }}
+    #     # Container registry server url
+    #     login-server: https://index.docker.io/v1/
+    # - name: Set the rover version
+    #   run: |
+    #     echo "docker_tag=$(date +"%g%m.%d%H")" >> $GITHUB_ENV
+    - name: Build the rover
+      run: |
+        set -e
+        sudo docker login -u "aztfmod" -p ${{ secrets.docker_registry_password }}
+        # Build the rover base image
+        make dev
+
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@latest
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    #   with:
+    #     tag_name: ${{ env.docker_tag }}
+    #     release_name: aztfmod/rover:${{ env.docker_tag }}
+    #     draft: false
+    #     prerelease: true

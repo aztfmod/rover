@@ -3,12 +3,13 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
+#
+# make is calling the ./scripts/build_images.sh who calls docker-compose build
+#
 version: '3.7'
 services:
-  rover:
-
-    container_name: rover
-
+  rover_local:
+    image: rover
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,16 +21,14 @@ services:
         - versionTflint
         - versionJq
         - versionDockerCompose
-        - versionRover
         - versionTfsec
         - versionTerraformDocs
         - versionAnsible
         - versionPacker
-        - versionTerraformCloudAgent
+        - versionMssqlTools
+        - versionRover
 
-    volumes:
-      - ..:/tf
+  rover_registry:
+      extends: rover_local
+      image: ${versionRover}
 
-
-    # Overrides default command so things don't shut down after the process ends.
-    command: /bin/sh -c "while sleep 1000; do :; done"

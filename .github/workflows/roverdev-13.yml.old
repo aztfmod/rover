@@ -2,11 +2,6 @@ name: vnext
 
 on:
   pull_request:
-    branches:
-      - vnext
-  push:
-    branches:
-      - vnext
 
 env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
@@ -36,28 +31,14 @@ jobs:
         login-server: https://index.docker.io/v1/
     - name: Set the rover version
       run: |
-        echo "docker_tag=$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
+        echo "docker_tag=0.13.6-$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
     - name: Build the rover
       run: |
         set -e
         # Build the rover base image
-        docker-compose build --build-arg versionRover="aztfmod/roverdev:$docker_tag"
+        docker-compose build \
+          --build-arg versionRover="aztfmod/roverdev:$docker_tag" \
+          --build-arg versionTerraform=0.13.6
 
         docker tag rover_rover aztfmod/roverdev:$docker_tag
-        docker tag rover_rover aztfmod/roverdev:vnext
-
         docker push aztfmod/roverdev:$docker_tag
-        docker push aztfmod/roverdev:vnext
-
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: $docker_tag
-        release_name: aztfmod/roverdev:$docker_tag
-        draft: true
-        prerelease: false
-        body: You can also use the latest vnext by using aztfmod/roverdev:vnext

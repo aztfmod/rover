@@ -1,0 +1,44 @@
+name: vnext
+
+on:
+  pull_request:
+
+env:
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  TF_VAR_azure_devops_pat_token: ${{ secrets.TF_VAR_azure_devops_pat_token }}
+  TF_VAR_azure_devops_url_organization: ${{ secrets.TF_VAR_azure_devops_url_organization }}
+
+
+jobs:
+  build:
+
+    name: Build roverdev
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Docker Hub Login
+      uses: Azure/docker-login@v1
+      with:
+        # Container registry username
+        username: aztfmod
+        # Container registry password
+        password: ${{ secrets.docker_registry_password }}
+        # Container registry server url
+        login-server: https://index.docker.io/v1/
+    - name: Set the rover version
+      run: |
+        echo "docker_tag=0.15.0-alpha20210127-$(date +"%g%m.%d%H%M")" >> $GITHUB_ENV
+    - name: Build the rover
+      run: |
+        set -e
+        # Build the rover base image
+        docker-compose build \
+          --build-arg versionRover="aztfmod/roveralpha:$docker_tag" \
+          --build-arg versionTerraform=0.15.0-alpha20210127
+
+        docker tag rover_rover aztfmod/roveralpha:$docker_tag
+        docker push aztfmod/roveralpha:$docker_tag

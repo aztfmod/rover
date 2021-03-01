@@ -7,8 +7,10 @@
 
 source /tf/rover/clone.sh
 source /tf/rover/functions.sh
+source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/banner.sh
-source /tf/rover/tfc.sh
+
+export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
 verify_rover_version
 
@@ -20,7 +22,6 @@ export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
-export LC_ALL=en_US.UTF-8
 
 unset PARAMS
 

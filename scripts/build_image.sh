@@ -3,49 +3,110 @@
 set -e
 ./scripts/pre_requisites.sh
 
+params=$@
+build_date=date
+tag_date_preview=$(${build_date} +"%g%m.%d%H%M")
+tag_date_release=$(${build_date} +"%g%m.%d%H")
+export strategy=${1}
 
-case "$1" in 
-    "github")
-        tag=$(date +"%g%m.%d%H")
-        rover="aztfmod/rover:${tag}"
-        ;;
-    "alpha")
-        tag=$(date +"%g%m.%d%H%M")
-        rover="aztfmod/roveralpha:${tag}"
-        ;;
-    "dev")
-        tag=$(date +"%g%m.%d%H%M")
-        rover="aztfmod/roverdev:${tag}"
-        ;;
-    "local")
-        tag=$(date +"%g%m.%d%H%M")
-        rover="roverlocal:${tag}"
-        ;;
-esac
+echo "params ${params}"
+echo "date ${build_date}"
 
-echo "Creating version ${rover}"
+function build_base_rover_image {
+    echo "params ${params}"
+    versionTerraform=${1}
+    strategy=${2}
 
-# Build the rover base image
-sudo docker-compose build --build-arg versionRover=${rover}
+    echo "@build_base_rover_image"
+    echo "Building base image with:"
+    echo " - regversionTerraformistry - ${versionTerraform}"
+    echo " - strategy                 - ${strategy}"
+
+    echo "Terraform version - ${versionTerraform}"
+
+    case "${strategy}" in
+        "github")
+            registry="aztfmod/"
+            tag=${versionTerraform}-${tag_date_release}
+            rover="${registry}rover:${tag}"
+            export tag_strategy=""
+            ;;
+        "alpha")
+            registry="aztfmod/"
+            tag=${versionTerraform}-${tag_date_preview}
+            rover="${registry}rover-alpha:${tag}"
+            export tag_strategy="alpha-"
+            ;;
+        "dev")
+            registry="aztfmod/"
+            tag=${versionTerraform}-${tag_date_preview}
+            export rover="${registry}rover-preview:${tag}"
+            tag_strategy="preview-"
+            ;;
+        "local")
+            registry=""
+            tag=${versionTerraform}-${tag_date_preview}
+            export rover="${registry}rover-local:${tag}"
+            tag_strategy="local-"
+            ;;
+    esac
+
+    echo "Creating version ${registry}${rover}"
+
+    # Build the rover base image
+    sudo versionRover="${rover}" docker-compose build \
+        --build-arg versionTerraform=${versionTerraform} \
+        --build-arg versionRover="${rover}"
 
 
-case "$1" in 
-    "github")
-        sudo docker tag rover_rover ${rover}
-        sudo docker push ${rover}
+    case "${strategy}" in
+        "local")
+            ;;
+        *)
+            echo "Pushing rover image to the docker regsitry"
+            sudo versionRover="${rover}" docker-compose push rover_registry
+            ;;
+    esac
 
-        # tag the git branch and push
-        git tag ${tag} master
-        git push --follow-tags
-        echo "Version aztfmod/rover:${tag} created."
-        ;;
-    "local")
-        sudo docker tag rover_rover ${rover}
-        echo "Version ${rover} created."
-        ;;
-    *)
-        sudo docker tag rover_rover ${rover}
-        sudo docker push ${rover}
-        echo "Version ${rover} created."
-        ;;
-esac
+    echo "Image ${rover} created."
+
+    # echo "Building CI/CD images."
+    build_rover_agents "${rover}" "${tag}" "${registry}"
+
+}
+
+function build_rover_agents {
+    # Build de rover agents and runners
+    rover=${1}
+    tag=${2}
+    registry=${3}
+
+    echo "@build_rover_agents"
+    echo "Building agents with:"
+    echo " - registry      - ${registry}"
+    echo " - version Rover - ${rover}"
+    echo " - tag           - ${tag}"
+    echo " - strategy      - ${strategy}"
+    echo " - tag_strategy  - ${tag_strategy}"
+    cd agents
+
+    sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build \
+        --build-arg versionRover="${rover}"
+
+        case "${strategy}" in
+        "local")
+            ;;
+        *)
+            sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push
+            ;;
+    esac
+
+    echo "Agents created under tag ${tag} for registry '${registry}'"
+    cd ..
+
+}
+
+echo "Building rover images."
+while read versionTerraform; do
+    build_base_rover_image ${versionTerraform} ${strategy}
+done <./.env.terraform

@@ -1,0 +1,40 @@
+#-------------------------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
+#-------------------------------------------------------------------------------------------------------------
+
+  version: '3.7'
+  services:
+    github:
+      image: ${registry}rover-agent:${tag}-${tag_strategy}github
+      build:
+        context: .
+        dockerfile: ./github/Dockerfile
+        args:
+          - versionGithubRunner
+          - USERNAME
+    azdo:
+      image: ${registry}rover-agent:${tag}-${tag_strategy}azdo
+      build:
+        context: .
+        dockerfile: ./azure_devops/Dockerfile
+        args:
+          - versionAzdo
+          - USERNAME
+    tfc:
+      image: ${registry}rover-agent:${tag}-${tag_strategy}tfc
+      build:
+        context: .
+        dockerfile: ./tfc/Dockerfile
+        args:
+          - versionTfc
+          - USERNAME
+    gitlab:
+      image: ${registry}rover-agent:${tag}-${tag_strategy}gitlab
+      build:
+        context: .
+        dockerfile: ./gitlab/Dockerfile
+        args:
+          - USERNAME
+
+
