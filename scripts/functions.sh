@@ -572,7 +572,7 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list")
+            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
                 deploy_from_remote_state
                 ;;
             *)
@@ -629,7 +629,7 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r .services.rover.image)
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image')
         running_version=$(cat /tf/rover/version.txt)
 
         if [ "${required_version}" != "${running_version}" ]; then
