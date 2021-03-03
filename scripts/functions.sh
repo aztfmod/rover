@@ -172,9 +172,9 @@ function verify_azure_session {
 
         if [ ! -z "${tenant}" ]; then
             echo "Login to azure with tenant ${tenant}"
-            ret=$(az login --tenant ${tenant} >/dev/null >&1)
+            ret=$(az login --use-device-code --tenant ${tenant} >/dev/null >&1)
         else
-            ret=$(az login >/dev/null >&1)
+            ret=$(az login --use-device-code >/dev/null >&1)
         fi
 
         # the second parameter would be the subscription id to target
