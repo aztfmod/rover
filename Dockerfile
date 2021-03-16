@@ -196,7 +196,7 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r" >> "/home/${USERNAME}/.bashrc"
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc"
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
