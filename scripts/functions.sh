@@ -491,7 +491,9 @@ function get_logged_user_object_id {
 
         case "${clientId}" in
             "systemAssignedIdentity")
-                echo " - logged in Azure with System Assigned Identity"
+                echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
+                export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
+                export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
                 ;;
             "userAssignedIdentity")
                 echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
