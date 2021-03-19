@@ -85,6 +85,10 @@ function process_actions {
             verify_parameters
             deploy_tfc ${TF_VAR_workspace}
             ;;
+        ci)
+            verify_parameters
+            execute_ci_action
+            ;;
         *)
             display_instructions
     esac
@@ -152,6 +156,10 @@ function verify_parameters {
             error ${LINENO} "action must be set when deploying a landing zone" 11
         fi
     fi
+}
+
+function execute_ci_action {
+    echo "Executing CI action"
 }
 
 # The rover stores the Azure sessions in a local rover/.azure subfolder
