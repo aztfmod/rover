@@ -13,7 +13,7 @@
         - "caf=Azure CAF"
 
       volumes:
-        - ..:/tf/rover
+        - ..:/tf/caf
         - volume-caf-vscode:/home/vscode
         - volume-caf-vscode-bashhistory:/commandhistory
         - ~/.ssh:/tmp/.ssh-localhost:ro
