@@ -66,6 +66,16 @@ while (( "$#" )); do
             shift 1
             export caf_command="login"
             ;;
+        ci)
+            shift 1
+            export caf_command="ci"
+            export devops="true"
+            ;;
+        cd)
+            shift 1
+            export caf_command="cd"
+            export devops="true"
+            ;;
         -tfc|--tfc)
             shift 1
             export caf_command="tfc"
@@ -156,6 +166,7 @@ echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
 echo "target subscription           : '$(echo ${target_subscription_name})'"
+echo "CI/CD enabled                 : '$(echo ${devops})'"
 echo ""
 
 process_actions
