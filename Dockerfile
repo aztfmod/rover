@@ -196,7 +196,7 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r" >> "/home/${USERNAME}/.bashrc"
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc"
 
 WORKDIR /tf/rover
 COPY ./scripts/rover.sh .
@@ -258,3 +258,13 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     rm /tmp/terraform.zip && \
     #
     echo ${versionRover} > /tf/rover/version.txt
+
+RUN echo "Installing Tflint Ruleset for Azure..." && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v0.9.0/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
+    mkdir -p /home/${USERNAME}/.tflint.d/config  && \
+    echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
+    rm /tmp/tflint-ruleset-azurerm.zip
