@@ -463,6 +463,40 @@ function clean_up_variables {
 
 }
 
+function get_resource_from_assignedIdentityInfo {
+    msi=$1
+    msiResource=""
+
+    if [ -z "$msi" ]; then
+        echo "Missing Assigned Identity Info!"
+        return 1
+    fi
+
+    case $msi in
+        *"MSIResource"*)
+            msiResource= ${msi//MSIResource-}
+        ;;
+        *"MSIClient"*)
+            msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-}'].{id:id}" -o tsv)
+        ;;
+        *)
+            echo "Warning: MSI identifier unknown."
+            msiResource= ${msi//MSIResource-}
+        ;;
+    esac
+
+    echo $msiResource
+}
+
+function set_arm_tenant_id_user_assigned_client {
+    # If User Assigned MSI is used to provision the launchpad
+    if [ "$TF_VAR_level" == "level0" ]; then
+        export ARM_TENANT_ID=$(az account show | jq -r '.tenantId')
+    else
+        export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
+    fi
+}
+
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
@@ -498,10 +532,11 @@ function get_logged_user_object_id {
             "userAssignedIdentity")
                 echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids ${msi//MSIResource-} | jq -r .clientId)
-                export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
+                msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
+                set_arm_tenant_id_user_assigned_client
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
