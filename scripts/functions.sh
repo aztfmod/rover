@@ -666,8 +666,8 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image')
-        running_version=$(cat /tf/rover/version.txt)
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $2}')
+        running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
 
         if [ "${required_version}" != "${running_version}" ]; then
             echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
