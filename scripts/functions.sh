@@ -497,11 +497,46 @@ function set_arm_tenant_id_user_assigned_client {
     fi
 }
 
+function export_azure_cloud_env {
+    local tf_cloud_env=''
+
+    unset AZURE_ENVIRONMENT
+    unset ARM_ENVIRONMENT
+    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
+
+    if [ -z "$cloud_name" ]; then
+
+        case $AZURE_ENVIRONMENT in
+            AzureCloud)
+            tf_cloud_env='public'
+            ;;
+            AzureChinaCloud)
+            tf_cloud_env='china'
+            ;;
+            AzureUSGovernment)
+            tf_cloud_env='usgovernment'
+            ;;
+            AzureGermanCloud)
+            tf_cloud_env='german'
+            ;;
+        esac
+
+        export ARM_ENVIRONMENT=$tf_cloud_env
+    else
+        export ARM_ENVIRONMENT=$cloud_name
+    fi
+
+    echo " - AZURE_ENVIRONMENT: ${AZURE_ENVIRONMENT}"
+    echo " - ARM_ENVIRONMENT: ${ARM_ENVIRONMENT}"
+}
+
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
     export TF_VAR_user_type=$(az account show \
         --query user.type -o tsv)
+
+    export_azure_cloud_env
 
     if [ ${TF_VAR_user_type} == "user" ]; then
 

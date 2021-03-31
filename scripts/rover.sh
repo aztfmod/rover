@@ -42,6 +42,10 @@ while (( "$#" )); do
             export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
             shift 2
             ;;
+        -c|--cloud)
+            export cloud_name=${2}
+            shift 2
+            ;;
         -a|--action)
             export tf_action=${2}
             shift 2
