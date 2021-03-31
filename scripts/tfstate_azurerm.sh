@@ -175,6 +175,11 @@ function plan {
         -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
         -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
 
+    if [ ! -z ${tf_output_plan_file} ]; then
+        echo "Copying plan file to ${tf_output_plan_file}"
+        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
+    fi
+
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
