@@ -107,6 +107,10 @@ while (( "$#" )); do
                 tf_output_file=${2}
                 shift 2
                 ;;
+        -p|--plan)
+                tf_output_plan_file=${2}
+                shift 2
+                ;;
         -w|--workspace)
                 export TF_VAR_workspace=${2}
                 shift 2
@@ -151,6 +155,7 @@ process_target_subscription
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"
 echo "terraform command output file : '$(echo ${tf_output_file})'"
+echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "command and parameters        : '$(echo ${tf_command})'"
 echo ""
