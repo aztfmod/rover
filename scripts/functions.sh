@@ -86,7 +86,7 @@ function process_actions {
             deploy_tfc ${TF_VAR_workspace}
             ;;
         ci)
-            verify_parameters
+            verify_ci_parameters
             execute_ci_action
             ;;
         *)
@@ -156,6 +156,10 @@ function verify_parameters {
             error ${LINENO} "action must be set when deploying a landing zone" 11
         fi
     fi
+}
+
+function verify_ci_parameters {
+    echo "@calling verify_ci_parameters"
 }
 
 function execute_ci_action {
