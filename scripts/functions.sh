@@ -475,11 +475,80 @@ function clean_up_variables {
 
 }
 
+function get_resource_from_assignedIdentityInfo {
+    msi=$1
+    msiResource=""
+
+    if [ -z "$msi" ]; then
+        echo "Missing Assigned Identity Info!"
+        return 1
+    fi
+
+    case $msi in
+        *"MSIResource"*)
+            msiResource= ${msi//MSIResource-}
+        ;;
+        *"MSIClient"*)
+            msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-}'].{id:id}" -o tsv)
+        ;;
+        *)
+            echo "Warning: MSI identifier unknown."
+            msiResource= ${msi//MSIResource-}
+        ;;
+    esac
+
+    echo $msiResource
+}
+
+function set_arm_tenant_id_user_assigned_client {
+    # If User Assigned MSI is used to provision the launchpad
+    if [ "$TF_VAR_level" == "level0" ]; then
+        export ARM_TENANT_ID=$(az account show | jq -r '.tenantId')
+    else
+        export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
+    fi
+}
+
+function export_azure_cloud_env {
+    local tf_cloud_env=''
+
+    unset AZURE_ENVIRONMENT
+    unset ARM_ENVIRONMENT
+    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
+
+    if [ -z "$cloud_name" ]; then
+
+        case $AZURE_ENVIRONMENT in
+            AzureCloud)
+            tf_cloud_env='public'
+            ;;
+            AzureChinaCloud)
+            tf_cloud_env='china'
+            ;;
+            AzureUSGovernment)
+            tf_cloud_env='usgovernment'
+            ;;
+            AzureGermanCloud)
+            tf_cloud_env='german'
+            ;;
+        esac
+
+        export ARM_ENVIRONMENT=$tf_cloud_env
+    else
+        export ARM_ENVIRONMENT=$cloud_name
+    fi
+
+    echo " - AZURE_ENVIRONMENT: ${AZURE_ENVIRONMENT}"
+    echo " - ARM_ENVIRONMENT: ${ARM_ENVIRONMENT}"
+}
+
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
     export TF_VAR_user_type=$(az account show \
         --query user.type -o tsv)
+
+    export_azure_cloud_env
 
     if [ ${TF_VAR_user_type} == "user" ]; then
 
@@ -503,15 +572,18 @@ function get_logged_user_object_id {
 
         case "${clientId}" in
             "systemAssignedIdentity")
-                echo " - logged in Azure with System Assigned Identity"
+                echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
+                export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
+                export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
                 ;;
             "userAssignedIdentity")
                 echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids ${msi//MSIResource-} | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids ${msi//MSIResource-} | jq -r .clientId)
-                export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
+                msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
+                set_arm_tenant_id_user_assigned_client
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
@@ -641,8 +713,8 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image')
-        running_version=$(cat /tf/rover/version.txt)
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $2}')
+        running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
 
         if [ "${required_version}" != "${running_version}" ]; then
             echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."

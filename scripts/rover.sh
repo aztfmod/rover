@@ -42,6 +42,10 @@ while (( "$#" )); do
             export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
             shift 2
             ;;
+        -c|--cloud)
+            export cloud_name=${2}
+            shift 2
+            ;;
         -a|--action)
             export tf_action=${2}
             shift 2
@@ -113,6 +117,10 @@ while (( "$#" )); do
                 tf_output_file=${2}
                 shift 2
                 ;;
+        -p|--plan)
+                tf_output_plan_file=${2}
+                shift 2
+                ;;
         -w|--workspace)
                 export TF_VAR_workspace=${2}
                 shift 2
@@ -157,6 +165,7 @@ process_target_subscription
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"
 echo "terraform command output file : '$(echo ${tf_output_file})'"
+echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
 echo "tf_action                     : '$(echo ${tf_action})'"
 echo "command and parameters        : '$(echo ${tf_command})'"
 echo ""
