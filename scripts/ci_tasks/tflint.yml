@@ -1,0 +1,4 @@
+name: tflint
+executableName: "tflint"
+parameters:
+  config: "~/.tflint.d/config/.tflint.hcl"

@@ -22,6 +22,7 @@ export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
+export symphony_run_all_tasks=true
 
 unset PARAMS
 
@@ -79,6 +80,15 @@ while (( "$#" )); do
             shift 1
             export caf_command="cd"
             export devops="true"
+            ;;
+        -sc|--symphony-config)
+            export symphony_yml_path=${2}
+            shift 2
+            ;;
+        -ct|--ci-task-name)
+            export ci_task_name=${2}
+            export symphony_run_all_tasks=false
+            shift 2
             ;;
         -tfc|--tfc)
             shift 1
@@ -176,6 +186,11 @@ echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
 echo "target subscription           : '$(echo ${target_subscription_name})'"
 echo "CI/CD enabled                 : '$(echo ${devops})'"
+echo "Symphony Yaml file path       : '$(echo ${symphony_yml_path})'"
+echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+if [ $symphony_run_all_tasks == false ]; then
+    echo "Running task                  : '$(echo ${ci_task_name})'"
+fi
 echo ""
 
 process_actions

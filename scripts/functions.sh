@@ -1,8 +1,10 @@
+source /tf/rover/ci.sh
+source /tf/rover/symphony_yaml.sh
 
 error() {
     local parent_lineno="$1"
     local message="$2"
-    local code="${3:-1}"
+
     if [[ -n "$message" ]] ; then
         >&2 echo -e "\e[41mError on or near line ${parent_lineno}: ${message}; exiting with status ${code}\e[0m"
     else
@@ -86,8 +88,10 @@ function process_actions {
             deploy_tfc ${TF_VAR_workspace}
             ;;
         ci)
+            register_ci_tasks
             verify_ci_parameters
-            execute_ci_action
+            set_default_parameters
+            execute_ci_actions
             ;;
         *)
             display_instructions
@@ -156,14 +160,6 @@ function verify_parameters {
             error ${LINENO} "action must be set when deploying a landing zone" 11
         fi
     fi
-}
-
-function verify_ci_parameters {
-    echo "@calling verify_ci_parameters"
-}
-
-function execute_ci_action {
-    echo "Executing CI action"
 }
 
 # The rover stores the Azure sessions in a local rover/.azure subfolder
