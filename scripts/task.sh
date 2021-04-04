@@ -4,6 +4,7 @@
 
 function get_list_of_task {
   local ci_task_dir=$1
+
   local -a files=()
   for file in "${ci_task_dir}*.yml"
   do

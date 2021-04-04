@@ -1,4 +1,4 @@
-name: "terraform format"
+name: "terraform-format"
 executableName: "terraform"
 parameters:
   - name: disableColor
