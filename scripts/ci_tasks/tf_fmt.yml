@@ -1,6 +1,10 @@
 name: "terraform format"
 executableName: "terraform"
 parameters:
-  disableColor: false
-  listFiles: true
-  recursive: true
+  - name: disableColor
+    value: false
+  - name: listFiles
+    value: true
+  - name: recursive
+    value: true
+
