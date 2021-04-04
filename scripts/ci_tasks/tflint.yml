@@ -1,4 +1,5 @@
 name: tflint
 executableName: "tflint"
 parameters:
-  config: "~/.tflint.d/config/.tflint.hcl"
+  - name: config
+    value: "~/.tflint.d/config/.tflint.hcl"
