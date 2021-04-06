@@ -10,6 +10,10 @@ source /tf/rover/functions.sh
 source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/banner.sh
 
+# symphony
+source /tf/rover/ci.sh
+source /tf/rover/symphony_yaml.sh
+
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
 verify_rover_version

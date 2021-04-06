@@ -1,19 +1,48 @@
 #!/bin/bash
 
-source ./task.sh
-source ./symphony_yaml.sh
+source /tf/rover/task.sh
+source /tf/rover/symphony_yaml.sh
 
 declare -a CI_TASK_CONFIG_FILE_LIST=()
 declare -a REGISTERED_CI_TASKS=()
-declare CI_TASK_DIR=./ci_tasks/
+declare CI_TASK_DIR=/tf/rover/ci_tasks/
 declare SYMPHONY_YAML_FILE="../public/caf_orchestrators/symphony-all.yml"
+
+
+
+
+function verify_task_name(){
+    local ci_task_name=$1
+    local isTaskNameRegistered=$(task_is_registered "$ci_task_name")
+    if [ "$isTaskNameRegistered" != "true" ]; then
+        export code="1"
+        error "1" "$ci_task_name is not a registered ci command!"
+        return $code
+    fi
+}
 
 function verify_ci_parameters {
     echo "@Verifying ci parameters"
-    # Hattan
-    # verify symphony yaml file path
+
+    # verify symphony yaml
+    if [ -z "$symphony_yml_path" ]; then
+        export code="1"
+        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config"
+        return $code
+    fi
+
+    if [ ! -f "$symphony_yml_path" ]; then
+        export code="1"
+        error "1" "Invalid path, $symphony_yml_path file not found. Please provide a valid path to the file via -sc or--symphony-config"
+        return $code
+    fi
+
     # verify ci task configs
-    # if running single task, verify that task name is valid
+    verify_task_name "terraform-format"
+    verify_task_name "tflint"
+    if [ ! -z "$ci_task_name" ]; then
+        verify_task_name "$ci_task_name"
+    fi
 }
 
 function set_default_parameters {
@@ -41,13 +70,14 @@ function register_ci_tasks {
 
 function task_is_registered {
   local task_name=$1
-  for task in $REGISTERED_CI_TASKS
+  for task in "${REGISTERED_CI_TASKS[@]}"
   do
-    if [ $task eq $task_name ]; then
-      return 1
+    if [ "$task" == "$task_name" ]; then
+      echo "true"
+      return
     fi
   done
-  return 0
+  echo "false"
 }
 
 function execute_ci_actions {
