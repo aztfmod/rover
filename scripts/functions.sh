@@ -1,5 +1,4 @@
-source /tf/rover/ci.sh
-source /tf/rover/symphony_yaml.sh
+
 
 error() {
     local parent_lineno="$1"
@@ -88,8 +87,8 @@ function process_actions {
             deploy_tfc ${TF_VAR_workspace}
             ;;
         ci)
-            register_ci_tasks
             verify_ci_parameters
+            register_ci_tasks            
             set_default_parameters
             execute_ci_actions
             ;;

@@ -1,15 +1,20 @@
 #!/bin/bash
 
-source ./task.sh
+source /tf/rover/task.sh
 
 declare -a CI_TASK_CONFIG_FILE_LIST=()
 declare -a REGISTERED_CI_TASKS=()
-declare CI_TASK_DIR=./ci_tasks/
+declare CI_TASK_DIR=/tf/rover/ci_tasks/
 
 function verify_ci_parameters {
     echo "@Verifying ci parameters"
-    # Hattan
-    # verify symphony yaml file path
+    
+    if [ -z "$symphony_yml_path" ]; then        
+        export code="1"
+        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config" 
+        echo "here!"
+    fi
+
     # verify ci task configs
     # if running single task, verify that task name is valid
 }
