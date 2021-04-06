@@ -1,10 +1,12 @@
 #!/bin/bash
 
 source ./task.sh
+source ./symphony_yaml.sh
 
 declare -a CI_TASK_CONFIG_FILE_LIST=()
 declare -a REGISTERED_CI_TASKS=()
 declare CI_TASK_DIR=./ci_tasks/
+declare SYMPHONY_YAML_FILE="../public/caf_orchestrators/symphony-all.yml"
 
 function verify_ci_parameters {
     echo "@Verifying ci parameters"
@@ -52,14 +54,22 @@ function execute_ci_actions {
     echo "Executing CI action"
     # Richard
     # read levels
+  local -a levels=()
 
-    # for each level
-      # clone repos
-      # execute tasks
+  level_count=get_level_count $SYMPHONY_YAML_FILE
+
+  for (( i=0; i < $level_count; i++))
+  do
+    levels+=()
+  done
+
+  # for each level
+    # clone repos
+    # execute tasks
 
 }
 
-function clone_repo {
+function clone_repos {
   echo @"Cloning repo ${1}"
   # Richard
 }
