@@ -39,9 +39,9 @@ function run_task {
   local symphony_config_path=$3
 
   get_landingzone_path "$level" "$symphony_config_path"
-  local lz_path=$(get_landingzone_path_by_name "$level" "$symphony_config_path")
-  
+  local lz_path=$(get_landingzone_path_by_name "$symphony_config_path" "$level")
+
   echo @"Running task: $task_name for level:$level"
-  
+
 }
 

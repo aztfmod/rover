@@ -84,17 +84,23 @@ function execute_ci_actions {
     echo "Executing CI action"
     # Richard
 
-    run_task "tflint" "level0" "$symphony_yml_path"    
+    run_task "tflint" "level0" "$symphony_yml_path"
 
     local -a levels=($(get_all_level_names "$symphony_yml_path"))
     for level in "${levels[@]}"
     do
-        clone_repos "$level"
-        # get stack
-          # For each stack run tool
-        echo @"ci task execution - level: $level" 
-        run_task "tflint" "$level" "$symphony_yml_path"
-    done  
+        # get stacks
+        local -a stacks=($(get_all_stack_names_for_level "$symphony_yml_path" "$level" ))
+        for stack in "${stacks[@]}"
+        do
+          # For each stack run ci tools
+          landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yml_path" "$level" "$stack")
+
+          echo @"ci task execution - level: $level, stack: $stack at path: $landing_zone_path"
+          run_task "tflint" "$level" "$symphony_yml_path"
+        done
+
+    done
 }
 
 function clone_repos {
