@@ -32,3 +32,9 @@ function get_task_name {
 
   yq -r ".name" $1
 }
+
+function run_task {
+  local task_name=$1
+  echo @"Running task $task_name"
+}
+
