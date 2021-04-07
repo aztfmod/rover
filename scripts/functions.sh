@@ -87,8 +87,8 @@ function process_actions {
             deploy_tfc ${TF_VAR_workspace}
             ;;
         ci)
-            verify_ci_parameters
-            register_ci_tasks            
+            register_ci_tasks  
+            verify_ci_parameters                      
             set_default_parameters
             execute_ci_actions
             ;;
