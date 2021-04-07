@@ -94,6 +94,10 @@ while (( "$#" )); do
             export symphony_run_all_tasks=false
             shift 2
             ;;
+        -b|--base-dir)
+            export base_directory=${2}
+            shift 2
+            ;;            
         -tfc|--tfc)
             shift 1
             export caf_command="tfc"

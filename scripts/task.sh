@@ -35,6 +35,13 @@ function get_task_name {
 
 function run_task {
   local task_name=$1
-  echo @"Running task $task_name"
+  local level=$2
+  local symphony_config_path=$3
+
+  get_landingzone_path "$level" "$symphony_config_path"
+  local lz_path=$(get_landingzone_path_by_name "$level" "$symphony_config_path")
+  
+  echo @"Running task: $task_name for level:$level"
+  
 }
 

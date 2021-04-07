@@ -10,18 +10,26 @@ function get_level {
   echo $json
 }
 
+function get_level_by_name {
+  local symphony_yaml_file=$1
+  local level=$2
+  json=$(yq -r --arg level $level '.levels[] | select(.level == $level)' $symphony_yaml_file)
+  echo $json
+}
+
 function get_level_count {
     yq '.levels | length' $1
 }
 
 
-function get_all_levels {
+function get_all_level_names {
     echo  $(yq  -r -c '.levels[].level' $1)
 }
 
-function get_landing_zone_path {
-  local task_config_file_path=$1
-  local level=$2
-  
+function get_landingzone_path_by_name {
+  local level=$1
+  local symphony_config_path=$2
+  yq  -r -c '.levels[]' $symphony_config_path
+  get_landingzone_path "$level" "$symphony_config_path"
 }
 

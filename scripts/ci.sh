@@ -83,13 +83,17 @@ function task_is_registered {
 function execute_ci_actions {
     echo "Executing CI action"
     # Richard
-    
-    local -a levels=($(get_all_levels "$symphony_yml_path"))
+
+    run_task "tflint" "level0" "$symphony_yml_path"    
+
+    local -a levels=($(get_all_level_names "$symphony_yml_path"))
     for level in "${levels[@]}"
     do
         clone_repos "$level"
+        # get stack
+          # For each stack run tool
         echo @"ci task execution - level: $level" 
-        run_task "tflint" "$level"
+        run_task "tflint" "$level" "$symphony_yml_path"
     done  
 }
 
