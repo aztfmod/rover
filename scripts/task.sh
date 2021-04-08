@@ -5,6 +5,13 @@
 function get_list_of_task {
   local ci_task_dir=$1
 
+  if [ ! -d "$ci_task_dir" ]; then
+
+    export code="1"
+    error "1" "Invalid CI Directory path, $ci_task_dir not found."
+    return $code
+  fi
+
   local -a files=()
   for file in "${ci_task_dir}*.yml"
   do
