@@ -36,12 +36,29 @@ function get_task_name {
 function run_task {
   local task_name=$1
   local level=$2
-  local symphony_config_path=$3
+  local landing_zone_path=$3
+  local task_json=$(get_task_by_name "$task_name")
+  local task_executable=$(echo $task_json | jq -r '.executableName')  
+  local task_command=$(echo $task_json | jq -r '.command')  
+  echo @"Running task: $task_name for level:$level lz:$landing_zone_path task_command:$task_command"
+  
+  if [ ! -x "$(command -v $task_executable)" ]; then
+    export code="1"
+    error "1" "$task_executable is not installed!"
+  fi
 
-  get_landingzone_path "$level" "$symphony_config_path"
-  local lz_path=$(get_landingzone_path_by_name "$symphony_config_path" "$level")
+  if [ ! -z "$task_command" ]; then
+    task_executable="$task_executable $command"
+  fi
 
-  echo @"Running task: $task_name for level:$level"
+  pushd "$base_directory/$landing_zone_path"
+    echo @"executing $task_executable"
+    eval "$task_executable"
+  popd
+}
 
+function get_task_by_name {
+  local task_config_file=$1
+  echo $(yq -r "." "$CI_TASK_DIR/$1.yml")
 }
 

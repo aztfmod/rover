@@ -1,5 +1,6 @@
 name: "terraform-format"
 executableName: "terraform"
+command: "fmt"
 parameters:
   - name: disableColor
     value: false
