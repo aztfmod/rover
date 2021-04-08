@@ -4,3 +4,5 @@ subCommand : ""
 parameters:
   - name: config
     value: "~/.tflint.d/config/.tflint.hcl"
+flags: ""
+debug: false

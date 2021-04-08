@@ -39,16 +39,17 @@ function run_task {
   local task_json=$(get_task_by_name "$task_name")
   local task_executable=$(echo $task_json | jq -r '.executableName')  
   local task_sub_command=$(echo $task_json | jq -r '.subCommand')  
-  
+  local task_flags=$(echo $task_json | jq -r '.flags')  
+  local task_parameters=$(echo $task_json | jq -r '.parameters')  
+
   if [ ! -x "$(command -v $task_executable)" ]; then
     export code="1"
     error "1" "$task_executable is not installed!"
   fi
 
-  if [ ! -z "$task_sub_command" ]; then
-    task_executable="$task_executable $task_sub_command"
-  fi
-
+  task_executable="$task_executable $task_sub_command"
+  task_executable="$task_executable $task_flags"
+  echo $task_parameters
   pushd "$base_directory/$landing_zone_path"
     echo @"Running task: $task_executable for level:$level lz:$landing_zone_path"
     eval "$task_executable"
