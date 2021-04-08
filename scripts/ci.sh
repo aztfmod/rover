@@ -6,10 +6,6 @@ source /tf/rover/symphony_yaml.sh
 declare -a CI_TASK_CONFIG_FILE_LIST=()
 declare -a REGISTERED_CI_TASKS=()
 declare CI_TASK_DIR=/tf/rover/ci_tasks/
-declare SYMPHONY_YAML_FILE="../public/caf_orchestrators/symphony-all.yml"
-
-
-
 
 function verify_task_name(){
     local ci_task_name=$1
@@ -82,7 +78,7 @@ function task_is_registered {
 
 function execute_ci_actions {
     echo "Executing CI action"
-    
+
     local -a levels=($(get_all_level_names "$symphony_yml_path"))
     for level in "${levels[@]}"
     do
@@ -99,7 +95,7 @@ function execute_ci_actions {
             do
               run_task "$task" "$level" "$landing_zone_path"
             done
-          fi          
+          fi
         done
 
     done
@@ -107,5 +103,5 @@ function execute_ci_actions {
 
 function clone_repos {
   echo @"Cloning repo ${1}"
-  # Richard
+  # TODO: We will start with git clone prior to CI execution.
 }

@@ -1,0 +1,6 @@
+name: task1
+executableName: "task1executablename"
+command : ""
+parameters:
+  - name: config1
+    value: "value1"

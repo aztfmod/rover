@@ -5,6 +5,13 @@
 function get_list_of_task {
   local ci_task_dir=$1
 
+  if [ ! -d "$ci_task_dir" ]; then
+
+    export code="1"
+    error "1" "Invalid CI Directory path, $ci_task_dir not found."
+    return $code
+  fi
+
   local -a files=()
   for file in "${ci_task_dir}*.yml"
   do
@@ -38,10 +45,10 @@ function run_task {
   local level=$2
   local landing_zone_path=$3
   local task_json=$(get_task_by_name "$task_name")
-  local task_executable=$(echo $task_json | jq -r '.executableName')  
-  local task_command=$(echo $task_json | jq -r '.command')  
+  local task_executable=$(echo $task_json | jq -r '.executableName')
+  local task_command=$(echo $task_json | jq -r '.command')
   echo @"Running task: $task_name for level:$level lz:$landing_zone_path task_command:$task_command"
-  
+
   if [ ! -x "$(command -v $task_executable)" ]; then
     export code="1"
     error "1" "$task_executable is not installed!"
