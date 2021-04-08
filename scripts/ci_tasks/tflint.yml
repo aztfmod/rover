@@ -1,6 +1,6 @@
 name: tflint
 executableName: "tflint"
-command : ""
+subCommand : ""
 parameters:
   - name: config
     value: "~/.tflint.d/config/.tflint.hcl"

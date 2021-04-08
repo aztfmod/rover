@@ -29,7 +29,6 @@ function get_task_parameters_json {
 
 function get_task_name {
   local task_config_file_path=$1
-
   yq -r ".name" $1
 }
 
@@ -39,20 +38,19 @@ function run_task {
   local landing_zone_path=$3
   local task_json=$(get_task_by_name "$task_name")
   local task_executable=$(echo $task_json | jq -r '.executableName')  
-  local task_command=$(echo $task_json | jq -r '.command')  
-  echo @"Running task: $task_name for level:$level lz:$landing_zone_path task_command:$task_command"
+  local task_sub_command=$(echo $task_json | jq -r '.subCommand')  
   
   if [ ! -x "$(command -v $task_executable)" ]; then
     export code="1"
     error "1" "$task_executable is not installed!"
   fi
 
-  if [ ! -z "$task_command" ]; then
-    task_executable="$task_executable $command"
+  if [ ! -z "$task_sub_command" ]; then
+    task_executable="$task_executable $task_sub_command"
   fi
 
   pushd "$base_directory/$landing_zone_path"
-    echo @"executing $task_executable"
+    echo @"Running task: $task_executable for level:$level lz:$landing_zone_path"
     eval "$task_executable"
   popd
 }
