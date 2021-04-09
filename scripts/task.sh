@@ -31,7 +31,7 @@ function get_task_attribute {
 function get_task_parameters_json {
   local task_config_file_path=$1
 
-  yq ".parameters" $1
+  yq -c ".parameters" $1
 }
 
 function get_task_name {
