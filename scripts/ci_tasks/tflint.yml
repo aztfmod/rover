@@ -2,7 +2,8 @@ name: tflint
 executableName: "tflint"
 subCommand : ""
 parameters:
-  - name: config
-    value: "~/.tflint.d/config/.tflint.hcl"
+  - name: "config"
+    value: "/home/hattan/.tflint.d/config/.tflint.hcl"
+    prefix: "--"
 flags: ""
 debug: false

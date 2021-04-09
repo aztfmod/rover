@@ -39,6 +39,30 @@ function get_task_name {
   yq -r ".name" $1
 }
 
+function format_task_parameters {
+  local task_parameters=$1
+  local result=""
+  for row in $(echo "${task_parameters}" | jq -r '.[] | @base64'); do
+    local parameter=$(echo ${row} | base64 --decode)
+    local name=$(echo ${parameter} | jq -r '.name')
+    local value=$(echo ${parameter} | jq -r '.value')
+    local prefix=$(echo ${parameter} | jq -r '.prefix')
+    result="$foo $prefix$name=$value"
+  done  
+  echo $result
+}
+
+function append {
+  local string=$1
+  local part=$2
+
+  if [ ! -z "$part" ]; then
+    echo "$string $part"
+  else
+    echo "$string"
+  fi
+}
+
 function run_task {
   local task_name=$1
   local level=$2
@@ -53,14 +77,18 @@ function run_task {
     export code="1"
     error "1" "$task_executable is not installed!"
   fi
-
-  task_executable="$task_executable $task_sub_command"
-  task_executable="$task_executable $task_flags"
-  echo $task_parameters
-  pushd "$base_directory/$landing_zone_path"
-    echo @"Running task: $task_executable for level:$level lz:$landing_zone_path"
+ 
+  task_executable=$(append $task_executable $task_sub_command)
+  task_executable=$(append "$task_executable" "$task_flags")
+  task_executable="$task_executable $(format_task_parameters "$task_parameters")"
+  
+  echo " Running task: $task_executable"
+  echo " lz folder: $base_directory/$landing_zone_path"
+  
+  pushd "$base_directory/$landing_zone_path"  > /dev/null
     eval "$task_executable"
-  popd
+  popd > /dev/null
+  echo " "
 }
 
 function get_task_by_name {

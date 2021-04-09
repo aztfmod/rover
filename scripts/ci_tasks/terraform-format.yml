@@ -4,7 +4,9 @@ subCommand: "fmt"
 parameters:
   - name: list
     value: true
+    prefix: "-"
   - name: write
     value: false
-flags: "-no-color -recursive -check -diff -write=false"
+    prefix: "-"
+flags: "-no-color -recursive -check -diff"
 debug: false

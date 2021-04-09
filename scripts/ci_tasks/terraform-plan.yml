@@ -1,0 +1,6 @@
+name: "terraform-plan"
+executableName: "terraform"
+subCommand: "plan"
+parameters: ""
+flags: ""
+debug: false
