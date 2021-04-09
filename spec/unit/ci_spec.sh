@@ -11,7 +11,7 @@ Describe 'ci.sh'
 
     Context "No Symphony Yaml Provided"
       setup() {
-        unset symphony_yml_path
+        unset symphony_yaml_file
       }
       BeforeEach 'setup'
 
@@ -25,7 +25,7 @@ Describe 'ci.sh'
 
     Context "Symphony Yaml Provided, invalid file"
       setup() {
-        export symphony_yml_path="spec/harness/symphony2.yml"
+        export symphony_yaml_file="spec/harness/symphony2.yml"
       }
       BeforeEach 'setup'
 
@@ -42,7 +42,7 @@ Describe 'ci.sh'
       Describe "tasks registered"
         setup() {
           register_ci_tasks # > /dev/null 2>&1
-          export symphony_yml_path="spec/harness/symphony.yml"
+          export symphony_yaml_file="spec/harness/symphony.yml"
         }
         Before 'setup'
 
@@ -58,7 +58,7 @@ Describe 'ci.sh'
         setup() {
           CI_TASK_CONFIG_FILE_LIST=()
           REGISTERED_CI_TASKS=()
-          export symphony_yml_path="spec/harness/symphony.yml"
+          export symphony_yaml_file="spec/harness/symphony.yml"
         }
         Before 'setup'
 
@@ -92,7 +92,7 @@ Error line:1: message:tflint is not a registered ci command! status :1'
       }
 
       setup() {
-        export symphony_yml_path="spec/harness/symphony.yml"
+        export symphony_yaml_file="spec/harness/symphony.yml"
       }
       Before 'setup'
 

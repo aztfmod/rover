@@ -21,15 +21,15 @@ function verify_ci_parameters {
     echo "@Verifying ci parameters"
 
     # verify symphony yaml
-    if [ -z "$symphony_yml_path" ]; then
+    if [ -z "$symphony_yaml_file" ]; then
         export code="1"
         error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config"
         return $code
     fi
 
-    if [ ! -f "$symphony_yml_path" ]; then
+    if [ ! -f "$symphony_yaml_file" ]; then
         export code="1"
-        error "1" "Invalid path, $symphony_yml_path file not found. Please provide a valid path to the file via -sc or--symphony-config"
+        error "1" "Invalid path, $symphony_yaml_file file not found. Please provide a valid path to the file via -sc or--symphony-config"
         return $code
     fi
 
@@ -44,7 +44,7 @@ function verify_ci_parameters {
 function set_default_parameters {
     echo "@Setting default parameters"
     export caf_command="landingzone"
-    
+
     # export landingzone_name=<landing_zone_path>
     # export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
 
@@ -85,15 +85,15 @@ function task_is_registered {
 function execute_ci_actions {
     echo @"Executing CI action"
 
-    local -a levels=($(get_all_level_names "$symphony_yml_path"))
+    local -a levels=($(get_all_level_names "$symphony_yaml_file"))
     for level in "${levels[@]}"
     do
-        local -a stacks=($(get_all_stack_names_for_level "$symphony_yml_path" "$level" ))
+        local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
         for stack in "${stacks[@]}"
         do
-          landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yml_path" "$level" "$stack")
-          config_path=$(get_config_path_for_stack "$symphony_yml_path" "$level" "$stack")
-          
+          landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level" "$stack")
+          config_path=$(get_config_path_for_stack "$symphony_yaml_file" "$level" "$stack")
+
           if [ ! -z "$ci_task_name" ]; then
             # run a single task by name
             run_task "$ci_task_name" "$level" "$landing_zone_path" "$config_path"

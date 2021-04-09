@@ -86,7 +86,7 @@ while (( "$#" )); do
             export devops="true"
             ;;
         -sc|--symphony-config)
-            export symphony_yml_path=${2}
+            export symphony_yaml_file=${2}
             shift 2
             ;;
         -ct|--ci-task-name)
@@ -97,7 +97,7 @@ while (( "$#" )); do
         -b|--base-dir)
             export base_directory=${2}
             shift 2
-            ;;            
+            ;;
         -tfc|--tfc)
             shift 1
             export caf_command="tfc"
@@ -194,7 +194,7 @@ echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
 echo "target subscription           : '$(echo ${target_subscription_name})'"
 echo "CI/CD enabled                 : '$(echo ${devops})'"
-echo "Symphony Yaml file path       : '$(echo ${symphony_yml_path})'"
+echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
 echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
 if [ $symphony_run_all_tasks == false ]; then
     echo "Running task                  : '$(echo ${ci_task_name})'"
