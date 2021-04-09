@@ -74,7 +74,7 @@ function validate {
   local symphony_yaml_file=$1
 
   local -a levels=($(get_all_level_names "$symphony_yaml_file"))
-
+  local -a results=()
   # for each level and each stack within the level
   #   Validate path exist for lz and config
   #   For stack config path, check at least 1 .tfvars exist
@@ -85,15 +85,31 @@ function validate {
     local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
     for stack in "${stacks[@]}"
     do
-      test=$(check_landing_zone_paths "$symphony_yaml_file" "$level" "$stack")
+      # test landing zone path
+      test_lz=$(check_landing_zone_path_exists "$symphony_yaml_file" "$level" "$stack")
 
+      if [ $test_lz == 'false' ]; then
+        results+=("Level '${level}' - Stack '$stack' has invalid landing zone path.")
+      fi
+
+      # test configuration path
+      test_config=$(check_configuration_path_exists "$symphony_yaml_file" "$level" "$stack")
+
+      if [ $test_config == 'false' ]; then
+        results+=("Level '${level}' - Stack '$stack' has invalid configuration folder path.")
+      fi
     done
   done
 
+  if [[ ${#results[@]} -gt 0 ]]; then
+    echo "${results[*]}"
+    return 1
+  fi
 
+  echo "All symphnoy.yml paths valid"
 }
 
-function check_landing_zone_paths {
+function check_landing_zone_path_exists {
   local symphony_yaml_file=$1
   local level_name=$2
   local stack_name=$3
