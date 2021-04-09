@@ -4,3 +4,4 @@ subCommand: "validate"
 parameters: ""
 flags: ""
 debug: false
+requiresInit: true

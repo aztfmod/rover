@@ -10,3 +10,4 @@ parameters:
     prefix: "-"
 flags: "-no-color -recursive -check -diff"
 debug: false
+requiresInit: false

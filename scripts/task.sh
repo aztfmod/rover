@@ -67,28 +67,43 @@ function run_task {
   local task_name=$1
   local level=$2
   local landing_zone_path=$3
+  local config_path=$4
   local task_json=$(get_task_by_name "$task_name")
   local task_executable=$(echo $task_json | jq -r '.executableName')  
   local task_sub_command=$(echo $task_json | jq -r '.subCommand')  
   local task_flags=$(echo $task_json | jq -r '.flags')  
   local task_parameters=$(echo $task_json | jq -r '.parameters')  
+  local task_requires_init=$(echo $task_json | jq -r '.requiresInit')  
 
   if [ ! -x "$(command -v $task_executable)" ]; then
     export code="1"
     error "1" "$task_executable is not installed!"
   fi
- 
-  task_executable=$(append $task_executable $task_sub_command)
-  task_executable=$(append "$task_executable" "$task_flags")
-  task_executable="$task_executable $(format_task_parameters "$task_parameters")"
   
-  echo " Running task: $task_executable"
-  echo " lz folder: $base_directory/$landing_zone_path"
-  
-  pushd "$base_directory/$landing_zone_path"  > /dev/null
-    eval "$task_executable"
-  popd > /dev/null
-  echo " "
+   if [ "$task_requires_init" == "true" ]; then
+    export landingzone_name="$base_directory/$landing_zone_path"
+    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
+    expand_tfvars_folder "$base_directory/$config_path"    
+  fi
+
+  echo " Running task        : $task_executable"
+  echo " sub command         : $task_sub_command"
+  echo " landing zone folder : $base_directory/$landing_zone_path"
+  echo " config folder       : $base_directory/$config_path"
+
+  if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
+    export tf_action="$task_sub_command"
+    deploy ${TF_VAR_workspace}
+  else
+    task_executable=$(append $task_executable $task_sub_command)
+    task_executable=$(append "$task_executable" "$task_flags")
+    task_executable="$task_executable $(format_task_parameters "$task_parameters")"
+          
+    pushd "$base_directory/$landing_zone_path"  > /dev/null
+      eval "$task_executable"
+    popd > /dev/null
+    echo " "
+  fi
 }
 
 function get_task_by_name {

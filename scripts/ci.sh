@@ -43,8 +43,14 @@ function verify_ci_parameters {
 
 function set_default_parameters {
     echo "@Setting default parameters"
-    # Hattan
-    # TODO: Investigate if we need any of these for CI
+    export caf_command="landingzone"
+    
+    # export landingzone_name=<landing_zone_path>
+    # export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
+
+    # export tf_action=<action name plan|apply|validate>
+    # expand_tfvars_folder <var folder path>
+    # deploy ${TF_VAR_workspace}
 }
 
 function register_ci_tasks {
@@ -86,14 +92,16 @@ function execute_ci_actions {
         for stack in "${stacks[@]}"
         do
           landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yml_path" "$level" "$stack")
+          config_path=$(get_config_path_for_stack "$symphony_yml_path" "$level" "$stack")
+          
           if [ ! -z "$ci_task_name" ]; then
             # run a single task by name
-            run_task "$ci_task_name" "$level" "$landing_zone_path"
+            run_task "$ci_task_name" "$level" "$landing_zone_path" "$config_path"
           else
             # run all tasks
             for task in "${REGISTERED_CI_TASKS[@]}"
             do
-              run_task "$task" "$level" "$landing_zone_path"
+              run_task "$task" "$level" "$landing_zone_path" "$config_path"
             done
           fi
         done

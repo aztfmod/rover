@@ -7,3 +7,4 @@ parameters:
     prefix: "--"
 flags: ""
 debug: false
+requiresInit: false
