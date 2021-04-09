@@ -168,8 +168,8 @@ RUN apt-get update && \
     # Patch
     # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
     #
-    for i in  $(cat ./.pip_to_patch_latest); do pip3 install $i --upgrade; done && \
-    #
+    for i in  $(cat .pip_to_patch_latest); do pip3 install $i --upgrade; done && \
+    apt-get upgrade -y && \
     # Clean-up
     #
     apt-get remove -y \
