@@ -21,7 +21,7 @@ Describe 'task.sh'
     Context "Detect 2 tasks"
         It 'should return no errors if task.yml files exist in the provided directory path'
           When call get_list_of_task 'spec/harness/ci_tasks/'
-          The output should eq 'spec/harness/ci_tasks/task1.yml spec/harness/ci_tasks/task2.yml'
+          The output should eq 'spec/harness/ci_tasks/task1.yml spec/harness/ci_tasks/task2.yml spec/harness/ci_tasks/task3.yml'
           The status should eq 0
         End
       End

@@ -36,8 +36,10 @@ function get_landingzone_path_for_stack {
   local level_name=$2
   local stack_name=$3
 
-  echo $(yq -r -c --arg level $level_name --arg stack $stack_name \
+  relativePath=$(yq -r -c --arg level $level_name --arg stack $stack_name \
     '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack) | .landingZonePath' $symphony_yaml_file)
+
+  echo "${base_directory}/${relativePath}"
 }
 
 function get_config_path_for_stack {
@@ -45,8 +47,10 @@ function get_config_path_for_stack {
   local level_name=$2
   local stack_name=$3
 
-  echo $(yq -r -c --arg level $level_name --arg stack $stack_name \
+  relativePath=$(yq -r -c --arg level $level_name --arg stack $stack_name \
     '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack) | .configurationPath' $symphony_yaml_file)
+
+  echo "${base_directory}/${relativePath}"
 }
 
 function get_all_stack_names_for_level {
@@ -64,4 +68,68 @@ function get_stack_by_name_for_level {
   json=$(yq -r -c --arg level $level_name --arg stack $stack_name \
     '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack)' $symphony_yaml_file)
   echo $json
+}
+
+function validate {
+  local symphony_yaml_file=$1
+
+  local -a levels=($(get_all_level_names "$symphony_yml_path"))
+
+  # for each level and each stack within the level
+  #   Validate path exist for lz and config
+  #   For stack config path, check at least 1 .tfvars exist
+  #   For lz config path, check at least 1 .tf file exist
+
+  for level in "${levels[@]}"
+  do
+    local -a stacks=($(get_all_stack_names_for_level "$symphony_yml_path" "$level" ))
+    for stack in "${stacks[@]}"
+    do
+      test=$(check_landing_zone_paths "$symphony_yml_path" "$level" "$stack")
+
+    done
+  done
+
+
+}
+
+function check_landing_zone_paths {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
+
+  landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yml_path" "$level" "$stack")
+
+  if [[ ! -d $landing_zone_path ]]; then
+    return 0
+  fi
+
+  # path exists
+  return 1
+}
+
+function check_configuration_path_exists {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
+
+  config_path=$(get_config_path_for_stack "$symphony_yml_path" "$level" "$stack")
+
+  if [[ ! -d $config_path ]]; then
+    return 0
+  fi
+
+  # path exists
+  return 1
+}
+
+function check_tfvars_exists {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
+}
+function check_tf_exists {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
 }

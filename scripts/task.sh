@@ -81,16 +81,15 @@ function run_task {
   fi
 
    if [ "$task_requires_init" == "true" ]; then
-    export landingzone_name="$base_directory/$landing_zone_path"
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
-    expand_tfvars_folder "$base_directory/$config_path"
+    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landing_zone_path}).tfstate"}
+    expand_tfvars_folder "$config_path"
   fi
 
   echo " Running task        : $task_executable"
   echo " sub command         : $task_sub_command"
   echo " task init required  : $task_requires_init"
-  echo " landing zone folder : $base_directory/$landing_zone_path"
-  echo " config folder       : $base_directory/$config_path"
+  echo " landing zone folder : $landing_zone_path"
+  echo " config folder       : $config_path"
 
   if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
     export tf_action="$task_sub_command"
@@ -100,7 +99,7 @@ function run_task {
     task_executable=$(append "$task_executable" "$task_flags")
     task_executable="$task_executable $(format_task_parameters "$task_parameters")"
 
-    pushd "$base_directory/$landing_zone_path"  > /dev/null
+    pushd "$landing_zone_path"  > /dev/null
       eval "$task_executable"
     popd > /dev/null
     echo " "
