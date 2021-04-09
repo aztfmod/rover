@@ -26,4 +26,36 @@ Describe 'task.sh'
         End
       End
   End
+
+  Describe "format_task_parameters"
+    Context "Invalid Json"
+
+      It 'should return an error that the JSON is invalid'
+        When call format_task_parameters "Invalid Json"
+        The error should eq 'parse error: Invalid numeric literal at line 1, column 8'
+        The output should eq ''
+      End
+    End
+
+    Context "Valid Json without prefix"
+
+      It 'should return valid parameters'
+        When call format_task_parameters $(get_task_parameters_json spec/harness/ci_tasks/task1.yml)
+        The error should eq ''
+        The output should eq 'config1=value1'
+      End
+    End
+
+    Context "Valid Json w/ prefix"
+
+      It 'should return valid parameters with prefix'
+        When call format_task_parameters $(get_task_parameters_json spec/harness/ci_tasks/task2.yml)
+        The error should eq ''
+        The output should eq '--config2=value2'
+      End
+    End
+  End
+
+  Describe ""
+  End
 End

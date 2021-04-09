@@ -98,7 +98,7 @@ Error line:1: message:tflint is not a registered ci command! status :1'
 
       It 'should return no errors'
         When call execute_ci_actions
-        The output should eq "Executing CI action"
+        The output should eq "@Executing CI action"
         The error should eq ''
         The status should eq 0
       End
