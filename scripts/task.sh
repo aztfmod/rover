@@ -83,6 +83,7 @@ function run_task {
    if [ "$task_requires_init" == "true" ]; then
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landing_zone_path}).tfstate"}
     expand_tfvars_folder "$config_path"
+    tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
   fi
 
   echo " Running task        : $task_executable"
@@ -90,7 +91,7 @@ function run_task {
   echo " task init required  : $task_requires_init"
   echo " landing zone folder : $landing_zone_path"
   echo " config folder       : $config_path"
-
+  echo " PARAMS              : $PARAMS"
   if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
     export tf_action="$task_sub_command"
     deploy ${TF_VAR_workspace}

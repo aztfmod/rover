@@ -343,6 +343,9 @@ function deploy_landingzone {
             echo "calling destroy"
             destroy
             ;;
+        "init")
+            echo "init no-op"            
+            ;;            
         *)
             other
             ;;
