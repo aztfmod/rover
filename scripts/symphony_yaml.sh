@@ -98,6 +98,20 @@ function validate {
       if [ $test_config == 'false' ]; then
         results+=("Level '${level}' - Stack '$stack' has invalid configuration folder path.")
       fi
+
+      # test if tf files exist in landing zone
+      test_lz_files=$(check_tf_exists "$symphony_yaml_file" "$level" "$stack")
+
+      if [ $test_lz_files == 'false' ]; then
+        results+=("Level '${level}' - Stack '$stack', no .tf files found in landing zone.")
+      fi
+
+      # test if tfvars files exist in configuration directory
+      test_config_files=$(check_tfvars_exists "$symphony_yaml_file" "$level" "$stack")
+
+      if [ $test_config_files == 'false' ]; then
+        results+=("Level '${level}' - Stack '$stack', no .tfvars files found in configuration folder.")
+      fi
     done
   done
 
@@ -107,6 +121,8 @@ function validate {
   fi
 
   echo "All symphnoy.yml paths valid"
+  return 0
+
 }
 
 function check_landing_zone_path_exists {
@@ -148,9 +164,31 @@ function check_tfvars_exists {
   local symphony_yaml_file=$1
   local level_name=$2
   local stack_name=$3
+
+  config_path=$(get_config_path_for_stack $symphony_yaml_file $level_name $stack_name)
+
+  local files=(${config_path}*.tfvars)
+
+  if [[ ${#files[@]} -gt 0 ]]; then
+    echo true
+    return
+  fi
+
+  echo false
 }
 function check_tf_exists {
   local symphony_yaml_file=$1
   local level_name=$2
   local stack_name=$3
+
+  landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level_name" "$stack_name")
+
+  local files=(${landing_zone_path}*.tf)
+
+  if [[ ${#files[@]} -gt 0 ]]; then
+    echo true
+    return
+  fi
+
+  echo false
 }
