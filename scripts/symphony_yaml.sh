@@ -148,9 +148,31 @@ function check_tfvars_exists {
   local symphony_yaml_file=$1
   local level_name=$2
   local stack_name=$3
+
+  config_path=$(get_config_path_for_stack $symphony_yaml_file $level_name $stack_name)
+
+  local files=(${config_path}*.tfvars)
+
+  if [[ ${#files[@]} -gt 0 ]]; then
+    echo true
+    return
+  fi
+
+  echo false
 }
 function check_tf_exists {
   local symphony_yaml_file=$1
   local level_name=$2
   local stack_name=$3
+
+  landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level_name" "$stack_name")
+
+  local files=(${landing_zone_path}*.tf)
+
+  if [[ ${#files[@]} -gt 0 ]]; then
+    echo true
+    return
+  fi
+
+  echo false
 }
