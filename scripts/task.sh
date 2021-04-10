@@ -86,12 +86,16 @@ function run_task {
     tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
   fi
 
-  echo " Running task        : $task_executable"
-  echo " sub command         : $task_sub_command"
-  echo " task init required  : $task_requires_init"
-  echo " landing zone folder : $landing_zone_path"
-  echo " config folder       : $config_path"
-  echo " PARAMS              : $PARAMS"
+  debug ""
+  debug " Running task        : $task_executable"
+  debug " sub command         : $task_sub_command"
+  debug " task init required  : $task_requires_init"
+  debug " landing zone folder : $landing_zone_path"
+  debug " config folder       : $config_path"
+  debug " flags               : $task_flags"
+  debug " parameters          : $(format_task_parameters "$task_parameters")"
+  debug " var files           : $PARAMS"
+
   if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
     export tf_action="$task_sub_command"
     deploy ${TF_VAR_workspace}
@@ -101,10 +105,23 @@ function run_task {
     task_executable="$task_executable $(format_task_parameters "$task_parameters")"
 
     pushd "$landing_zone_path"  > /dev/null
-      eval "$task_executable"
+      information "\n - running tool : $task_executable" 
+      information "        lz path : $landing_zone_path"
+      
+      execute "$task_executable"
+
+      local status_code="$?"
+      if [ "$status_code" == "0" ]; then
+        success " - $task_name completed successfully with no issues. (status code: $status_code)"
+      fi
+
     popd > /dev/null
-    echo " "
   fi
+}
+
+function execute {
+  local task=$1
+  eval "$task"
 }
 
 function get_task_by_name {

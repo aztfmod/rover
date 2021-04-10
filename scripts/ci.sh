@@ -33,6 +33,7 @@ function verify_ci_parameters {
         return $code
     fi
 
+    validate "$symphony_yaml_file"
     # verify ci task configs
     verify_task_name "terraform-format"
     verify_task_name "tflint"
@@ -83,7 +84,7 @@ function task_is_registered {
 }
 
 function execute_ci_actions {
-    echo @"Executing CI action"
+    echo @"Starting CI tools execution:"
 
     local -a levels=($(get_all_level_names "$symphony_yaml_file"))
     for level in "${levels[@]}"
@@ -103,9 +104,9 @@ function execute_ci_actions {
             do
               run_task "$task" "$level" "$landing_zone_path" "$config_path"
             done
+            echo " "
           fi
         done
-
     done
 }
 

@@ -71,6 +71,7 @@ function get_stack_by_name_for_level {
 }
 
 function validate {
+  information "\n@ starting validation of symphony yaml. path: $symphony_yaml_file"
   local symphony_yaml_file=$1
 
   local -a levels=($(get_all_level_names "$symphony_yaml_file"))
@@ -79,6 +80,7 @@ function validate {
   #   Validate path exist for lz and config
   #   For stack config path, check at least 1 .tfvars exist
   #   For lz config path, check at least 1 .tf file exist
+  local code=0
 
   for level in "${levels[@]}"
   do
@@ -89,38 +91,43 @@ function validate {
       test_lz=$(check_landing_zone_path_exists "$symphony_yaml_file" "$level" "$stack")
 
       if [ $test_lz == 'false' ]; then
-        results+=("Level '${level}' - Stack '$stack' has invalid landing zone path.")
+        code=1
+        error_message "  - error: Level '${level}' - Stack '$stack' has invalid landing zone path."
       fi
 
       # test configuration path
       test_config=$(check_configuration_path_exists "$symphony_yaml_file" "$level" "$stack")
 
       if [ $test_config == 'false' ]; then
-        results+=("Level '${level}' - Stack '$stack' has invalid configuration folder path.")
+        code=1
+        error_message "  - error: Level '${level}' - Stack '$stack' has invalid configuration folder path."
       fi
 
       # test if tf files exist in landing zone
       test_lz_files=$(check_tf_exists "$symphony_yaml_file" "$level" "$stack")
 
       if [ $test_lz_files == 'false' ]; then
-        results+=("Level '${level}' - Stack '$stack', no .tf files found in landing zone.")
+        code=1
+        error_message "  - error: Level '${level}' - Stack '$stack', no .tf files found in landing zone."
       fi
 
       # test if tfvars files exist in configuration directory
       test_config_files=$(check_tfvars_exists "$symphony_yaml_file" "$level" "$stack")
 
       if [ $test_config_files == 'false' ]; then
-        results+=("Level '${level}' - Stack '$stack', no .tfvars files found in configuration folder.")
+        code=1
+        error_message "  - error: Level '${level}' - Stack '$stack', no .tfvars files found in configuration folder."
       fi
     done
   done
 
-  if [[ ${#results[@]} -gt 0 ]]; then
-    echo "${results[*]}"
+  if [ "$code" != "0" ]; then
+    echo ""
+    error "" "$symphony_yaml_file contains invalid paths."
     return 1
   fi
 
-  echo "All symphnoy.yml paths valid"
+  success "  All paths in $symphony_yaml_file are valid. \n"
   return 0
 
 }
@@ -131,7 +138,7 @@ function check_landing_zone_path_exists {
   local stack_name=$3
 
   landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level_name" "$stack_name")
-
+  
   if [[ ! -d $landing_zone_path ]]; then
     # path does not exist
     echo false

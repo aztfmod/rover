@@ -27,6 +27,7 @@ export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export symphony_run_all_tasks=true
+export debug_mode=${debug_mode:="false"}
 
 unset PARAMS
 
@@ -50,6 +51,10 @@ while (( "$#" )); do
         -c|--cloud)
             export cloud_name=${2}
             shift 2
+            ;;
+        -d|--debug)
+            export debug_mode="true"
+            shift 1
             ;;
         -a|--action)
             export tf_action=${2}

@@ -4,10 +4,15 @@ error() {
     local parent_lineno="$1"
     local message="$2"
 
+    local line_message=""
+    if [ "$parent_lineno" != "" ]; then
+      line_message="on or near line ${parent_lineno}"
+    fi
+
     if [[ -n "$message" ]] ; then
-        >&2 echo -e "\e[41mError on or near line ${parent_lineno}: ${message}; exiting with status ${code}\e[0m"
+        >&2 echo -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
     else
-        >&2 echo -e "\e[41mError on or near line ${parent_lineno}; exiting with status ${code}\e[0m"
+        >&2 echo -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
     fi
     echo ""
 
@@ -15,6 +20,27 @@ error() {
 
     exit "${code}"
 }
+
+error_message() {
+  >&2 printf "\e[91m$@\n\e[0m"  
+}
+
+
+debug() {
+  local message=$1
+  if [ "$debug_mode" == "true" ]; then
+    echo "$message"
+  fi    
+}
+
+information() {
+    printf "\e[36m$@\n\e[0m"
+}
+
+success() {
+    printf "\e[32m$@\n\e[0m"
+}
+
 
 exit_if_error() {
   local exit_code=$1
