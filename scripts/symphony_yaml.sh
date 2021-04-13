@@ -70,12 +70,13 @@ function get_stack_by_name_for_level {
   echo $json
 }
 
-function validate {
+function validate_symphony {
   information "\n@ starting validation of symphony yaml. path: $symphony_yaml_file"
   local symphony_yaml_file=$1
 
   local -a levels=($(get_all_level_names "$symphony_yaml_file"))
   local -a results=()
+
   # for each level and each stack within the level
   #   Validate path exist for lz and config
   #   For stack config path, check at least 1 .tfvars exist
@@ -84,9 +85,11 @@ function validate {
 
   for level in "${levels[@]}"
   do
+    
     local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
     for stack in "${stacks[@]}"
     do
+
       # test landing zone path
       test_lz=$(check_landing_zone_path_exists "$symphony_yaml_file" "$level" "$stack")
 
