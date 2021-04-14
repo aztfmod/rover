@@ -1,5 +1,6 @@
 Describe 'ci.sh'
   Include scripts/ci.sh
+  Include scripts/functions.sh
   Describe "verify_ci_parameters"
     #Function Mocks
     error() {
@@ -26,6 +27,7 @@ Describe 'ci.sh'
     Context "Symphony Yaml Provided, invalid file"
       setup() {
         export symphony_yaml_file="spec/harness/symphony2.yml"
+        export base_directory="."
       }
       BeforeEach 'setup'
 
@@ -43,12 +45,14 @@ Describe 'ci.sh'
         setup() {
           register_ci_tasks # > /dev/null 2>&1
           export symphony_yaml_file="spec/harness/symphony.yml"
+          export base_directory="."
         }
-        Before 'setup'
+        BeforeEach 'setup'
 
         It 'should return no errors if symphony yaml is valid and ci tasks are registered'
           When call verify_ci_parameters
-          The output should eq '@Verifying ci parameters'
+          The output should include '@Verifying ci parameters'
+          The output should include '@ starting validation of symphony yaml. path:'
           The error should eq ''
           The status should eq 0
         End
@@ -59,14 +63,15 @@ Describe 'ci.sh'
           CI_TASK_CONFIG_FILE_LIST=()
           REGISTERED_CI_TASKS=()
           export symphony_yaml_file="spec/harness/symphony.yml"
+          export base_directory="."
         }
         Before 'setup'
 
         It 'should return no errors if symphony yaml is valid and ci tasks are registered'
           When call verify_ci_parameters
-          The error should eq 'Error line:1: message:terraform-format is not a registered ci command! status :1
+          The error should include 'Error line:1: message:terraform-format is not a registered ci command! status :1
 Error line:1: message:tflint is not a registered ci command! status :1'
-          The output should eq '@Verifying ci parameters'
+          The output should include '@Verifying ci parameters'
           The status should eq 0
         End
       End
@@ -93,12 +98,14 @@ Error line:1: message:tflint is not a registered ci command! status :1'
 
       setup() {
         export symphony_yaml_file="spec/harness/symphony.yml"
+        export base_directory="."
       }
       Before 'setup'
 
       It 'should return no errors'
         When call execute_ci_actions
-        The output should eq "@Executing CI action"
+        The output should eq "@Starting CI tools execution
+ "
         The error should eq ''
         The status should eq 0
       End

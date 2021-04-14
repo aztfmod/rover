@@ -84,7 +84,7 @@ function task_is_registered {
 }
 
 function execute_ci_actions {
-    echo @"Starting CI tools execution:"
+    echo "@Starting CI tools execution"
 
     local -a levels=($(get_all_level_names "$symphony_yaml_file"))
     for level in "${levels[@]}"
