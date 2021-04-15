@@ -6,8 +6,8 @@
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 source /tf/rover/clone.sh
-source /tf/rover/functions.sh
 source /tf/rover/tfstate_azurerm.sh
+source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
@@ -166,5 +166,7 @@ echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
 echo "target subscription           : '$(echo ${target_subscription_name})'"
 echo ""
+
+export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
 process_actions

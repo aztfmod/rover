@@ -305,16 +305,18 @@ function deploy_landingzone {
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-    terraform init  -reconfigure=true \
-        -backend=true \
-        -get-plugins=true \
-        -upgrade=true \
-        -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
-        -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
-        -backend-config container_name=${TF_VAR_workspace} \
-        -backend-config key=${TF_VAR_tf_name} \
-        -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
-        ${landingzone_name}
+    terraform_init_remote
+
+    # terraform init -reconfigure=true \
+    #     -backend=true \
+    #     -get-plugins=true \
+    #     -upgrade=true \
+    #     -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
+    #     -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
+    #     -backend-config container_name=${TF_VAR_workspace} \
+    #     -backend-config key=${TF_VAR_tf_name} \
+    #     -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
+    #     ${landingzone_name}
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
