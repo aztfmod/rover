@@ -46,6 +46,9 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     LC_ALL=en_US.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
+WORKDIR /tf/rover
+COPY ./.pip_to_patch_latest .
+
 # installation tools
 RUN apt-get update && \
     apt-get install -y \
@@ -162,6 +165,11 @@ RUN apt-get update && \
         fonts-powerline \
         jq=${versionJq}-1ubuntu0.20.04.1 && \
     #
+    # Patch
+    # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
+    #
+    for i in  $(cat ./.pip_to_patch_latest); do pip3 install $i --upgrade; done && \
+    #
     # Clean-up
     #
     apt-get remove -y \
@@ -198,7 +206,7 @@ RUN apt-get update && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
     echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc"
 
-WORKDIR /tf/rover
+
 COPY ./scripts/rover.sh .
 COPY ./scripts/tfstate_azurerm.sh .
 COPY ./scripts/functions.sh .

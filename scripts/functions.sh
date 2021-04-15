@@ -464,6 +464,8 @@ function clean_up_variables {
     unset TF_VAR_logged_user_objectId
     unset TF_VAR_logged_aad_app_objectId
     unset keyvault
+    unset AZURE_ENVIRONMENT
+    unset ARM_ENVIRONMENT
 
     echo "clean_up backend_files"
     find /tf/caf -name  backend.azurerm.tf -delete
