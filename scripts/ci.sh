@@ -35,8 +35,8 @@ function verify_ci_parameters {
 
     validate_symphony "$symphony_yaml_file"
     # verify ci task configs
-    verify_task_name "terraform-format"
-    verify_task_name "tflint"
+    # verify_task_name "terraform-format"
+    # verify_task_name "tflint"
     if [ ! -z "$ci_task_name" ]; then
         verify_task_name "$ci_task_name"
     fi
