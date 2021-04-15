@@ -115,8 +115,8 @@ Error line:1: message:tflint is not a registered ci command! status :1'
 
       It 'should return no errors'
         When call execute_ci_actions
-        The output should eq "@Starting CI tools execution
- "
+        The output should include "@Starting CI tools execution"
+        The output should include "All CI tasks have run successfully."
         The error should eq ''
         The status should eq 0
       End

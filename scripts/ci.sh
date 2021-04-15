@@ -108,6 +108,8 @@ function execute_ci_actions {
           fi
         done
     done
+
+    success "All CI tasks have run successfully."
 }
 
 function clone_repos {
