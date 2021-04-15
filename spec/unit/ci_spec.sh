@@ -75,13 +75,15 @@ Describe 'ci.sh'
           REGISTERED_CI_TASKS=()
           export symphony_yaml_file="spec/harness/symphony.yml"
           export base_directory="."
+          export ci_task_name='task1'
+          export CI_TASK_DIR='spec/harness/ci_tasks/'
+          register_ci_tasks
         }
         Before 'setup'
 
         It 'should return no errors if symphony yaml is valid and ci tasks are registered'
           When call verify_ci_parameters
-          The error should include 'Error line:1: message:terraform-format is not a registered ci command! status :1
-Error line:1: message:tflint is not a registered ci command! status :1'
+          The error should include ''
           The output should include '@Verifying ci parameters'
           The status should eq 0
         End
