@@ -46,8 +46,19 @@ Describe 'ci.sh'
           register_ci_tasks # > /dev/null 2>&1
           export symphony_yaml_file="spec/harness/symphony.yml"
           export base_directory="."
+          #create dummy dirs
+          mkdir -p ./spec/harness/landingzones/launchpad
+          touch ./spec/harness/landingzones/launchpad/main.tf
+
+          mkdir -p ./spec/harness/configs/level0/launchpad
+          touch ./spec/harness/configs/level0/launchpad/configuration.tfvars
+        }
+        teardown(){
+          rm -rf ./spec/harness/configs/level0/launchpad
+          rm -rf ./spec/harness/landingzones/launchpad
         }
         BeforeEach 'setup'
+        AfterEach 'teardown'
 
         It 'should return no errors if symphony yaml is valid and ci tasks are registered'
           When call verify_ci_parameters
