@@ -1,0 +1,7 @@
+name: "terraform-validate"
+executableName: "terraform"
+subCommand: "validate"
+parameters: ""
+flags: ""
+debug: false
+requiresInit: true

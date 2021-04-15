@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source /tf/rover/task.sh
+source /tf/rover/symphony_yaml.sh
 
 declare -a CI_TASK_CONFIG_FILE_LIST=()
 declare -a REGISTERED_CI_TASKS=()
@@ -9,41 +10,47 @@ declare CI_TASK_DIR=/tf/rover/ci_tasks/
 function verify_task_name(){
     local ci_task_name=$1
     local isTaskNameRegistered=$(task_is_registered "$ci_task_name")
-    if [ "$isTaskNameRegistered" != "true" ]; then        
+    if [ "$isTaskNameRegistered" != "true" ]; then
         export code="1"
-        error "1" "$ci_task_name is not a registered ci command!" 
+        error "1" "$ci_task_name is not a registered ci command!"
         return $code
-    fi     
+    fi
 }
 
 function verify_ci_parameters {
     echo "@Verifying ci parameters"
 
     # verify symphony yaml
-    if [ -z "$symphony_yml_path" ]; then        
+    if [ -z "$symphony_yaml_file" ]; then
         export code="1"
-        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config" 
+        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config"
         return $code
     fi
 
-    if [ ! -f "$symphony_yml_path" ]; then        
+    if [ ! -f "$symphony_yaml_file" ]; then
         export code="1"
-        error "1" "Invalid path, $symphony_yml_path file not found. Please provide a valid path to the file via -sc or--symphony-config" 
+        error "1" "Invalid path, $symphony_yaml_file file not found. Please provide a valid path to the file via -sc or--symphony-config"
         return $code
-    fi    
+    fi
 
-    # verify ci task configs
-    verify_task_name "terraform-format"
-    verify_task_name "tflint"
+    validate_symphony "$symphony_yaml_file"
+   
+    # verify ci task name is valid
     if [ ! -z "$ci_task_name" ]; then
-        verify_task_name "$ci_task_name"    
-    fi    
+        verify_task_name "$ci_task_name"
+    fi
 }
 
 function set_default_parameters {
     echo "@Setting default parameters"
-    # Hattan
-    # TODO: Investigate if we need any of these for CI
+    export caf_command="landingzone"
+
+    # export landingzone_name=<landing_zone_path>
+    # export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
+
+    # export tf_action=<action name plan|apply|validate>
+    # expand_tfvars_folder <var folder path>
+    # deploy ${TF_VAR_workspace}
 }
 
 function register_ci_tasks {
@@ -66,7 +73,7 @@ function register_ci_tasks {
 function task_is_registered {
   local task_name=$1
   for task in "${REGISTERED_CI_TASKS[@]}"
-  do    
+  do
     if [ "$task" == "$task_name" ]; then
       echo "true"
       return
@@ -76,17 +83,35 @@ function task_is_registered {
 }
 
 function execute_ci_actions {
-    echo "Executing CI action"
-    # Richard
-    # read levels
+    echo "@Starting CI tools execution"
 
-    # for each level
-      # clone repos
-      # execute tasks
+    local -a levels=($(get_all_level_names "$symphony_yaml_file"))
+    for level in "${levels[@]}"
+    do
+        local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
+        for stack in "${stacks[@]}"
+        do
+          landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level" "$stack")
+          config_path=$(get_config_path_for_stack "$symphony_yaml_file" "$level" "$stack")
 
+          if [ ! -z "$ci_task_name" ]; then
+            # run a single task by name
+            run_task "$ci_task_name" "$level" "$landing_zone_path" "$config_path"
+          else
+            # run all tasks
+            for task in "${REGISTERED_CI_TASKS[@]}"
+            do
+              run_task "$task" "$level" "$landing_zone_path" "$config_path"
+            done
+            echo " "
+          fi
+        done
+    done
+
+    success "All CI tasks have run successfully."
 }
 
-function clone_repo {
+function clone_repos {
   echo @"Cloning repo ${1}"
-  # Richard
+  # TODO: We will start with git clone prior to CI execution.
 }

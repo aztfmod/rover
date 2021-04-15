@@ -1,0 +1,13 @@
+name: "terraform-format"
+executableName: "terraform"
+subCommand: "fmt"
+parameters:
+  - name: list
+    value: true
+    prefix: "-"
+  - name: write
+    value: false
+    prefix: "-"
+flags: "-no-color -recursive -check -diff"
+debug: false
+requiresInit: false
