@@ -1,0 +1,62 @@
+environment: prod
+repositories:
+  - name: launchpad_lz
+    uri: <clone uri to repo>
+    branch: master
+  - name: launchpad_config
+    uri: <clone uri to repo>
+    branch: master
+  - name: solution_lz
+    uri: <clone uri to repo>
+    branch: master
+  - name: solution_aks_config
+    uri: <clone uri to repo>
+    branch: master
+  - name: argocd_config
+    uri: <clone uri to repo>
+    branch: master
+
+ # All paths are relative
+ # The following are examples. They should point to your landing zones and configs relative the base directory
+levels:
+- level: level0
+  type: platform
+  stacks:
+  - stack: launchpad
+    landingZonePath: caf_modules_public/landingzones/caf_launchpad/
+    configurationPath: base_config/level0/
+  launchpad: true
+
+- level: level1
+  type: platform
+  stacks:
+  - stack: foundations
+    landingZonePath: caf_modules_public/landingzones/caf_foundations/
+    configurationPath: base_config/level1
+    tfState: foundations.tfstate
+
+- level: level2
+  stacks:
+  - stack: networking_hub
+    landingZonePath: caf_modules_public/landingzones/caf_networking/
+    configurationPath: base_config/level2/networking/hub/
+    tfState: networking_hub.tfstate
+    
+  - stack: shared_services
+    landingZonePath: caf_modules_public/landingzones/caf_shared_services/
+    configurationPath: base_config/level2/shared_services/
+    tfState: caf_shared_services.tfstate
+
+- level: level3
+  stacks:
+  - stack: catalog_service
+    landingZonePath: caf_modules_app/landingzones/caf_solutions/
+    configurationPath: app_config_aks/level3/
+    tfState: landingzone_aks.tfstate
+
+- level: level4
+  stacks:
+  - stack: catalog_service_application
+    landingZonePath: caf_modules_app/landingzones/caf_solutions/add-ons/aks_applications/
+    configurationPath: app_config_argocd/level4/argocd/
+    tfState: argocd.tfstate

@@ -33,3 +33,5 @@ Usage: rover <command> <switches>
            -var-folder        <path>        Path to the folder containing configurations for the lz.
 
 ```
+
+See [Continuous Integration document](CONTINOUS_INTEGRATION.md) for examples on running CI.
