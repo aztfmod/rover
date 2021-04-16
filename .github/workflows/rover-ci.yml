@@ -1,0 +1,19 @@
+name: Build Rover ci images
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build the rover
+      run: |
+        set -e
+        sudo docker login -u ${{ secrets.acr_registry_user }} -p ${{ secrets.acr_registry_password }} ${{ secrets.acr_registry_url }}
+
+        # Build the rover base image
+        make ci
