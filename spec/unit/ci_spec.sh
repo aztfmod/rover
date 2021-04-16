@@ -145,7 +145,7 @@ Describe 'ci.sh'
       }
       Before 'setup'
 
-      It 'should return no errors'
+      It 'should return no errors when executing all task using the test symphony yaml.'
         When call execute_ci_actions
         The output should include "@Starting CI tools execution"
         The output should include "All CI tasks have run successfully."
