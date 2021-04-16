@@ -16,7 +16,7 @@ Describe 'ci.sh'
       }
       BeforeEach 'setup'
 
-      It 'should return an error that the path to symphony.yml is not provided'
+      It 'should return an error that the path to symphony.yml was not provided'
         When call verify_ci_parameters
         The output should eq '@Verifying ci parameters'
         The error should eq 'Error line:1: message:Missing path to symphony.yml. Please provide a path to the file via -sc or --symphony-config status :1'
@@ -43,10 +43,11 @@ Describe 'ci.sh'
     Context "Symphony Yaml Provided, valid file"
       Describe "tasks registered"
         setup() {
-          register_ci_tasks # > /dev/null 2>&1
+          register_ci_tasks
           export symphony_yaml_file="spec/harness/symphony.yml"
           export base_directory="."
-          #create dummy dirs
+
+          # create mock dirs
           mkdir -p ./spec/harness/landingzones/launchpad
           touch ./spec/harness/landingzones/launchpad/main.tf
 
@@ -54,8 +55,8 @@ Describe 'ci.sh'
           touch ./spec/harness/configs/level0/launchpad/configuration.tfvars
         }
         teardown(){
-          rm -rf ./spec/harness/configs/level0/launchpad
-          rm -rf ./spec/harness/landingzones/launchpad
+          rm -rf ./spec/harness/configs
+          rm -rf ./spec/harness/landingzones
         }
         BeforeEach 'setup'
         AfterEach 'teardown'
@@ -69,7 +70,11 @@ Describe 'ci.sh'
         End
       End
 
-      Describe "no tasks registered"
+      Describe "single task execution - success"
+        validate_symphony() {
+          echo ""
+        }
+
         setup() {
           CI_TASK_CONFIG_FILE_LIST=()
           REGISTERED_CI_TASKS=()
@@ -79,6 +84,7 @@ Describe 'ci.sh'
           export CI_TASK_DIR='spec/harness/ci_tasks/'
           register_ci_tasks
         }
+
         Before 'setup'
 
         It 'should return no errors if symphony yaml is valid and ci tasks are registered'
@@ -89,6 +95,30 @@ Describe 'ci.sh'
         End
       End
 
+      Describe "single task execution - error"
+        validate_symphony() {
+          echo ""
+        }
+
+        setup() {
+          CI_TASK_CONFIG_FILE_LIST=()
+          REGISTERED_CI_TASKS=()
+          export symphony_yaml_file="spec/harness/symphony.yml"
+          export base_directory="."
+          export ci_task_name='task'
+          export CI_TASK_DIR='spec/harness/ci_tasks/'
+          register_ci_tasks
+        }
+
+        Before 'setup'
+
+        It 'should return an error if symphony yaml is valid and ci task name is not registered'
+          When call verify_ci_parameters
+          The error should include 'task is not a registered ci command!'
+          The output should include '@Verifying ci parameters'
+          The status should eq 1
+        End
+      End
     End
 
   End
