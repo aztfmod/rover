@@ -55,7 +55,4 @@ Describe 'task.sh'
       End
     End
   End
-
-  Describe ""
-  End
 End
