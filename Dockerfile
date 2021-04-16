@@ -156,7 +156,7 @@ RUN apt-get update && \
     # Install baash completions for git
     #
     echo "Installing bash completions for git" && \
-    curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash
+    curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash && \
 
     ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
         azure-cli=${versionAzureCli}-1~focal \
