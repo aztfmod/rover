@@ -19,7 +19,7 @@ Describe 'ci.sh'
       It 'should return an error that the path to symphony.yml is not provided'
         When call verify_ci_parameters
         The output should eq '@Verifying ci parameters'
-        The error should eq 'Error line:1: message:Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config status :1'
+        The error should eq 'Error line:1: message:Missing path to symphony.yml. Please provide a path to the file via -sc or --symphony-config status :1'
         The status should eq 1
       End
     End
@@ -34,7 +34,7 @@ Describe 'ci.sh'
       It 'should return an error if the symphony yaml path points to an invalid or missing file'
         When call verify_ci_parameters
         The output should eq '@Verifying ci parameters'
-        The error should eq 'Error line:1: message:Invalid path, spec/harness/symphony2.yml file not found. Please provide a valid path to the file via -sc or--symphony-config status :1'
+        The error should eq 'Error line:1: message:Invalid path, spec/harness/symphony2.yml file not found. Please provide a valid path to the file via -sc or --symphony-config status :1'
         The status should eq 1
       End
     End

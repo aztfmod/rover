@@ -23,18 +23,18 @@ function verify_ci_parameters {
     # verify symphony yaml
     if [ -z "$symphony_yaml_file" ]; then
         export code="1"
-        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or--symphony-config"
+        error "1" "Missing path to symphony.yml. Please provide a path to the file via -sc or --symphony-config"
         return $code
     fi
 
     if [ ! -f "$symphony_yaml_file" ]; then
         export code="1"
-        error "1" "Invalid path, $symphony_yaml_file file not found. Please provide a valid path to the file via -sc or--symphony-config"
+        error "1" "Invalid path, $symphony_yaml_file file not found. Please provide a valid path to the file via -sc or --symphony-config"
         return $code
     fi
 
     validate_symphony "$symphony_yaml_file"
-   
+
     # verify ci task name is valid
     if [ ! -z "$ci_task_name" ]; then
         verify_task_name "$ci_task_name"
