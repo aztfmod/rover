@@ -153,6 +153,12 @@ RUN apt-get update && \
     echo "Installing Checkov ${versionCheckov} ..." && \
     pip3 install --no-cache-dir checkov==${versionCheckov} && \
     #
+    # Install baash completions for git
+    #
+    echo "Installing bash completions for git" && \
+    mkdir -p /etc/bash_completion.d/ && \
+    curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash && \
+    #
     ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
         azure-cli=${versionAzureCli}-1~focal \
         mssql-tools=${versionMssqlTools}-1 \
