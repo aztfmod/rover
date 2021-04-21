@@ -220,7 +220,10 @@ COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/backend.hcl.tf .
-
+COPY ./scripts/ci.sh .
+COPY ./scripts/task.sh .
+COPY ./scripts/symphony_yaml.sh .
+COPY ./scripts/ci_tasks/* ./ci_tasks/
 #
 # Switch to non-root ${USERNAME} context
 #
