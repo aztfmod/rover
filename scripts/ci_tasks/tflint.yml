@@ -3,7 +3,7 @@ executableName: "tflint"
 subCommand : ""
 parameters:
   - name: "config"
-    value: "/home/hattan/.tflint.d/config/.tflint.hcl"
+    value: "/home/vscode/.tflint.d/config/.tflint.hcl"
     prefix: "--"
 flags: ""
 debug: false
