@@ -75,11 +75,15 @@ function task_tf_init {
   local task_requires_init=$1
   local landing_zone_path=$2
   local config_path=$3
+  local level=$4
 
   if [ "$task_requires_init" == "true" ]; then
     local state_file="$(basename ${landing_zone_path}).tfstate"
+    local plan_file="$(basename ${landing_zone_path}).tfplan"
     export landingzone_name=$landing_zone_path
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$state_file"}
+    export TF_VAR_tf_name=${state_file}
+    export TF_VAR_tf_plan=${plan_file}
+    export TF_VAR_level=${level}
     expand_tfvars_folder "$config_path"
     tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
   fi
@@ -118,10 +122,12 @@ function run_task {
   local task_parameters=$(echo $task_json | jq -r '.parameters')
   local task_requires_init=$(echo $task_json | jq -r '.requiresInit')
 
+  unset PARAMS
+
   verify_local_tool_installed "$task_executable"
+  task_tf_init "$task_requires_init" "$landing_zone_path" "$config_path" "$level"
   task_print_debug "$task_executable" "$task_sub_command" "$task_requires_init" "$landing_zone_path" "$config_path" "$task_flags" "$task_parameters"
-  task_tf_init "$task_requires_init" "$landing_zone_path" "$config_path"
-  
+    
   if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
     export tf_action="$task_sub_command"
     deploy ${TF_VAR_workspace}
