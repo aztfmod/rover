@@ -467,14 +467,14 @@ function get_resource_from_assignedIdentityInfo {
 
     case $msi in
         *"MSIResource"*)
-            msiResource= ${msi//MSIResource-}
+            msiResource=${msi//MSIResource-}
         ;;
         *"MSIClient"*)
             msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-}'].{id:id}" -o tsv)
         ;;
         *)
             echo "Warning: MSI identifier unknown."
-            msiResource= ${msi//MSIResource-}
+            msiResource=${msi//MSIResource-}
         ;;
     esac
 
@@ -539,7 +539,7 @@ function get_logged_user_object_id {
         unset ARM_CLIENT_SECRET
         unset TF_VAR_logged_aad_app_objectId
 
-        export TF_VAR_tenant_id=$(az account show -o json | jq -r .tenantId)
+        export ARM_TENANT_ID=$(az account show -o json | jq -r .tenantId)
         export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
         export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
         echo " - logged in user objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
@@ -553,18 +553,21 @@ function get_logged_user_object_id {
 
         case "${clientId}" in
             "systemAssignedIdentity")
-                echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
-                export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
+                computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
+                principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
+                echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
+                export TF_VAR_logged_user_objectId=${principalId}
+                export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
                 ;;
             "userAssignedIdentity")
-                echo " - logged in Azure with User Assigned Identity: ($(az account show -o json | jq -r .user.assignedIdentityInfo))"
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
+                echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
-                set_arm_tenant_id_user_assigned_client
+                export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
+                # set_arm_tenant_id_user_assigned_client // Not sure about this function
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
@@ -574,9 +577,9 @@ function get_logged_user_object_id {
                 ;;
         esac
 
-        export TF_VAR_tenant_id=${ARM_TENANT_ID}
-
     fi
+
+    export TF_VAR_tenant_id=${ARM_TENANT_ID}
 }
 
 function deploy {
