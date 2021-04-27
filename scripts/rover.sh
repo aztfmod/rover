@@ -6,8 +6,8 @@
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 source /tf/rover/clone.sh
-source /tf/rover/functions.sh
 source /tf/rover/tfstate_azurerm.sh
+source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
 # symphony
@@ -205,5 +205,7 @@ if [ $symphony_run_all_tasks == false ]; then
     echo "Running task                  : '$(echo ${ci_task_name})'"
 fi
 echo ""
+
+export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
 process_actions
