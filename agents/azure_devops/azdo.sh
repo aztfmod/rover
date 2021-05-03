@@ -3,11 +3,11 @@
 set -Ee
 
 function finally {
-  echo "Remove agent from agent pool"
+  echo "Remove agent from agent pool $1"
   ./config.sh remove --unattended
 }
 
-trap finally EXIT SIGTERM
+trap finally EXIT SIGTERM SIGINT
 
 if [ -n "${VSTS_AGENT_INPUT_TOKEN}" ]; then
   echo "Connect to Azure AD using PAT TOKEN from VSTS_AGENT_INPUT_TOKEN"
