@@ -242,10 +242,10 @@ USER ${USERNAME}
 COPY .devcontainer/.zshrc $HOME
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
-RUN #
+    #
     # ssh server for Azure ACI
     #
-    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
     sudo apt-get update && \
     sudo apt-get install -y \
         zsh && \
@@ -254,7 +254,7 @@ RUN #
     #
     # chsh -s /bin/zsh ${USERNAME} && \
     sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
-    chmod 700 -R /home/${USERNAME}/.oh-my-zsh
+    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
