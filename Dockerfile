@@ -162,7 +162,7 @@ RUN apt-get update && \
     #
     # kubectl node shell
     #
-    curl -sSl -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
+    curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
     chmod +x /usr/local/bin/kubectl-node_shell && \
     #
     #
