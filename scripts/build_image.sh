@@ -9,6 +9,9 @@ tag_date_preview=$(${build_date} +"%g%m.%d%H%M")
 tag_date_release=$(${build_date} +"%g%m.%d%H")
 export strategy=${1}
 
+export DOCKER_CLIENT_TIMEOUT=600
+export COMPOSE_HTTP_TIMEOUT=600
+
 echo "params ${params}"
 echo "date ${build_date}"
 

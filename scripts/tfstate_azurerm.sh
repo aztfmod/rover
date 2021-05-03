@@ -9,6 +9,8 @@ function initialize_state {
     cd ${landingzone_name}
 
     sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
+
+
     rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}

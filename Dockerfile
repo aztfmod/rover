@@ -48,6 +48,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
 
 WORKDIR /tf/rover
 COPY ./.pip_to_patch_latest .
+COPY ./scripts/.kubectl_aliases .
 
 # installation tools
 RUN apt-get update && \
@@ -159,6 +160,12 @@ RUN apt-get update && \
     mkdir -p /etc/bash_completion.d/ && \
     curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash && \
     #
+    # kubectl node shell
+    #
+    curl -sSl -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
+    chmod +x /usr/local/bin/kubectl-node_shell && \
+    #
+    #
     ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
         azure-cli=${versionAzureCli}-1~focal \
         mssql-tools=${versionMssqlTools}-1 \
@@ -210,7 +217,9 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc"
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc"
+
 
 
 COPY ./scripts/rover.sh .
@@ -239,6 +248,7 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.zshrc" && \
     #
     # ssh server for Azure ACI
     #

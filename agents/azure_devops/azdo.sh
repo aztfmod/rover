@@ -19,4 +19,6 @@ else
 fi
 
 # Most of the variables are retrieved from VSTS_AGENT_INPUT_*
-./config.sh --acceptTeeEula --replace --unattended && ./run.sh
+# VSTS_AGENT_INPUT_RUN_ONCE=true will run the job and terminates
+./config.sh --acceptTeeEula --replace --unattended && ./run.sh VSTS_AGENT_INPUT_RUN_ONCE
+finally
