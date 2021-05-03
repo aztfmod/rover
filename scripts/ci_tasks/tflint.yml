@@ -1,0 +1,10 @@
+name: tflint
+executableName: "tflint"
+subCommand : ""
+parameters:
+  - name: "config"
+    value: "/home/vscode/.tflint.d/config/.tflint.hcl"
+    prefix: "--"
+flags: ""
+debug: false
+requiresInit: false

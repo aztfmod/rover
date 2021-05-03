@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 ./scripts/pre_requisites.sh
@@ -8,6 +8,9 @@ build_date=date
 tag_date_preview=$(${build_date} +"%g%m.%d%H%M")
 tag_date_release=$(${build_date} +"%g%m.%d%H")
 export strategy=${1}
+
+export DOCKER_CLIENT_TIMEOUT=600
+export COMPOSE_HTTP_TIMEOUT=600
 
 echo "params ${params}"
 echo "date ${build_date}"
@@ -43,6 +46,12 @@ function build_base_rover_image {
             export rover="${registry}rover-preview:${tag}"
             tag_strategy="preview-"
             ;;
+        "ci")
+            registry="symphonydev.azurecr.io/"
+            tag=${versionTerraform}-${tag_date_preview}
+            export rover="${registry}rover-ci:${tag}"
+            tag_strategy="ci-"
+            ;;            
         "local")
             registry=""
             tag=${versionTerraform}-${tag_date_preview}
@@ -89,15 +98,24 @@ function build_rover_agents {
     echo " - strategy      - ${strategy}"
     echo " - tag_strategy  - ${tag_strategy}"
     cd agents
-
-    sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build \
-        --build-arg versionRover="${rover}"
+    
+    if [ "$strategy" == "ci" ]; then
+        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build  \
+            --build-arg versionRover="${rover}" gitlab
+    else
+        sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build \
+            --build-arg versionRover="${rover}"         
+    fi
 
         case "${strategy}" in
         "local")
             ;;
         *)
-            sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push
+            if [ "$strategy" == "ci" ]; then
+                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push gitlab
+            else
+                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push        
+            fi                   
             ;;
     esac
 
@@ -107,6 +125,11 @@ function build_rover_agents {
 }
 
 echo "Building rover images."
-while read versionTerraform; do
-    build_base_rover_image ${versionTerraform} ${strategy}
-done <./.env.terraform
+if [ "$strategy" == "ci" ]; then
+    build_base_rover_image "0.13.6" ${strategy}
+else
+    while read versionTerraform; do
+        build_base_rover_image ${versionTerraform} ${strategy}
+    done <./.env.terraform          
+fi
+

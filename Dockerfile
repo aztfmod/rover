@@ -48,6 +48,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
 
 WORKDIR /tf/rover
 COPY ./.pip_to_patch_latest .
+COPY ./scripts/.kubectl_aliases .
 
 # installation tools
 RUN apt-get update && \
@@ -153,6 +154,18 @@ RUN apt-get update && \
     echo "Installing Checkov ${versionCheckov} ..." && \
     pip3 install --no-cache-dir checkov==${versionCheckov} && \
     #
+    # Install baash completions for git
+    #
+    echo "Installing bash completions for git" && \
+    mkdir -p /etc/bash_completion.d/ && \
+    curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash && \
+    #
+    # kubectl node shell
+    #
+    curl -sSl -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
+    chmod +x /usr/local/bin/kubectl-node_shell && \
+    #
+    #
     ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
         azure-cli=${versionAzureCli}-1~focal \
         mssql-tools=${versionMssqlTools}-1 \
@@ -204,7 +217,9 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc"
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc"
+
 
 
 COPY ./scripts/rover.sh .
@@ -214,7 +229,10 @@ COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/backend.hcl.tf .
-
+COPY ./scripts/ci.sh .
+COPY ./scripts/task.sh .
+COPY ./scripts/symphony_yaml.sh .
+COPY ./scripts/ci_tasks/* ./ci_tasks/
 #
 # Switch to non-root ${USERNAME} context
 #
@@ -230,6 +248,7 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.zshrc" && \
     #
     # ssh server for Azure ACI
     #
@@ -266,3 +285,13 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     rm /tmp/terraform.zip && \
     #
     echo ${versionRover} > /tf/rover/version.txt
+
+RUN echo "Installing Tflint Ruleset for Azure..." && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v0.9.0/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
+    mkdir -p /home/${USERNAME}/.tflint.d/config  && \
+    echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
+    rm /tmp/tflint-ruleset-azurerm.zip
