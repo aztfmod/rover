@@ -162,7 +162,7 @@ RUN apt-get update && \
     #
     # kubectl node shell
     #
-    curl -sSl -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
+    curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
     chmod +x /usr/local/bin/kubectl-node_shell && \
     #
     #
@@ -215,10 +215,10 @@ RUN apt-get update && \
     mkdir /commandhistory && \
     touch /commandhistory/.bash_history && \
     chown -R ${USERNAME} /commandhistory && \
-    echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
-    echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc"
+    echo "set -o history" >> /home/${USERNAME}/.bashrc && \
+    echo "export HISTCONTROL=ignoredups:erasedups"  >> /home/${USERNAME}/.bashrc && \
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> /home/${USERNAME}/.bashrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.bashrc
 
 
 
@@ -242,14 +242,7 @@ USER ${USERNAME}
 COPY .devcontainer/.zshrc $HOME
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
-RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
-    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
-    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.zshrc" && \
-    #
+RUN #
     # ssh server for Azure ACI
     #
     ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
@@ -262,6 +255,13 @@ RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     # chsh -s /bin/zsh ${USERNAME} && \
     sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
     chmod 700 -R /home/${USERNAME}/.oh-my-zsh
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
+    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
+    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
 
 
 from base
