@@ -10,6 +10,10 @@ source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
 
+# symphony
+source /tf/rover/ci.sh
+source /tf/rover/symphony_yaml.sh
+
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
 verify_rover_version
@@ -22,6 +26,8 @@ export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
+export symphony_run_all_tasks=true
+export debug_mode=${debug_mode:="false"}
 
 unset PARAMS
 
@@ -46,6 +52,10 @@ while (( "$#" )); do
             export cloud_name=${2}
             shift 2
             ;;
+        -d|--debug)
+            export debug_mode="true"
+            shift 1
+            ;;
         -a|--action)
             export tf_action=${2}
             shift 2
@@ -69,6 +79,29 @@ while (( "$#" )); do
         login)
             shift 1
             export caf_command="login"
+            ;;
+        ci)
+            shift 1
+            export caf_command="ci"
+            export devops="true"
+            ;;
+        cd)
+            shift 1
+            export caf_command="cd"
+            export devops="true"
+            ;;
+        -sc|--symphony-config)
+            export symphony_yaml_file=${2}
+            shift 2
+            ;;
+        -ct|--ci-task-name)
+            export ci_task_name=${2}
+            export symphony_run_all_tasks=false
+            shift 2
+            ;;
+        -b|--base-dir)
+            export base_directory=${2}
+            shift 2
             ;;
         -tfc|--tfc)
             shift 1
@@ -165,6 +198,12 @@ echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
 echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
 echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
 echo "target subscription           : '$(echo ${target_subscription_name})'"
+echo "CI/CD enabled                 : '$(echo ${devops})'"
+echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
+echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+if [ $symphony_run_all_tasks == false ]; then
+    echo "Running task                  : '$(echo ${ci_task_name})'"
+fi
 echo ""
 
 export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
