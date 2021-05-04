@@ -98,7 +98,7 @@ RUN apt-get update && \
     #
     # Golang repo
     #
-    apt-add-repository ppa:longsleep/golang-backports -y && \
+    apt-add-repository ppa:longsleep/golang-backports && \
     #
     apt-get update -y && \
     apt-get upgrade -y && \
