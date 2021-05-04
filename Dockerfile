@@ -49,6 +49,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
 WORKDIR /tf/rover
 COPY ./.pip_to_patch_latest .
 COPY ./scripts/.kubectl_aliases .
+COPY ./scripts/zsh-autosuggestions.zsh .
 
 # installation tools
 RUN apt-get update && \
@@ -94,6 +95,10 @@ RUN apt-get update && \
     #
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
     echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && \
+    #
+    # Golang repo
+    #
+    apt-add-repository ppa:longsleep/golang-backports -y && \
     #
     apt-get update -y && \
     apt-get upgrade -y && \
@@ -167,16 +172,17 @@ RUN apt-get update && \
     #
     #
     ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
-        azure-cli=${versionAzureCli}-1~focal \
-        mssql-tools=${versionMssqlTools}-1 \
-        kubectl=${versionKubectl}-00 \
-        packer=${versionPacker} \
-        docker-ce-cli \
-        git=1:${versionGit}-1ubuntu3 \
-        ansible=${versionAnsible}+dfsg-1 \
-        openssh-server \
-        fonts-powerline \
-        jq=${versionJq}-1ubuntu0.20.04.1 && \
+    azure-cli=${versionAzureCli}-1~focal \
+    mssql-tools=${versionMssqlTools}-1 \
+    kubectl=${versionKubectl}-00 \
+    packer=${versionPacker} \
+    docker-ce-cli \
+    golang-go \
+    git=1:${versionGit}-1ubuntu3 \
+    ansible=${versionAnsible}+dfsg-1 \
+    openssh-server \
+    fonts-powerline \
+    jq=${versionJq}-1ubuntu0.20.04.1 && \
     #
     # Patch
     # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
@@ -186,8 +192,8 @@ RUN apt-get update && \
     # Clean-up
     #
     apt-get remove -y \
-        apt-utils \
-        python3-pip && \
+    apt-utils \
+    python3-pip && \
     apt-get autoremove -y && \
     rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
     rm -rf /var/lib/apt/lists/* && \
@@ -195,17 +201,17 @@ RUN apt-get update && \
     # Create USERNAME home folder structure
     #
     mkdir -p /tf/caf \
-        /tf/rover \
-        /home/${USERNAME}/.ansible \
-        /home/${USERNAME}/.azure \
-        /home/${USERNAME}/.gnupg \
-        /home/${USERNAME}/.packer.d \
-        /home/${USERNAME}/.ssh \
-        /home/${USERNAME}/.ssh-localhost \
-        /home/${USERNAME}/.terraform.cache \
-        /home/${USERNAME}/.terraform.cache/tfstates \
-        /home/${USERNAME}/.vscode-server \
-        /home/${USERNAME}/.vscode-server-insiders && \
+    /tf/rover \
+    /home/${USERNAME}/.ansible \
+    /home/${USERNAME}/.azure \
+    /home/${USERNAME}/.gnupg \
+    /home/${USERNAME}/.packer.d \
+    /home/${USERNAME}/.ssh \
+    /home/${USERNAME}/.ssh-localhost \
+    /home/${USERNAME}/.terraform.cache \
+    /home/${USERNAME}/.terraform.cache/tfstates \
+    /home/${USERNAME}/.vscode-server \
+    /home/${USERNAME}/.vscode-server-insiders && \
     chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
     chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
     chmod 700 /home/${USERNAME}/.ssh && \
@@ -242,26 +248,28 @@ USER ${USERNAME}
 COPY .devcontainer/.zshrc $HOME
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
-RUN echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+#
+# ssh server for Azure ACI
+#
+RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+    sudo apt-get update && \
+    sudo apt-get install -y \
+    zsh && \
+    #
+    # Install Oh My Zsh
+    #
+    # chsh -s /bin/zsh ${USERNAME} && \
+    sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
+    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
-    #
-    # ssh server for Azure ACI
-    #
-    ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
-    sudo apt-get update && \
-    sudo apt-get install -y \
-        zsh && \
-    #
-    # Install Oh My Zsh
-    #
-    # chsh -s /bin/zsh ${USERNAME} && \
-    sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
-    chmod 700 -R /home/${USERNAME}/.oh-my-zsh
+    echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
+    echo "alias watch=\"watch \""
 
 
 from base
@@ -273,10 +281,10 @@ ARG versionRover
 ENV versionRover=${versionRover} \
     versionTerraform=${versionTerraform}
 
-    #
-    # Install Terraform
-    #
-    # Keeping this method to support alpha build installations
+#
+# Install Terraform
+#
+# Keeping this method to support alpha build installations
 RUN echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/terraform.zip && \
