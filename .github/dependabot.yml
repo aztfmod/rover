@@ -1,0 +1,12 @@
+version: 2
+updates:
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: golang
+    versions:
+    - 1.15.8
+    - 1.16.0
