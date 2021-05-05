@@ -18,11 +18,11 @@ error() {
 
     clean_up_variables
 
-    exit "${code}"
+    exit ${code}
 }
 
 error_message() {
-  >&2 printf "\e[91m$@\n\e[0m"  
+  >&2 printf "\e[91m$@\n\e[0m"
 }
 
 
@@ -30,7 +30,7 @@ debug() {
   local message=$1
   if [ "$debug_mode" == "true" ]; then
     echo "$message"
-  fi    
+  fi
 }
 
 information() {
@@ -113,8 +113,8 @@ function process_actions {
             deploy_tfc ${TF_VAR_workspace}
             ;;
         ci)
-            register_ci_tasks  
-            verify_ci_parameters                      
+            register_ci_tasks
+            verify_ci_parameters
             set_default_parameters
             execute_ci_actions
             ;;
@@ -361,8 +361,8 @@ function deploy_landingzone {
             destroy
             ;;
         "init")
-            echo "init no-op"            
-            ;;            
+            echo "init no-op"
+            ;;
         *)
             other
             ;;
