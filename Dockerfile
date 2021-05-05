@@ -224,7 +224,8 @@ RUN apt-get update && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
     echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc"
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc" && \
+    echo "alias watch=\"watch \"" >> "/home/${USERNAME}/.bashrc"
 
 
 
