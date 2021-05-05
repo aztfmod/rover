@@ -5,8 +5,9 @@ function initialize_state {
     echo "Checking required permissions"
     if [ ${skip_permission_check} == true ]; then
         echo "Checking required permissions - Skipped as --skip-permission-check was found."
+    else
+        check_subscription_required_role "Owner"
     fi
-    check_subscription_required_role "Owner"
 
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
