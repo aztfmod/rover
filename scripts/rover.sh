@@ -26,6 +26,7 @@ export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
+export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 
@@ -154,6 +155,10 @@ while (( "$#" )); do
                 ;;
         --impersonate)
                 export impersonate=true
+                shift 1
+                ;;
+        -skip-permission-check)
+                export skip_permission_check=true
                 shift 1
                 ;;
         -var-folder)
