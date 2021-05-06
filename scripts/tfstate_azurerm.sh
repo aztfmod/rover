@@ -3,12 +3,17 @@ function initialize_state {
     echo "@calling initialize_state"
 
     echo "Checking required permissions"
-    check_subscription_required_role "Owner"
+    if [ ${skip_permission_check} == true ]; then
+        echo "Checking required permissions - Skipped as --skip-permission-check was found."
+    else
+        check_subscription_required_role "Owner"
+    fi
 
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
 
     sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
+
     rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
@@ -220,6 +225,7 @@ function plan {
                 plan ${tf_command} \
                 -refresh=true \
                 -detailed-exitcode \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
             ;;
         *)

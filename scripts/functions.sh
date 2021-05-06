@@ -1,19 +1,46 @@
 
+
 error() {
     local parent_lineno="$1"
     local message="$2"
-    local code="${3:-1}"
+
+    local line_message=""
+    if [ "$parent_lineno" != "" ]; then
+      line_message="on or near line ${parent_lineno}"
+    fi
+
     if [[ -n "$message" ]] ; then
-        >&2 echo -e "\e[41mError on or near line ${parent_lineno}: ${message}; exiting with status ${code}\e[0m"
+        >&2 echo -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
     else
-        >&2 echo -e "\e[41mError on or near line ${parent_lineno}; exiting with status ${code}\e[0m"
+        >&2 echo -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
     fi
     echo ""
 
     clean_up_variables
 
-    exit "${code}"
+    exit ${code}
 }
+
+error_message() {
+  >&2 printf "\e[91m$@\n\e[0m"
+}
+
+
+debug() {
+  local message=$1
+  if [ "$debug_mode" == "true" ]; then
+    echo "$message"
+  fi
+}
+
+information() {
+    printf "\e[36m$@\n\e[0m"
+}
+
+success() {
+    printf "\e[32m$@\n\e[0m"
+}
+
 
 exit_if_error() {
   local exit_code=$1
@@ -84,6 +111,12 @@ function process_actions {
         tfc)
             verify_parameters
             deploy_tfc ${TF_VAR_workspace}
+            ;;
+        ci)
+            register_ci_tasks
+            verify_ci_parameters
+            set_default_parameters
+            execute_ci_actions
             ;;
         *)
             display_instructions
@@ -326,6 +359,9 @@ function deploy_landingzone {
         "destroy")
             echo "calling destroy"
             destroy
+            ;;
+        "init")
+            echo "init no-op"
             ;;
         *)
             other

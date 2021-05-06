@@ -10,5 +10,8 @@ local:
 dev:
 	@bash "$(CURDIR)/scripts/build_image.sh" "dev"
 
+ci:
+	@bash "$(CURDIR)/scripts/build_image.sh" "ci"
+
 alpha:
 	@bash "$(CURDIR)/scripts/build_image.sh" "alpha"

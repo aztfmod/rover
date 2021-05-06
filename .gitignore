@@ -9,4 +9,5 @@
 **/~*.*
 **/*.log
 version.txt
-landingzones
+public/
+.data
