@@ -62,6 +62,7 @@ RUN apt-get update && \
     ca-certificates \
     software-properties-common \
     unzip \
+    zip \
     sudo \
     locales \
     vim \
