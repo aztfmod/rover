@@ -85,7 +85,16 @@ function task_is_registered {
 function execute_ci_actions {
     echo "@Starting CI tools execution"
 
-    local -a levels=($(get_all_level_names "$symphony_yaml_file"))
+    if [ "${TF_VAR_level}" == "all" ]; then
+      # get all levels from symphony yaml (only useful in env where there is a single MSI for all levels.)
+      local -a levels=($(get_all_level_names "$symphony_yaml_file"))
+      echo "get all levels"
+    else
+      # run CI for a single level
+      local -a levels=($(echo $TF_VAR_level))
+      echo "single level CI - ${TF_VAR_level}"
+    fi
+
     for level in "${levels[@]}"
     do
         local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))

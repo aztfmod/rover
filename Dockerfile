@@ -304,3 +304,7 @@ RUN echo "Installing Tflint Ruleset for Azure..." && \
     echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
     rm /tmp/tflint-ruleset-azurerm.zip
+
+RUN echo "Installing shellspec..." && \
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes && \
+    export PATH=$PATH:/home/vscode/.local/lib/shellspec/bin

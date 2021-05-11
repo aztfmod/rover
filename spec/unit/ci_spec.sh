@@ -124,27 +124,48 @@ Describe 'ci.sh'
   End
 
   Describe "execute_ci_actions"
-    Context "Happy path validation"
-      get_all_level_names() {
-        echo "level1"
-      }
-      get_all_stack_names_for_level() {
-        echo "foundations"
-      }
-      get_landingzone_path_for_stack() {
-        echo "caf_modules_public/landingzones/caf_foundations/"
-      }
-      run_task() {
-        echo "run_task arguments: $@";
-        return 0
-      }
+    Context "Happy Path Validation"
 
+      # get_all_level_names() {
+      #   echo "level1"
+      # }
+
+      # get_all_stack_names_for_level() {
+      #   echo "foundations"
+      # }
+
+      # get_landingzone_path_for_stack() {
+      #   echo "caf_modules_public/landingzones/caf_foundations/"
+      # }
+
+      # run_task() {
+      #   echo "run_task arguments: $@";
+      #   return 0
+      # }
       setup() {
         export symphony_yaml_file="spec/harness/symphony.yml"
         export base_directory="."
       }
-      Before 'setup'
+      BeforeEach 'setup'
 
+      It 'should return no errors when executing all task using the test symphony yaml.'
+        When call execute_ci_actions
+        The output should include "@Starting CI tools execution"
+        The output should include "All CI tasks have run successfully."
+        The error should eq ''
+        The status should eq 0
+      End
+    End
+  End
+
+  Describe "execute_ci_actions - single level test "
+    Context "Single Level Test - Invalid Level"
+    setup() {
+      export symphony_yaml_file="spec/harness/symphony.yml"
+      export base_directory="."
+      export TF_VAR_level='level1'
+    }
+    BeforeEach 'setup'
       It 'should return no errors when executing all task using the test symphony yaml.'
         When call execute_ci_actions
         The output should include "@Starting CI tools execution"
