@@ -1,45 +1,40 @@
 ![](https://github.com/aztfmod/rover/workflows/master/badge.svg)
 ![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
-[![VScodespaces](https://img.shields.io/endpoint?url=https%3A%2F%2Faka.ms%2Fvso-badge)](https://online.visualstudio.com/environments/new?name=rover=aztfmod/rover)
 [![Gitter](https://badges.gitter.im/aztfmod/community.svg)](https://gitter.im/aztfmod/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Cloud Adoption Framework for Azure - Landing zones on Terraform - Rover
 
 Microsoft Cloud Adoption Framework for Azure provides you with guidance and best practices to adopt Azure.
 
-The **Azure CAF rover** is a Docker container in charge of the deployment of the landing zones in your Azure environment. 
+The CAF **rover** is helping you managing your enterprise Terraform deployments on Microsoft Azure and is composed of two parts:
 
-It is acting as a **sandbox toolchain** development environment to avoid impacting the local machine but more importantly to make sure that all contributors in the GitOps teams are using a **consistent set of tools** and version.
+- **A docker container**
+  - Allows consistent developer experience on PC, Mac, Linux, including the right tools, git hooks and DevOps tools.
+  - Native integration with [Visual Studio Code](https://code.visualstudio.com/docs/remote/containers), [GitHub Codespaces](https://github.com/features/codespaces).
+  - Contains the versioned toolset you need to apply landing zones.
+  - Helps you switching components versions fast by separating the run environment and the configuration environment.
+  - Ensure pipeline ubiquity and abstraction run the rover everywhere, whichever pipeline technology.
 
-The Azure CAF rover is the same container regardless you are using Windows, Linux or macOS. On the local GitOps machine you need to install Visual Studio Code. The Azure CAF rover is executed locally in a container.
+- **A Terraform wrapper**
+  - Helps you store and retrieve Terraform state files on Azure storage account.
+  - Facilitates the transition to CI/CD.
+  - Enables seamless experience (state connection, execution traces, etc.) locally and inside pipelines.
 
-<img src="https://code.visualstudio.com/assets/docs/remote/containers/architecture-containers.png" width="75%">
+The rover is available from the Docker Hub in form of:
 
-You can learn more about the Visual Studio Code Remote on this [link](https://code.visualstudio.com/docs/remote/remote-overview).
+- [Standalone edition](https://hub.docker.com/r/aztfmod/rover/tags?page=1&ordering=last_updated): to be used for landing zones engineering or pipelines.
+- [Adding runner (agent) for the following platforms](https://hub.docker.com/r/aztfmod/rover-agent/tags?page=1&ordering=last_updated)
+  - Azure DevOps
+  - GitHub Actions
+  - Gitlab
+  - Terraform Cloud/Terraform Enterprise
 
-## Pre-requisites
+### Getting starter with CAF Terraform landing zones
 
-The Visual Studio Code system requirements describe the steps to follow to get your GitOps development environment ready -> [link](https://code.visualstudio.com/docs/remote/containers#_system-requirements)
+Get your Cloud Adoption Framework Terraform landing zones project starter here:  [caf-terraform-landingzones-starter](https://github.com/azure/caf-terraform-landingzones-starter)
 
-* **Windows**: Docker Desktop 2.0+ on Windows 10 Pro/Enterprise with Linux Container mode
-* **macOS**: Docker Desktop 2.0+
-* **Linux**: Docker CE/EE 18.06+ and Docker Compose 1.24+
 
-The Azure CAF rover is a Centos:7 base image and is hosted on the Docker Hub.
-https://hub.docker.com/r/aztfmod/rover/tags?page=1&ordering=last_updated
-
-Install
-* Visual Studio Code version 1.41+ - [link](https://code.visualstudio.com/Download)
-* Install Visual Studio Code Extension - Remote Development - [link](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
-
-## Repositories
-
-| Repo                                                                                              | Description                                                |
-|---------------------------------------------------------------------------------------------------|------------------------------------------------------------|
-| [caf-terraform-landingzones](https://github.com/azure/caf-terraform-landingzones)                 | landing zones repo with sample and core documentations     |
-| [rover](https://github.com/aztfmod/rover) (You are here!)                                         | devops toolset for operating landing zones                 |
-| [azure_caf_provider](https://github.com/aztfmod/terraform-provider-azurecaf)                      | custom provider for naming conventions                     |
-| [modules](https://registry.terraform.io/modules/aztfmod)                                          | set of curated modules available in the Terraform registry |
+[![asciicast](https://asciinema.org/a/413478.svg)](https://asciinema.org/a/413478)
 
 ## Community
 
