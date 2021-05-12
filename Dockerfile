@@ -202,6 +202,7 @@ RUN apt-get update && \
     #
     mkdir -p /tf/caf \
     /tf/rover \
+    /tf/logs \
     /home/${USERNAME}/.ansible \
     /home/${USERNAME}/.azure \
     /home/${USERNAME}/.gnupg \
@@ -212,7 +213,7 @@ RUN apt-get update && \
     /home/${USERNAME}/.terraform.cache/tfstates \
     /home/${USERNAME}/.vscode-server \
     /home/${USERNAME}/.vscode-server-insiders && \
-    chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf && \
+    chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf /tf/logs && \
     chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
