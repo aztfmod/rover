@@ -3,7 +3,7 @@
 error() {
     local parent_lineno="$1"
     local message="$2"
-
+    local code="${3:-1}"
     local line_message=""
     if [ "$parent_lineno" != "" ]; then
       line_message="on or near line ${parent_lineno}"
