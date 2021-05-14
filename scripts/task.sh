@@ -132,7 +132,7 @@ function run_task {
     export tf_action="$task_sub_command"
     deploy ${TF_VAR_workspace}
   else
-    run_non_terraform_tool "$task_executable" "$task_sub_command" "$task_requires_init" "$landing_zone_path" "$config_path" "$task_flags" "$task_parameters"
+    run_non_terraform_tool "$task_executable" "$task_sub_command" "$task_requires_init" "$landing_zone_path" "$config_path" "$task_flags" "$task_parameters" "$task_name"
   fi
 }
 
@@ -144,6 +144,7 @@ function run_non_terraform_tool {
   local config_path=$5
   local task_flags=$6
   local task_parameters=$7
+  local task_name=$8
 
   task_executable=$(append $task_executable $task_sub_command)
   task_executable=$(append "$task_executable" "$task_flags")
@@ -152,18 +153,27 @@ function run_non_terraform_tool {
   pushd "$landing_zone_path"  > /dev/null
     information "\n - running tool : $task_executable" 
     information "        lz path : $landing_zone_path"
-    
-    execute "$task_executable"
 
-    local status_code="$?"
-    if [ "$status_code" == "0" ]; then
-      success " - $task_name completed successfully with no issues. (status code: $status_code)"
-    fi
+    execute "$task_executable" "$task_name" 
   popd > /dev/null
 }
+
 function execute {
-  local task=$1
+  mkdir -p /tf/logs/
+  local errFile=/tf/logs/$task_name.log
+  rm -rf $errFile
+
+  local task="$1 2>&1 | tee -a $errFile"
+  local task_name=$2
+  local target_file=$3
   eval "$task"
+
+  if [ -s $errFile ]; then
+    RETURN_CODE=3000
+    error ${LINENO} "Error running ci task - $task_name" $RETURN_CODE
+  else
+    success " - $task_name completed successfully with no issues."
+  fi 
 }
 
 function get_task_by_name {

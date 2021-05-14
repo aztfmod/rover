@@ -1,6 +1,7 @@
 Describe 'ci.sh'
   Include scripts/ci.sh
   Include scripts/functions.sh
+
   Describe "verify_ci_parameters"
     #Function Mocks
     error() {
@@ -43,7 +44,6 @@ Describe 'ci.sh'
     Context "Symphony Yaml Provided, valid file"
       Describe "tasks registered"
         setup() {
-          register_ci_tasks
           export symphony_yaml_file="spec/harness/symphony.yml"
           export base_directory="."
 
@@ -54,10 +54,12 @@ Describe 'ci.sh'
           mkdir -p ./spec/harness/configs/level0/launchpad
           touch ./spec/harness/configs/level0/launchpad/configuration.tfvars
         }
+
         teardown(){
           rm -rf ./spec/harness/configs
           rm -rf ./spec/harness/landingzones
         }
+
         BeforeEach 'setup'
         AfterEach 'teardown'
 
@@ -124,16 +126,21 @@ Describe 'ci.sh'
   End
 
   Describe "execute_ci_actions"
-    Context "Happy path validation"
+
+    Context "Happy Path Validation"
+
       get_all_level_names() {
         echo "level1"
       }
+
       get_all_stack_names_for_level() {
         echo "foundations"
       }
+
       get_landingzone_path_for_stack() {
         echo "caf_modules_public/landingzones/caf_foundations/"
       }
+
       run_task() {
         echo "run_task arguments: $@";
         return 0
@@ -142,8 +149,10 @@ Describe 'ci.sh'
       setup() {
         export symphony_yaml_file="spec/harness/symphony.yml"
         export base_directory="."
+        export TF_VAR_level='all'
       }
-      Before 'setup'
+
+      BeforeEach 'setup'
 
       It 'should return no errors when executing all task using the test symphony yaml.'
         When call execute_ci_actions
@@ -152,7 +161,70 @@ Describe 'ci.sh'
         The error should eq ''
         The status should eq 0
       End
+
     End
+
+  End
+
+  Describe "single level test - execute_ci_actions"
+
+    Context "Single Level Test - Invalid Level"
+
+      #Function Mocks
+      error() {
+          local parent_lineno="$1"
+          local message="$2"
+          >&2 echo "Error line:${parent_lineno}: message:${message} status :${code}"
+          return ${code}
+      }
+
+      setup() {
+        export symphony_yaml_file="spec/harness/symphony.yml"
+        export base_directory="."
+        export TF_VAR_level='level1'
+      }
+
+      BeforeEach 'setup'
+
+      It 'should return an error when executing because the level is invalid.'
+        When call execute_ci_actions
+        The output should include "@Starting CI tools execution"
+        The error should include 'message:No stacks found, check that level level1 exist and has stacks defined in spec/harness/symphony.yml status :1'
+      End
+
+    End
+
+  End
+
+  Describe "execute_ci_actions - single level test "
+
+    Context "Single Level Test - Valid Level"
+
+      #Function Mocks
+      error() {
+          local parent_lineno="$1"
+          local message="$2"
+          >&2 echo "Error line:${parent_lineno}: message:${message} status :${code}"
+          return ${code}
+      }
+
+      setup() {
+        export symphony_yaml_file="spec/harness/symphony.yml"
+        export base_directory="."
+        export TF_VAR_level='level0'
+      }
+
+      BeforeEach 'setup'
+
+      It 'should return no errors when executing all task using the test symphony yaml because the level name is valid.'
+        When call execute_ci_actions
+        The output should include "@Starting CI tools execution"
+        The error should eq ''
+        The status should eq 0
+      End
+
+    End
+
   End
 
 End
