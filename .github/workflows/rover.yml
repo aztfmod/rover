@@ -1,9 +1,7 @@
 name: Build Rover dev images
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   build:
