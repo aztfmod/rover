@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM ubuntu:20.04 as base
+FROM ubuntu:21.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
@@ -51,15 +51,14 @@ COPY ./.pip_to_patch_latest .
 COPY ./scripts/.kubectl_aliases .
 COPY ./scripts/zsh-autosuggestions.zsh .
 
-# installation tools
+
+    # installation common tools
 RUN apt-get update && \
     apt-get install -y \
-    apt-utils \
     curl \
-    gettext \
-    python3-pip \
-    apt-transport-https \
     ca-certificates \
+    apt-transport-https \
+    gettext \
     software-properties-common \
     unzip \
     zip \
@@ -68,41 +67,6 @@ RUN apt-get update && \
     vim \
     gpg \
     gpg-agent && \
-    # ############### APT Repositories ###################
-    #
-    # Add Azure repository
-    #
-    curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
-    gpg --dearmor | \
-    tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null && \
-    #
-    # Add Azure CLI apt repository
-    #
-    echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ focal main"  | \
-    tee /etc/apt/sources.list.d/azure-cli.list && \
-    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | tee /etc/apt/sources.list.d/msprod.list && \
-    #
-    # Add Docker repository
-    #
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable" && \
-    #
-    # Add Terraform repository
-    #
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
-    apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com focal main" && \
-    #
-    # Kubernetes repo
-    #
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list && \
-    #
-    # Golang repo
-    #
-    apt-add-repository ppa:longsleep/golang-backports && \
-    #
-    apt-get update -y && \
-    apt-get upgrade -y && \
     #
     # Create USERNAME
     #
@@ -111,14 +75,45 @@ RUN apt-get update && \
     useradd --uid $USER_UID -m -G docker ${USERNAME} && \
     #
     # Set the locale
-    locale-gen en_US.UTF-8 && \
+    locale-gen en_US.UTF-8
+
+
     #
-    # ################# Install clients ###################
+    # ############### APT Repositories ###################
+    #
+    # Add Microsoft key
+    #
+RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    #
+    # Add Microsoft repository
+    #
+    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && \
+    curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
+    #
+    # Add Docker repository
+    #
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu hirsute stable" > /etc/apt/sources.list.d/docker.list && \
+    #
+    # Add Terraform repository
+    #
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/hashicorp-archive-keyring.gpg && \
+    echo "deb [arch=amd64] https://apt.releases.hashicorp.com hirsute main" > /etc/apt/sources.list.d/hashicorp.list && \
+    #
+    # Kubernetes repo
+    #
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |  gpg --dearmor > /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg && \
+    echo "deb [arch=amd64] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
+    #
+    apt-get update
+
+    #
+    # ################# Install binary clients ###################
     #
     #
-    # Install Docker-Compose - required to rebuild the rover from the rover ;)
+    # Install Docker-Compose - required to rebuild the rover
     #
-    echo "Installing docker-compose ${versionDockerCompose}..." && \
+RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
@@ -142,23 +137,8 @@ RUN apt-get update && \
     # Install terraform docs
     #
     echo "Installing terraform docs ${versionTerraformDocs}..." && \
-    curl -sSL -o /bin/terraform-docs https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v0.11.1-linux-amd64 && \
+    curl -sSL -o /bin/terraform-docs https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64 && \
     chmod +x /bin/terraform-docs && \
-    #
-    # Install pre-commit
-    #
-    echo "Installing pre-commit ..." && \
-    pip3 install --no-cache-dir pre-commit && \
-    #
-    # Install yq
-    #
-    echo "Installing yq ..." && \
-    pip3 install --no-cache-dir yq && \
-    #
-    # Install checkov
-    #
-    echo "Installing Checkov ${versionCheckov} ..." && \
-    pip3 install --no-cache-dir checkov==${versionCheckov} && \
     #
     # Install baash completions for git
     #
@@ -169,39 +149,88 @@ RUN apt-get update && \
     # kubectl node shell
     #
     curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
-    chmod +x /usr/local/bin/kubectl-node_shell && \
+    chmod +x /usr/local/bin/kubectl-node_shell
+
     #
+    # ################# Install PIP clients ###################
     #
-    ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
-    azure-cli=${versionAzureCli}-1~focal \
-    mssql-tools=${versionMssqlTools}-1 \
-    kubectl=${versionKubectl}-00 \
-    packer=${versionPacker} \
-    docker-ce-cli \
-    golang-go \
-    git=1:${versionGit}-1ubuntu3 \
-    ansible=${versionAnsible}+dfsg-1 \
-    openssh-server \
-    fonts-powerline \
-    jq=${versionJq}-1ubuntu0.20.04.1 && \
+RUN apt-get install -y python3-pip && \
+    #
+    # Install pre-commit
+    #
+    echo "Installing pre-commit ..." && \
+    pip3 install pre-commit && \
+    #
+    # Install yq
+    #
+    echo "Installing yq ..." && \
+    pip3 install yq && \
+    #
+    # Install checkov
+    #
+    echo "Installing Checkov ${versionCheckov} ..." && \
+    pip3 install checkov==${versionCheckov} && \
+    #
+    # Install Azure-cli
+    #
+    pip3 install azure-cli==${versionAzureCli} && \
+    #
+    # Clean-up
+    #
+    pip3 cache purge && \
+    apt-get remove -y \
+    python3-pip
+
+    #
+    # ################ Install apt packages ##################
+    #
+RUN ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
+    mssql-tools=${versionMssqlTools}-1
+    #
+RUN apt-get install -y --no-install-recommends \
+    kubectl=${versionKubectl}-00
+
+RUN apt-get install -y --no-install-recommends \
+    packer=${versionPacker}
+
+RUN apt-get install -y --no-install-recommends \
+    docker-ce-cli
+
+RUN apt-get install -y --no-install-recommends \
+    golang
+
+RUN apt-get install -y --no-install-recommends \
+    git=${versionGit}
+
+RUN apt-get install -y --no-install-recommends \
+    ansible=${versionAnsible}
+
+RUN apt-get install -y --no-install-recommends \
+    openssh-server
+
+RUN apt-get install -y --no-install-recommends \
+    fonts-powerline
+
+RUN apt-get install -y --no-install-recommends \
+    jq=${versionJq}
     #
     # Patch
     # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
     #
-    for i in  $(cat .pip_to_patch_latest); do pip3 install $i --upgrade; done && \
-    apt-get upgrade -y && \
+    # for i in  $(cat .pip_to_patch_latest); do pip3 install $i --upgrade; done && \
+    # apt-get upgrade -y && \
     # Clean-up
     #
-    apt-get remove -y \
-    apt-utils \
-    python3-pip && \
-    apt-get autoremove -y && \
-    rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
-    rm -rf /var/lib/apt/lists/* && \
+    # apt-get remove -y \
+    # apt-utils && \
+    # apt-get autoremove -y && \
+    # rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
+    # rm -rf /var/lib/apt/lists/*
+
     #
     # Create USERNAME home folder structure
     #
-    mkdir -p /tf/caf \
+RUN mkdir -p /tf/caf \
     /tf/rover \
     /tf/logs \
     /home/${USERNAME}/.ansible \
@@ -280,9 +309,11 @@ from base
 ARG versionTerraform
 ARG USERNAME=vscode
 ARG versionRover
+ARG versionTflint
 
 ENV versionRover=${versionRover} \
-    versionTerraform=${versionTerraform}
+    versionTerraform=${versionTerraform} \
+    versionTflint=${versionTflint}
 
 #
 # Install Terraform
@@ -298,7 +329,7 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     echo ${versionRover} > /tf/rover/version.txt
 
 RUN echo "Installing Tflint Ruleset for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v0.9.0/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflint}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
