@@ -3,7 +3,7 @@
 error() {
     local parent_lineno="$1"
     local message="$2"
-
+    local code="${3:-1}"
     local line_message=""
     if [ "$parent_lineno" != "" ]; then
       line_message="on or near line ${parent_lineno}"
@@ -589,11 +589,17 @@ function get_logged_user_object_id {
 
         case "${clientId}" in
             "systemAssignedIdentity")
-                computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
-                principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
-                echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
-                export TF_VAR_logged_user_objectId=${principalId}
-                export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
+                if [ -z ${MSI_ID} ]; then
+                    computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
+                    principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
+                    echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
+                    export TF_VAR_logged_user_objectId=${principalId}
+                    export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
+                else
+                    echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
+                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
+                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
+                fi
                 ;;
             "userAssignedIdentity")
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
