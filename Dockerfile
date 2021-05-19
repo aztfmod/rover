@@ -62,6 +62,7 @@ RUN apt-get update && \
     software-properties-common \
     unzip \
     zip \
+    make \
     sudo \
     locales \
     vim \
