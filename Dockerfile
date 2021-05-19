@@ -175,6 +175,10 @@ RUN apt-get install -y python3-pip && \
     #
     pip3 install azure-cli==${versionAzureCli} && \
     #
+    # Install pywinrm
+    #
+    pip3 install pywinrm && \
+    #
     # Clean-up
     #
     pip3 cache purge && \
