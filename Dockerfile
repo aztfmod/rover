@@ -220,8 +220,8 @@ RUN apt-get install -y --no-install-recommends \
     jq=${versionJq}
 
 RUN apt-get install -y --no-install-recommends \
-    powershell \
-    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force \
+    powershell
+    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force
     pwsh -Command Install-Module -name Az.Resources -Force
     #
     # Patch
