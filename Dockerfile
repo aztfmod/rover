@@ -220,9 +220,11 @@ RUN apt-get install -y --no-install-recommends \
     jq=${versionJq}
 
 RUN apt-get install -y --no-install-recommends \
-    powershell
-    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force
-    pwsh -Command Install-Module -name Az.Resources -Force
+    powershell && \
+
+    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
+    pwsh -Command Install-Module -name Az.Resources -Force && \
+
     #
     # Patch
     # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
