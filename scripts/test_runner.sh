@@ -5,7 +5,10 @@ function run_integration_tests {
 
   if [ ! -x "$(command -v go)" ]; then
     error "go is not installed and is a required dependency to run integration tests."
-    
+  fi  
+
+  if [[ ! -d $base_directory ]]; then
+    error "Integration test path is invalid. $base_directory is not a valid path."
   fi  
 
   get_storage_id
