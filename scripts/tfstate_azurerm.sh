@@ -100,7 +100,7 @@ function upload_tfstate {
 function download_tfstate {
     echo "@calling download_tfstate"
 
-    echo "Downloading Remote state from to the cloud"
+    echo "Downloading Remote state from the cloud"
 
     stg=$(az storage account show --ids ${id} -o json)
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
