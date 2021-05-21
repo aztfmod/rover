@@ -44,9 +44,3 @@ find_and_export_prefix () {
   echo $prefix
 }
 
-rover test \
-      -b /home/hattan/projects/caf/symphony/tests \
-      -env one_week \
-      -level level0 \
-      -tfstate caf_launchpad.tfstate \
-      -d 
