@@ -57,6 +57,14 @@ function display_clone_instructions {
                 echo
                 shift 1
                 ;;
+            --clone-project-name)
+                echo "--clone-project-name specify the GitHub repo to download from, default is Azure/caf-terraform-landingzones"
+                echo
+                echo "      Example: --clone-project-name Azure/caf-terraform-landingzones-starter --clone-branch starter will download the starter branch of the Azure/caf-terraform-landingzones-starter repo"
+                echo "      Note: the default --cone-branch is master and this is not available in the example repo above so the starter branch is specified."
+                echo
+                shift 1
+                ;;
             --examples)
                 echo "By default the rover will clone the azure/caf-terraform-landingzones into the local rover folder /tf/caf/landinzones"
                 echo
@@ -75,6 +83,26 @@ function display_clone_instructions {
     done
 }
 
+function clone_sample_repository {
+  local sample=$1
+
+  set_clone_exports "/tf/caf/$sample/landingzones" "/caf_launchpad" "1" "Azure/caf-terraform-landingzones" "master"
+  clone_repository
+
+  set_clone_exports "/tf/caf/$sample/landingzones" "/caf_solution" "1" "Azure/caf-terraform-landingzones" "master"
+  clone_repository
+
+  set_clone_exports "/tf/caf/$sample/configs" "/configuration/$sample" "2" "Azure/caf-terraform-landingzones-starter" "starter"
+  clone_repository
+}
+
+function set_clone_exports {
+  export clone_destination=$1
+  export clone_folder=$2
+  export clone_folder_strip=$3
+  export clone_project_name=$4
+  export landingzone_branch=$5
+}
 
 function clone_repository {
     echo "@calling clone_repository"
@@ -147,6 +175,14 @@ function process_clone_parameter {
                 exit 24
             else
                 export clone_folder_strip=${2}
+            fi
+            ;;
+        --clone-project-name)
+            if [ $# -eq 1 ]; then
+            display_clone_instructions ${1}
+            exit 24
+            else
+            export clone_project_name=${2}
             fi
             ;;
     esac

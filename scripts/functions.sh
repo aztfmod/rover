@@ -96,6 +96,10 @@ function process_actions {
             workspace ${tf_command}
             exit 0
             ;;
+        clone_sample)
+            clone_sample_repository "demo"
+            exit 0
+            ;;
         clone)
             clone_repository
             exit 0

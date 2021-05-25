@@ -38,6 +38,11 @@ mkdir -p ${TF_PLUGIN_CACHE_DIR}
 
 while (( "$#" )); do
     case "${1}" in
+        --clone-sample)
+            export caf_command="clone_sample"
+            echo "cloning sample"
+            shift 1
+            ;;
         --clone|--clone-branch|--clone-folder|--clone-destination|--clone-folder-strip)
             export caf_command="clone"
             process_clone_parameter $@
