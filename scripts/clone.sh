@@ -40,7 +40,7 @@ function display_clone_instructions {
                 ;;
             --clone-folder)
                 echo "--clone-folder specify the folder to extract from the original project"
-                echo 
+                echo
                 echo "      Example: --clone-folder /landingzones/landingzone_caf_foundations will only extract the caf foundations landing zone"
                 echo
                 shift 1

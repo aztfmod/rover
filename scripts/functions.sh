@@ -41,18 +41,6 @@ success() {
     printf "\e[32m$@\n\e[0m"
 }
 
-
-exit_if_error() {
-  local exit_code=$1
-  shift
-  [[ $exit_code ]] &&               # do nothing if no error code passed
-    ((exit_code != 0)) && {         # do nothing if error code is 0
-      printf 'ERROR: %s\n' "$@" >&2 # we can use better logging here
-      exit "$exit_code"             # we could also check to make sure
-                                    # error code is numeric when passed
-    }
-}
-
 #
 # Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
 #
@@ -517,18 +505,10 @@ function get_resource_from_assignedIdentityInfo {
     echo $msiResource
 }
 
-function set_arm_tenant_id_user_assigned_client {
-    # If User Assigned MSI is used to provision the launchpad
-    if [ "$TF_VAR_level" == "level0" ]; then
-        export ARM_TENANT_ID=$(az account show | jq -r '.tenantId')
-    else
-        export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${ARM_TENANT_ID}"
-    fi
-}
-
 function export_azure_cloud_env {
     local tf_cloud_env=''
 
+    # Set cloud variables for terraform
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
     export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
@@ -557,6 +537,13 @@ function export_azure_cloud_env {
 
     echo " - AZURE_ENVIRONMENT: ${AZURE_ENVIRONMENT}"
     echo " - ARM_ENVIRONMENT: ${ARM_ENVIRONMENT}"
+
+    # Set landingzone cloud variables for modules
+    echo "Initalizing az cloud variables"
+    while IFS="=" read key value; do
+        echo " - TF_VAR_$key = $value"
+        export "TF_VAR_$key=$value"
+    done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
 
 function get_logged_user_object_id {
@@ -609,7 +596,6 @@ function get_logged_user_object_id {
                 export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
                 export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
-                # set_arm_tenant_id_user_assigned_client // Not sure about this function
                 ;;
             *)
                 # When connected with a service account the name contains the objectId
