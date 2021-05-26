@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM ubuntu:21.04 as base
+FROM ubuntu:21.10 as base
 
 SHELL ["/bin/bash", "-c"]
 
