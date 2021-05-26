@@ -508,6 +508,7 @@ function get_resource_from_assignedIdentityInfo {
 function export_azure_cloud_env {
     local tf_cloud_env=''
 
+    # Set cloud variables for terraform
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
     export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
@@ -536,6 +537,13 @@ function export_azure_cloud_env {
 
     echo " - AZURE_ENVIRONMENT: ${AZURE_ENVIRONMENT}"
     echo " - ARM_ENVIRONMENT: ${ARM_ENVIRONMENT}"
+    
+    # Set landingzone cloud variables for modules
+    echo "Initalizing az cloud variables"
+    while IFS="=" read key value; do
+        echo " - TF_VAR_$key = $value"
+        export "TF_VAR_$key=$value"
+    done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
 
 function get_logged_user_object_id {
