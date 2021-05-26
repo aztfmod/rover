@@ -1,6 +1,6 @@
 name: Build Rover ci images
 
-on: 
+on:
   workflow_dispatch:
 
 jobs:

@@ -537,7 +537,7 @@ function export_azure_cloud_env {
 
     echo " - AZURE_ENVIRONMENT: ${AZURE_ENVIRONMENT}"
     echo " - ARM_ENVIRONMENT: ${ARM_ENVIRONMENT}"
-    
+
     # Set landingzone cloud variables for modules
     echo "Initalizing az cloud variables"
     while IFS="=" read key value; do

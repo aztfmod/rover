@@ -51,7 +51,7 @@ function build_base_rover_image {
             tag=${versionTerraform}-${tag_date_preview}
             export rover="${registry}rover-ci:${tag}"
             tag_strategy="ci-"
-            ;;            
+            ;;
         "local")
             registry=""
             tag=${versionTerraform}-${tag_date_preview}
@@ -98,13 +98,13 @@ function build_rover_agents {
     echo " - strategy      - ${strategy}"
     echo " - tag_strategy  - ${tag_strategy}"
     cd agents
-    
+
     if [ "$strategy" == "ci" ]; then
         tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build  \
             --build-arg versionRover="${rover}" gitlab
     else
         sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build \
-            --build-arg versionRover="${rover}"         
+            --build-arg versionRover="${rover}"
     fi
 
         case "${strategy}" in
@@ -114,8 +114,8 @@ function build_rover_agents {
             if [ "$strategy" == "ci" ]; then
                 sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push gitlab
             else
-                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push        
-            fi                   
+                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push
+            fi
             ;;
     esac
 
@@ -130,6 +130,6 @@ if [ "$strategy" == "ci" ]; then
 else
     while read versionTerraform; do
         build_base_rover_image ${versionTerraform} ${strategy}
-    done <./.env.terraform          
+    done <./.env.terraform
 fi
 

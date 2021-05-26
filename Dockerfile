@@ -67,6 +67,7 @@ RUN apt-get update && \
     locales \
     vim \
     gpg \
+    apt-utils \
     gpg-agent && \
     #
     # Create USERNAME
@@ -221,7 +222,6 @@ RUN apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y --no-install-recommends \
     powershell && \
-
     pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
     pwsh -Command Install-Module -name Az.Resources -Force
 

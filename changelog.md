@@ -1,9 +1,9 @@
 ## 2007.2408
 
 NEW COMMANDS
-* Launchpad commands moved into the rover with 
+* Launchpad commands moved into the rover with
 ```bash
-rover -lz /tf/caf/landingzones/launchpad -a apply -launchpad 
+rover -lz /tf/caf/landingzones/launchpad -a apply -launchpad
 ```
 
 * Clone the public launchpad folder
@@ -69,7 +69,7 @@ NEW FEATURES:
 
 # v1912.1312
 UPGRADE NOTES:
-* cleanup your vscode Dev Container volumes 
+* cleanup your vscode Dev Container volumes
 docker volume rm -f $(docker volume ls -f label=caf)
 
 ENHANCEMENTS:

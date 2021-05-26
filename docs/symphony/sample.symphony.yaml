@@ -41,7 +41,7 @@ levels:
     landingZonePath: caf_modules_public/landingzones/caf_networking/
     configurationPath: base_config/level2/networking/hub/
     tfState: networking_hub.tfstate
-    
+
   - stack: shared_services
     landingZonePath: caf_modules_public/landingzones/caf_shared_services/
     configurationPath: base_config/level2/shared_services/
