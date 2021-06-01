@@ -106,6 +106,9 @@ function process_actions {
             set_default_parameters
             execute_ci_actions
             ;;
+        cd)
+            verify_cd_parameters
+            ;;
         *)
             display_instructions
     esac

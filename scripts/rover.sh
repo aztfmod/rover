@@ -12,6 +12,7 @@ source /tf/rover/banner.sh
 
 # symphony
 source /tf/rover/ci.sh
+source /tf/rover/cd.sh
 source /tf/rover/symphony_yaml.sh
 
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
