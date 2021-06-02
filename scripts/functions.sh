@@ -1,18 +1,16 @@
-
-
 error() {
     local parent_lineno="$1"
     local message="$2"
     local code="${3:-1}"
     local line_message=""
     if [ "$parent_lineno" != "" ]; then
-      line_message="on or near line ${parent_lineno}"
+        line_message="on or near line ${parent_lineno}"
     fi
 
-    if [[ -n "$message" ]] ; then
-        >&2 echo -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
+    if [[ -n "$message" ]]; then
+        echo >&2 -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
     else
-        >&2 echo -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
+        echo >&2 -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
     fi
     echo ""
 
@@ -22,15 +20,14 @@ error() {
 }
 
 error_message() {
-  >&2 printf "\e[91m$@\n\e[0m"
+    printf >&2 "\e[91m$@\n\e[0m"
 }
 
-
 debug() {
-  local message=$1
-  if [ "$debug_mode" == "true" ]; then
-    echo "$message"
-  fi
+    local message=$1
+    if [ "$debug_mode" == "true" ]; then
+        echo "$message"
+    fi
 }
 
 information() {
@@ -41,15 +38,14 @@ success() {
     printf "\e[32m$@\n\e[0m"
 }
 
-
 exit_if_error() {
-  local exit_code=$1
-  shift
-  [[ $exit_code ]] &&               # do nothing if no error code passed
-    ((exit_code != 0)) && {         # do nothing if error code is 0
-      printf 'ERROR: %s\n' "$@" >&2 # we can use better logging here
-      exit "$exit_code"             # we could also check to make sure
-                                    # error code is numeric when passed
+    local exit_code=$1
+    shift
+    [[ $exit_code ]] &&               # do nothing if no error code passed
+        ((exit_code != 0)) && {       # do nothing if error code is 0
+        printf 'ERROR: %s\n' "$@" >&2 # we can use better logging here
+        exit "$exit_code"             # we could also check to make sure
+        # error code is numeric when passed
     }
 }
 
@@ -57,73 +53,71 @@ exit_if_error() {
 # Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
 #
 function execute_with_backoff {
-  local max_attempts=${ATTEMPTS-5}
-  local timeout=${TIMEOUT-20}
-  local attempt=0
-  local exitCode=0
+    local max_attempts=${ATTEMPTS-5}
+    local timeout=${TIMEOUT-20}
+    local attempt=0
+    local exitCode=0
 
-  while [[ $attempt < $max_attempts ]]
-  do
-    set +e
-    "$@"
-    exitCode=$?
-    set -e
+    while [[ $attempt < $max_attempts ]]; do
+        set +e
+        "$@"
+        exitCode=$?
+        set -e
 
-    if [[ $exitCode == 0 ]]
-    then
-      break
+        if [[ $exitCode == 0 ]]; then
+            break
+        fi
+
+        echo "Failure! Return code ${exitCode} - Retrying in $timeout.." 1>&2
+        sleep $timeout
+        attempt=$((attempt + 1))
+        timeout=$((timeout * 2))
+    done
+
+    if [[ $exitCode != 0 ]]; then
+        echo "Hit the max retry count ($@)" 1>&2
     fi
 
-    echo "Failure! Return code ${exitCode} - Retrying in $timeout.." 1>&2
-    sleep $timeout
-    attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 2 ))
-  done
-
-  if [[ $exitCode != 0 ]]
-  then
-    echo "Hit the max retry count ($@)" 1>&2
-  fi
-
-  return $exitCode
+    return $exitCode
 }
 
 function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
-        workspace)
-            workspace ${tf_command}
-            exit 0
-            ;;
-        clone_sample)
-            clone_sample_repository "demo"
-            exit 0
-            ;;
-        clone)
-            clone_repository
-            exit 0
-            ;;
-        landingzone_mgmt)
-            landing_zone ${tf_command}
-            exit 0
-            ;;
-        launchpad|landingzone)
-            verify_parameters
-            deploy ${TF_VAR_workspace}
-            ;;
-        tfc)
-            verify_parameters
-            deploy_tfc ${TF_VAR_workspace}
-            ;;
-        ci)
-            register_ci_tasks
-            verify_ci_parameters
-            set_default_parameters
-            execute_ci_actions
-            ;;
-        *)
-            display_instructions
+    workspace)
+        workspace ${tf_command}
+        exit 0
+        ;;
+    walkthrough)
+        execute_walkthrough
+        exit 0
+        ;;
+    clone)
+        clone_repository
+        exit 0
+        ;;
+    landingzone_mgmt)
+        landing_zone ${tf_command}
+        exit 0
+        ;;
+    launchpad | landingzone)
+        verify_parameters
+        deploy ${TF_VAR_workspace}
+        ;;
+    tfc)
+        verify_parameters
+        deploy_tfc ${TF_VAR_workspace}
+        ;;
+    ci)
+        register_ci_tasks
+        verify_ci_parameters
+        set_default_parameters
+        execute_ci_actions
+        ;;
+    *)
+        display_instructions
+        ;;
     esac
 }
 
@@ -153,7 +147,7 @@ function display_instructions {
 
     if [ -d "/tf/caf/public/landingzones" ]; then
         for i in $(ls -d /tf/caf/public/landingzones/*); do echo ${i%%/}; done
-            echo ""
+        echo ""
     fi
 }
 
@@ -223,24 +217,24 @@ function verify_azure_session {
     fi
 
     if [ "${caf_command}" == "logout" ]; then
-            echo "Closing Azure session"
-            az logout || true
+        echo "Closing Azure session"
+        az logout || true
 
-            # Cleaup any service principal session
-            unset ARM_TENANT_ID
-            unset ARM_SUBSCRIPTION_ID
-            unset ARM_CLIENT_ID
-            unset ARM_CLIENT_SECRET
+        # Cleaup any service principal session
+        unset ARM_TENANT_ID
+        unset ARM_SUBSCRIPTION_ID
+        unset ARM_CLIENT_ID
+        unset ARM_CLIENT_SECRET
 
-            echo "Azure session closed"
-            exit
+        echo "Azure session closed"
+        exit
     fi
 
     echo "Checking existing Azure session"
     session=$(az account show -o json 2>/dev/null || true)
     if [ "$session" == '' ]; then
-            display_login_instructions
-            error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
+        display_login_instructions
+        error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
     fi
 
 }
@@ -250,7 +244,7 @@ function check_subscription_required_role {
     role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups)
 
     if [ "${role}" == "[]" ]; then
-           error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
+        error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
     else
         echo "User is ${1} of the subscription"
     fi
@@ -271,10 +265,10 @@ function list_deployed_landingzones {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         -c ${TF_VAR_workspace} \
         --auth-mode login \
-        --account-name ${storage_account_name} -o json |  \
-    jq -r '["landing zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' | \
-    awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1'  | \
-    column -t -s ','
+        --account-name ${storage_account_name} -o json |
+        jq -r '["landing zone", "size in Kb", "last modification"], (.[] | [.name, .properties.contentLength / 1024, .properties.lastModified]) | @csv' |
+        awk 'BEGIN{ FS=OFS="," }NR>1{ $2=sprintf("%.2f",$2) }1' |
+        column -t -s ','
 
     echo ""
 }
@@ -308,7 +302,6 @@ function login_as_launchpad {
     export TF_VAR_lower_container_name=${TF_VAR_workspace}
 
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
-
 
     if [ ${caf_command} == "landingzone" ]; then
 
@@ -347,29 +340,29 @@ function deploy_landingzone {
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
     case "${tf_action}" in
-        "plan")
-            echo "calling plan"
-            plan
-            ;;
-        "apply")
-            echo "calling plan and apply"
-            plan
-            apply
-            ;;
-        "validate")
-            echo "calling validate"
-            validate
-            ;;
-        "destroy")
-            echo "calling destroy"
-            destroy
-            ;;
-        "init")
-            echo "init no-op"
-            ;;
-        *)
-            other
-            ;;
+    "plan")
+        echo "calling plan"
+        plan
+        ;;
+    "apply")
+        echo "calling plan and apply"
+        plan
+        apply
+        ;;
+    "validate")
+        echo "calling validate"
+        validate
+        ;;
+    "destroy")
+        echo "calling destroy"
+        destroy
+        ;;
+    "init")
+        echo "init no-op"
+        ;;
+    *)
+        other
+        ;;
     esac
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
@@ -386,23 +379,23 @@ function workspace {
     get_storage_id
 
     if [ "${id}" == "null" ]; then
-            display_launchpad_instructions
-            exit 1000
+        display_launchpad_instructions
+        exit 1000
     fi
 
     case "${1}" in
-        "list")
-            workspace_list
-            ;;
-        "create")
-            workspace_create ${2}
-            ;;
-        "delete")
-            workspace_delete ${2}
-            ;;
-        *)
-            echo "launchpad workspace [ list | create | delete ]"
-            ;;
+    "list")
+        workspace_list
+        ;;
+    "create")
+        workspace_create ${2}
+        ;;
+    "delete")
+        workspace_delete ${2}
+        ;;
+    *)
+        echo "launchpad workspace [ list | create | delete ]"
+        ;;
     esac
 }
 
@@ -417,13 +410,13 @@ function workspace_list {
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
     echo " Listing workspaces:"
-    echo  ""
+    echo ""
     az storage container list \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --auth-mode "login" \
-        --account-name ${storage_account_name} -o json |  \
-    jq -r '["workspace", "last modification", "lease ststus"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' | \
-    column -t -s ','
+        --account-name ${storage_account_name} -o json |
+        jq -r '["workspace", "last modification", "lease ststus"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
+        column -t -s ','
 
     echo ""
 }
@@ -438,7 +431,7 @@ function workspace_create {
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
     echo " Create $1 workspace"
-    echo  ""
+    echo ""
     az storage container create \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
@@ -459,7 +452,7 @@ function workspace_delete {
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
     echo " Delete $1 workspace"
-    echo  ""
+    echo ""
     az storage container delete \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
@@ -492,7 +485,7 @@ function clean_up_variables {
     unset ARM_ENVIRONMENT
 
     echo "clean_up backend_files"
-    find /tf/caf -name  backend.azurerm.tf -delete
+    find /tf/caf -name backend.azurerm.tf -delete
 
 }
 
@@ -506,15 +499,15 @@ function get_resource_from_assignedIdentityInfo {
     fi
 
     case $msi in
-        *"MSIResource"*)
-            msiResource=${msi//MSIResource-}
+    *"MSIResource"*)
+        msiResource=${msi//MSIResource-/}
         ;;
-        *"MSIClient"*)
-            msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-}'].{id:id}" -o tsv)
+    *"MSIClient"*)
+        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv)
         ;;
-        *)
-            echo "Warning: MSI identifier unknown."
-            msiResource=${msi//MSIResource-}
+    *)
+        echo "Warning: MSI identifier unknown."
+        msiResource=${msi//MSIResource-/}
         ;;
     esac
 
@@ -540,16 +533,16 @@ function export_azure_cloud_env {
     if [ -z "$cloud_name" ]; then
 
         case $AZURE_ENVIRONMENT in
-            AzureCloud)
+        AzureCloud)
             tf_cloud_env='public'
             ;;
-            AzureChinaCloud)
+        AzureChinaCloud)
             tf_cloud_env='china'
             ;;
-            AzureUSGovernment)
+        AzureUSGovernment)
             tf_cloud_env='usgovernment'
             ;;
-            AzureGermanCloud)
+        AzureGermanCloud)
             tf_cloud_env='german'
             ;;
         esac
@@ -592,35 +585,35 @@ function get_logged_user_object_id {
         export keyvault=$(az keyvault list --subscription ${TF_VAR_tfstate_subscription_id} --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
 
         case "${clientId}" in
-            "systemAssignedIdentity")
-                if [ -z ${MSI_ID} ]; then
-                    computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
-                    principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
-                    echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
-                    export TF_VAR_logged_user_objectId=${principalId}
-                    export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
-                else
-                    echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
-                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
-                fi
-                ;;
-            "userAssignedIdentity")
-                msi=$(az account show | jq -r .user.assignedIdentityInfo)
-                echo " - logged in Azure with User Assigned Identity: ($msi)"
-                msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
-                export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
-                # set_arm_tenant_id_user_assigned_client // Not sure about this function
-                ;;
-            *)
-                # When connected with a service account the name contains the objectId
-                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
-                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
-                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
-                ;;
+        "systemAssignedIdentity")
+            if [ -z ${MSI_ID} ]; then
+                computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
+                principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
+                echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
+                export TF_VAR_logged_user_objectId=${principalId}
+                export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
+            else
+                echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
+                export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
+                export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
+            fi
+            ;;
+        "userAssignedIdentity")
+            msi=$(az account show | jq -r .user.assignedIdentityInfo)
+            echo " - logged in Azure with User Assigned Identity: ($msi)"
+            msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
+            export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
+            export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+            export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
+            export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
+            # set_arm_tenant_id_user_assigned_client // Not sure about this function
+            ;;
+        *)
+            # When connected with a service account the name contains the objectId
+            export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+            export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+            echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
+            ;;
         esac
 
     fi
@@ -636,33 +629,33 @@ function deploy {
     get_logged_user_object_id
 
     case ${id} in
-        "")
-            echo "No launchpad found."
-            if [ "${caf_command}" == "launchpad" ]; then
-                if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                    echo "Recover from an un-finished previous execution"
-                    if [ "${tf_action}" == "destroy" ]; then
-                        destroy
-                    else
-                        initialize_state
-                    fi
+    "")
+        echo "No launchpad found."
+        if [ "${caf_command}" == "launchpad" ]; then
+            if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
+                echo "Recover from an un-finished previous execution"
+                if [ "${tf_action}" == "destroy" ]; then
+                    destroy
                 else
-                    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-                    if [ "${tf_action}" == "destroy" ]; then
-                        echo "There is no launchpad in this subscription"
-                    else
-                        echo "Deploying from scratch the launchpad"
-                        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-                        initialize_state
-                    fi
-                    exit
+                    initialize_state
                 fi
             else
-                error ${LINENO} "You need to initialise a launchpad first with the command \n
-                rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
+                rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                if [ "${tf_action}" == "destroy" ]; then
+                    echo "There is no launchpad in this subscription"
+                else
+                    echo "Deploying from scratch the launchpad"
+                    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                    initialize_state
+                fi
+                exit
             fi
+        else
+            error ${LINENO} "You need to initialise a launchpad first with the command \n
+                rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
+        fi
         ;;
-        *)
+    *)
 
         # Get the launchpad version
         caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
@@ -686,7 +679,7 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
+            "plan" | "apply" | "validate" | "import" | "output" | "taint" | "state list" | "state rm" | "state show")
                 deploy_from_remote_state
                 ;;
             *)
@@ -697,7 +690,6 @@ function deploy {
         ;;
     esac
 
-
 }
 
 function landing_zone {
@@ -706,33 +698,33 @@ function landing_zone {
     get_storage_id
 
     case "${1}" in
-        "list")
-            echo "Listing the deployed landing zones"
-            list_deployed_landingzones
-                ;;
-        *)
-            echo "rover landingzone [ list ]"
-            ;;
+    "list")
+        echo "Listing the deployed landing zones"
+        list_deployed_landingzones
+        ;;
+    *)
+        echo "rover landingzone [ list ]"
+        ;;
     esac
 }
 
 function expand_tfvars_folder {
 
-  echo " Expanding variable files: ${1}/*.tfvars"
+    echo " Expanding variable files: ${1}/*.tfvars"
 
-  for filename in "${1}"/*.tfvars; do
-    if [ "${filename}" != "${1}/*.tfvars" ]; then
-        PARAMS+="-var-file ${filename} "
-    fi
-  done
+    for filename in "${1}"/*.tfvars; do
+        if [ "${filename}" != "${1}/*.tfvars" ]; then
+            PARAMS+="-var-file ${filename} "
+        fi
+    done
 
-  echo " Expanding variable files: ${1}/*.tfvars.json"
+    echo " Expanding variable files: ${1}/*.tfvars.json"
 
-   for filename in "${1}"/*.tfvars.json; do
-    if [ "${filename}" != "${1}/*.tfvars.json" ]; then
-        PARAMS+="-var-file ${filename} "
-    fi
-  done
+    for filename in "${1}"/*.tfvars.json; do
+        if [ "${filename}" != "${1}/*.tfvars.json" ]; then
+            PARAMS+="-var-file ${filename} "
+        fi
+    done
 }
 
 #
@@ -764,8 +756,8 @@ function process_target_subscription {
 
     account=$(az account show -o json)
 
-    target_subscription_name=$( echo ${account} | jq -r .name)
-    target_subscription_id=$( echo ${account} | jq -r .id)
+    target_subscription_name=$(echo ${account} | jq -r .name)
+    target_subscription_id=$(echo ${account} | jq -r .id)
 
     export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
 
@@ -775,21 +767,20 @@ function process_target_subscription {
         export TF_VAR_tfstate_subscription_id=${ARM_SUBSCRIPTION_ID}
     fi
 
-    export target_subscription_name=$( echo ${account} | jq -r .name)
-    export target_subscription_id=$( echo ${account} | jq -r .id)
+    export target_subscription_name=$(echo ${account} | jq -r .name)
+    export target_subscription_id=$(echo ${account} | jq -r .id)
 
     echo "caf_command ${caf_command}"
     echo "target_subscription_id ${target_subscription_id}"
     echo "TF_VAR_tfstate_subscription_id ${TF_VAR_tfstate_subscription_id}"
 
     # Check if rover mode is set to launchpad
-    if [[ ( "${caf_command}" == "launchpad" ) && ( "${target_subscription_id}" != "${TF_VAR_tfstate_subscription_id}" ) ]]; then
+    if [[ ("${caf_command}" == "launchpad") && ("${target_subscription_id}" != "${TF_VAR_tfstate_subscription_id}") ]]; then
         error 51 "To deploy the launchpad, the target and tfstate subscription must be the same."
     fi
 
     echo "Resources from this landing zone are going to be deployed in the following subscription:"
     echo ${account} | jq -r
-
 
     echo "debug: ${TF_VAR_tfstate_subscription_id}"
     tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json | jq -r .name)
