@@ -7,7 +7,7 @@ Rover ci invokes a set of predefined tools to ensure code quality. These tools a
 * Landing zones and configs are cloned to a base directory (eg. /tf/caf)
 * A symphony.yaml file. Please see [samples.symphony.yaml](symphony/sample.symphony.yaml)
 
-### Run CI 
+### Run CI
 * Run all CI tools
 
   ```shell

@@ -85,7 +85,7 @@ function validate_symphony {
 
   for level in "${levels[@]}"
   do
-    
+
     local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
     for stack in "${stacks[@]}"
     do
@@ -141,7 +141,7 @@ function check_landing_zone_path_exists {
   local stack_name=$3
 
   landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level_name" "$stack_name")
-  
+
   if [[ ! -d $landing_zone_path ]]; then
     # path does not exist
     echo false

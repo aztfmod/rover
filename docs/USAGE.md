@@ -18,7 +18,7 @@ Usage: rover <command> <switches>
       create      Create a new workspace
       delete      Delete a workspace
 
-  switches: 
+  switches:
     -sc | --symphony-config   <path>        (ci workflow) Path to a symphony.yml file.
     -ct | --ci-task-name      <task name>   (ci workflow) CI Tool to invoke. If omitted all tools are run, if provided only that tool is run.
      -b | --base-dir                        (ci workflow) Base directory for paths in symphony.yml.

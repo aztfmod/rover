@@ -127,7 +127,7 @@ function run_task {
   verify_local_tool_installed "$task_executable"
   task_tf_init "$task_requires_init" "$landing_zone_path" "$config_path" "$level"
   task_print_debug "$task_executable" "$task_sub_command" "$task_requires_init" "$landing_zone_path" "$config_path" "$task_flags" "$task_parameters"
-    
+
   if [ "$task_executable" == "terraform" ] && [ "$task_requires_init" == "true" ]; then
     export tf_action="$task_sub_command"
     deploy ${TF_VAR_workspace}
@@ -151,10 +151,10 @@ function run_non_terraform_tool {
   task_executable="$task_executable $(format_task_parameters "$task_parameters")"
 
   pushd "$landing_zone_path"  > /dev/null
-    information "\n - running tool : $task_executable" 
+    information "\n - running tool : $task_executable"
     information "        lz path : $landing_zone_path"
 
-    execute "$task_executable" "$task_name" 
+    execute "$task_executable" "$task_name"
   popd > /dev/null
 }
 
@@ -173,7 +173,7 @@ function execute {
     error ${LINENO} "Error running ci task - $task_name" $RETURN_CODE
   else
     success " - $task_name completed successfully with no issues."
-  fi 
+  fi
 }
 
 function get_task_by_name {
