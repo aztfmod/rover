@@ -30,6 +30,7 @@ export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
+export devops=${devops:="false"}
 
 unset PARAMS
 
@@ -89,6 +90,7 @@ while (( "$#" )); do
             ;;
         cd)
             shift 1
+            export TF_VAR_level="all"
             export caf_command="cd"
             export devops="true"
             ;;

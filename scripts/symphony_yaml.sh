@@ -53,6 +53,17 @@ function get_config_path_for_stack {
   echo "${base_directory}/${relativePath}"
 }
 
+function get_state_file_name_for_stack {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
+
+  stateFileName=$(yq -r -c --arg level $level_name --arg stack $stack_name \
+    '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack) | .tfState' $symphony_yaml_file)
+
+  echo $stateFileName
+}
+
 function get_all_stack_names_for_level {
     local symphony_yaml_file=$1
     level_name=$2

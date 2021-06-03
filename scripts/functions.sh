@@ -108,6 +108,8 @@ function process_actions {
             ;;
         cd)
             verify_cd_parameters
+            set_default_parameters
+            execute_cd
             ;;
         *)
             display_instructions
@@ -640,7 +642,11 @@ function deploy {
                         rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                         initialize_state
                     fi
-                    exit
+                    if [ "$devops" == "true" ]; then
+                        return
+                    else
+                        exit                     
+                    fi
                 fi
             else
                 error ${LINENO} "You need to initialise a launchpad first with the command \n
