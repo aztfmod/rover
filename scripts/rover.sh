@@ -14,6 +14,7 @@ source /tf/rover/banner.sh
 source /tf/rover/ci.sh
 source /tf/rover/cd.sh
 source /tf/rover/symphony_yaml.sh
+source /tf/rover/test_runner.sh
 
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
@@ -88,6 +89,11 @@ while (( "$#" )); do
             export caf_command="ci"
             export devops="true"
             ;;
+        test)
+            shift 1
+            export caf_command="test"
+            export devops="true"
+            ;;            
         cd)
             shift 1
             export TF_VAR_level="all"

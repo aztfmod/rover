@@ -110,6 +110,9 @@ function process_actions {
             verify_cd_parameters
             set_default_parameters
             execute_cd
+
+        test)
+            run_integration_tests
             ;;
         *)
             display_instructions
