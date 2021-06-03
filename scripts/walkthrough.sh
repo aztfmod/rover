@@ -4,23 +4,41 @@ export walkthrough_path="/tf/caf/walkthrough"
 export config_name="demo"
 
 function execute_walkthrough {
-  # clone_landing_zones
+  clone_landing_zones
 
-  # clone_configurations
+  clone_configurations
 
-  # select_walkthrough_config
+  select_walkthrough_config
 
   generate_walkthrough_assets
 
-  # execute_deployments
+  execute_deployments
 }
 
 function clone_landing_zones {
-  echo -e "\n******************************* Rover Walkthrough *******************************"
-  echo "Cloning Logic repository"
+  echo_section_break
+  echo "*************************************** Rover Walkthrough ***************************************"
+  echo "*************************************************************************************************"
+  echo ""
+  echo "This CAF Rover Walkthrough will guide you through a complete starter solution deployment."
+  echo ""
+  echo "Overview of steps:"
+  echo " 1. Download logic landingzones (Terraform modules)"
+  echo " 2. Download configuration files (Platform and Solution deployment specifications)"
+  echo " 3. Rover command generation (deploy and destroy)"
+  echo " 4. Deploy to Azure!"
+  echo ""
+  echo -n "Ready to get started? (y/n): "
+  read proceed
+  check_exit_case $proceed
+  echo_section_break
+  echo ""
+  echo "Step 1 - Download the logic repository. This exposes terraform modules for the launchpad and solution "
+  echo "landingzones. You can download this directly at any time and reuse for multiple deployments."
+  echo ""
+  echo "Download logic repository for walkthrough"
   echo " - https://github.com/azure/caf-terraform-landingzones"
   echo ""
-  echo "Step one, download the logic repository. This exposes terraform modules for the launchpad and solution landing zones."
   echo -n "Ready to proceed? (y/n): "
   read proceed
   check_exit_case $proceed
@@ -36,12 +54,19 @@ function clone_landing_zones {
 }
 
 function clone_configurations {
-  echo "Cloning Configuration repository"
+  echo ""
+  echo "Step 2 - Download the configuration repository. These contain terraform configuration files for the solution"
+  echo "sets you want to create and are organized by levels for the proper enterprise seperation of concerns."
+  echo ""
+  echo "Learn more about levels"
+  echo " - https://github.com/Azure/caf-terraform-landingzones/blob/master/documentation/code_architecture/hierarchy.md"
+  echo ""
+  echo "Examples to follow"
+  echo " - https://github.com/aztfmod/terraform-azurerm-caf/tree/master/examples"
+  echo ""
+  echo "Download configuration starter CAF repository for walkthrough"
   echo " - https://github.com/Azure/caf-terraform-landingzones-starter"
   echo ""
-  echo "Step two, download the configuration repository. These contain terraform configuration files for the modules you want to create."
-  echo "These are organized by levels for the proper enterprise seperation of concerns."
-  echo "Read more about the levels here: https://github.com/Azure/caf-terraform-landingzones/blob/master/documentation/code_architecture/hierarchy.md"
   echo -n "Ready to proceed? (y/n): "
   read proceed
   check_exit_case $proceed
@@ -53,7 +78,7 @@ function clone_configurations {
 }
 
 function select_walkthrough_config {
-  echo "The following configurations were found in the starter repo:"
+  echo "The following configurations were found in the starter repo, enter one for the walkthrough."
   d=$(pwd)
   cd ${walkthrough_path}/configuration/
   ls -d */ | sort | sed 's/\///'
@@ -61,7 +86,7 @@ function select_walkthrough_config {
   echo ""
 
   config=""
-  echo -n "Select one configuration for this walkthrough or 'end' to exit (configuration name): "
+  echo -n "Configuration name: "
 
   while [ -z $config ]; do
     read config
@@ -85,7 +110,15 @@ function select_walkthrough_config {
 }
 
 function generate_walkthrough_assets {
-  echo -n "Would you like to generate the deployment/destroy scripts and README instructions? (y/n): "
+  echo ""
+  echo "Step 3 - Generate the deployment and destroy scripts. These rover commands use the landingzone modules"
+  echo "and configuration tfvars files to execute Terraform init, plan, apply and destroy commands for you."
+  echo ""
+  echo "The launchpad in the Platform / Level 0 configuraiton is always deployed first and is used for remote"
+  echo "state storage. This pattern creates a self contained environment. State is also available between levels"
+  echo "as defined in each configuration's landingzone.tfvars global_settings_key and tfstates values."
+  echo ""
+  echo -n "Ready to proceed? (y/n): "
   read proceed
   check_exit_case $proceed
 
@@ -122,19 +155,29 @@ function generate_walkthrough_assets {
   done
 
   end_sh
+  echo ""
+  echo "Deployment scripts and instructions generated!"
+  echo_section_break
 }
 
 function execute_deployments {
   echo ""
-  echo "Deployment script and instructions generated!"
-  echo_section_break
-  echo "You can follow the README instructions to deploy one configuration at a time or run deploy.sh to deploy ALL configurations in sequence."
-  echo "Please note the base folder names are used to name the *.tfstate files and must match the configuration landingzone.tf references."
+  echo "Step 4 - Deploy to Azure. The generated bash script will deploy ALL configuration levels in order"
+  echo "for you. In an enterprise deployment, the platform configurations may be stored and deployed"
+  echo "in a repo with a pipeline of its own while solution configuration repos keep changes focused, "
+  echo "allow greater frequency of deployment and require lower level of permission."
   echo "${walkthrough_path}/deploy.sh"
+  echo ""
+  echo "The destroy script removes the Azure configuration levels in reverse order. You can run this"
+  echo "manually at any time after the deployment to remove the Azure resources."
+  echo "${walkthrough_path}/destroy.sh"
+  echo ""
+  echo "You can also stop here and follow the README.md instructions to deploy individual configurations."
   echo "${walkthrough_path}/README.md"
   echo ""
-  echo "This deployment creates all resources in the currently logged in Azure subscription"
-  echo "and is the final step, but will take a while to run."
+  echo "The deployment script creates ALL resources in the currently logged in Azure subscription"
+  echo "and is the final step, but may take up to an hour to run."
+  echo ""
   echo -n "Ready to proceed? (y/n): "
   read proceed
   check_exit_case $proceed
@@ -227,7 +270,7 @@ function write_sh_destroy {
 }
 
 function echo_section_break {
-  echo -e "\n*********************************************************************************"
+  echo -e "\n*************************************************************************************************"
 }
 
 function check_exit_case {
