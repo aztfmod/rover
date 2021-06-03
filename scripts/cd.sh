@@ -37,6 +37,21 @@ function verify_cd_parameters {
 #   fi
 # }
 
+function join_path {
+  local base_path=$1
+  local part=$2
+
+  if [[ "$base_path" != *'/' ]]; then
+     base_path="$base_path/"
+  fi
+
+  if [[ "$part" == '/'* ]]; then
+     part="${part:1}"
+  fi  
+
+  echo "$base_path$part"
+}
+
 function execute_cd {
     echo "@Starting CD execution"
 
@@ -73,10 +88,14 @@ function execute_cd {
           PARAMS=""
           
           information "deploying stack $stack"
+          join_path "$base_directory" "$integration_test_relative_path"
+
           landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level" "$stack")
           config_path=$(get_config_path_for_stack "$symphony_yaml_file" "$level" "$stack")
           state_file_name=$(get_state_file_name_for_stack "$symphony_yaml_file" "$level" "$stack")
-          
+          integration_test_relative_path=$(get_integration_test_path "$symphony_yaml_file")
+          integration_test_absolute_path=$(join_path "$base_directory" "$integration_test_relative_path")
+
           local plan_file="${state_file_name%.*}.tfplan"
 
           export landingzone_name=$landing_zone_path
@@ -88,17 +107,19 @@ function execute_cd {
           export tf_action="apply"
 
           debug @"Starting Deployment"
-          debug "  landingzone_name: $landingzone_name"
-          debug "  TF_VAR_tf_name: $TF_VAR_tf_name"
-          debug "  TF_VAR_tf_plan: $TF_VAR_tf_plan"
-          debug "  TF_VAR_level: $TF_VAR_level"
-          debug "  tf_action: $tf_action"
-          debug "  tf_command: $tf_command"
+          debug "                landingzone_name: $landingzone_name"
+          debug "                  TF_VAR_tf_name: $TF_VAR_tf_name"
+          debug "                  TF_VAR_tf_plan: $TF_VAR_tf_plan"
+          debug "                    TF_VAR_level: $TF_VAR_level"
+          debug "                       tf_action: $tf_action"          
+          debug "                      tf_command: $tf_command"
+          debug "  integration_test_absolute_path: $integration_test_absolute_path"
 
           deploy ${TF_VAR_workspace}          
-
+          #run_integration_tests "$basedirectory/$integration_test_path"
         done
     done
 
     success "All levels deployed."
 }
+

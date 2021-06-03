@@ -2,13 +2,14 @@
 
 function run_integration_tests {
   information @"Run Integration Tests"
+  local target_directory=$1
 
   if [ ! -x "$(command -v go)" ]; then
     error "go is not installed and is a required dependency to run integration tests."
   fi  
 
-  if [[ ! -d $base_directory ]]; then
-    error "Integration test path is invalid. $base_directory is not a valid path."
+  if [[ ! -d $target_directory ]]; then
+    error "Integration test path is invalid. $target_directory is not a valid path."
   fi  
 
   get_storage_id
@@ -21,19 +22,19 @@ function run_integration_tests {
   export PREFIX=$prefix
   export ENVIRONMENT=$TF_VAR_environment
   
-  debug "  Test Directory   : $base_directory"
+  debug "  Test Directory   : $target_directory"
   debug "  Environment      : $ENVIRONMENT"
   debug "  STATE_FILE_PATH  : $STATE_FILE_PATH"
   debug "  STATE_FILE       : $targetStateFile"
   debug "  Level            : $TF_VAR_level"
   debug "  Prefix           : $PREFIX"
    
-  pushd $base_directory > /dev/null
+  pushd $target_directory > /dev/null
     go test -v -tags $TF_VAR_level
   popd > /dev/null
 
   debug "Removing $targetStateFile"
-  rm $targetStateFile
+  #rm $targetStateFile
 }
 
 find_and_export_prefix () {

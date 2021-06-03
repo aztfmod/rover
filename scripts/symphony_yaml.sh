@@ -2,6 +2,14 @@
 
 # helper functions for working with symphony yaml file
 
+function get_integration_test_path {
+  local symphony_yaml_file=$1
+
+  integration_test_path=$(yq -r '.integrationTestsPath' $symphony_yaml_file)
+  echo "$integration_test_path"
+}
+
+
 function get_level {
   symphony_yaml_file=$1
   index=$2
