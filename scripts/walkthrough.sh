@@ -47,7 +47,7 @@ function clone_configurations {
   check_exit_case $proceed
 
   # set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "Azure/caf-terraform-landingzones-starter" "starter"
-  set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "davesee/caf-terraform-landingzones-starter" "standard_config_tfstate"
+  set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "davesee/caf-terraform-landingzones-starter" "walkthrough"
   clone_repository
   echo_section_break
 }
