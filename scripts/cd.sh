@@ -98,6 +98,9 @@ function set_autorest_environment_variables {
     AzureCloud)
     export AZURE_ENVIRONMENT='AzurePublicCloud'
     ;;
+    AzureUSGovernment)
+    export AZURE_ENVIRONMENT='AzureUSGovernmentCloud'
+    ;;
   esac
 }
 
