@@ -109,7 +109,7 @@ function process_actions {
         cd)
             verify_cd_parameters
             set_default_parameters
-            execute_cd
+            process_cd_actions
             ;;
         test)
             run_integration_tests "$base_directory"
@@ -549,7 +549,7 @@ function export_azure_cloud_env {
     # Set landingzone cloud variables for modules
     echo "Initalizing az cloud variables"
     while IFS="=" read key value; do
-        echo " - TF_VAR_$key = $value"
+        debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
     done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }

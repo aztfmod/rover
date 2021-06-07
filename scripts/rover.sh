@@ -89,17 +89,18 @@ while (( "$#" )); do
             export caf_command="ci"
             export devops="true"
             ;;
+        cd)
+            export cd_action=${2}
+            export TF_VAR_level="all"
+            export caf_command="cd"
+            export devops="true"
+            shift 2
+            ;;            
         test)
             shift 1
             export caf_command="test"
             export devops="true"
             ;;            
-        cd)
-            shift 1
-            export TF_VAR_level="all"
-            export caf_command="cd"
-            export devops="true"
-            ;;
         -sc|--symphony-config)
             export symphony_yaml_file=${2}
             shift 2

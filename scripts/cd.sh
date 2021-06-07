@@ -20,22 +20,6 @@ function verify_cd_parameters {
   validate_symphony "$symphony_yaml_file"
 }
 
-# function execute_cd {
-#   echo "@Starting cd execution"
-#   if [ "${TF_VAR_level}" == "all" ]; then
-#     echo "deploy all"
-#   else
-#     echo "deploy level ${TF_VAR_level}"
-
-#     # local state_file="$(basename ${landing_zone_path}).tfstate"
-#     # local plan_file="$(basename ${landing_zone_path}).tfplan"
-#     # export landingzone_name=$landing_zone_path
-#     # export TF_VAR_tf_name=${state_file}
-#     # export TF_VAR_tf_plan=${plan_file}
-#     # export TF_VAR_level=${level}
-#     # expand_tfvars_folder "$config_path"
-#   fi
-# }
 
 function join_path {
   local base_path=$1
@@ -52,8 +36,30 @@ function join_path {
   echo "$base_path$part"
 }
 
+# Convert AZURE_ENVIRONMENT to comply with autorest's expectations
+# https://github.com/Azure/go-autorest/blob/master/autorest/azure/environments.go#L37
+# To see az cli cloud names - az cloud list -o table
+# We are only handling AzureCloud because the other cloud names are the same, only AzureCloud is different between az cli and autorest.
+# Note the names below are camel case, Autorest converts all to upper case - https://github.com/Azure/go-autorest/blob/master/autorest/azure/environments.go#L263
+function set_autorest_environment_variables {
+  case $AZURE_ENVIRONMENT in
+    AzureCloud)
+    export AZURE_ENVIRONMENT='AzurePublicCloud'
+    ;;
+  esac
+}
+
+function process_cd_actions {
+  echo "@Process cd actions"
+  echo @"cd_action: $cd_action"
+
+  execute_cd "$cd_action"
+}
+
 function execute_cd {
+    local action=$1
     echo "@Starting CD execution"
+    echo "@CD action: $action"
 
     if [ "${TF_VAR_level}" == "all" ]; then
       # get all levels from symphony yaml (only useful in env where there is a single MSI for all levels.)
@@ -113,10 +119,25 @@ function execute_cd {
           debug "                    TF_VAR_level: $TF_VAR_level"
           debug "                       tf_action: $tf_action"          
           debug "                      tf_command: $tf_command"
+          debug "                TF_VAR_workspace: $TF_VAR_workspace"
           debug "  integration_test_absolute_path: $integration_test_absolute_path"
 
-          deploy ${TF_VAR_workspace}          
-          #run_integration_tests "$basedirectory/$integration_test_path"
+         case "${action}" in
+              run)
+                  deploy "${TF_VAR_workspace}"
+                  set_autorest_environment_variables
+                  run_integration_tests "$integration_test_absolute_path"
+                  ;;
+              apply)
+                  deploy "${TF_VAR_workspace}"
+                  ;;
+              test)
+                  set_autorest_environment_variables
+                  run_integration_tests "$integration_test_absolute_path"
+                  ;;
+              *)
+                  error "unknown cd action: $actions"
+          esac          
         done
     done
 

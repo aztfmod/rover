@@ -21,9 +21,11 @@ function run_integration_tests {
   export STATE_FILE_PATH="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
   export PREFIX=$prefix
   export ENVIRONMENT=$TF_VAR_environment
+  export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
   
   debug "  Test Directory   : $target_directory"
   debug "  Environment      : $ENVIRONMENT"
+  debug "  Subscription Id  : $ARM_SUBSCRIPTION_ID"
   debug "  STATE_FILE_PATH  : $STATE_FILE_PATH"
   debug "  STATE_FILE       : $targetStateFile"
   debug "  Level            : $TF_VAR_level"
@@ -34,7 +36,7 @@ function run_integration_tests {
   popd > /dev/null
 
   debug "Removing $targetStateFile"
-  #rm $targetStateFile
+  rm $targetStateFile
 }
 
 find_and_export_prefix () {
