@@ -131,7 +131,7 @@ function execute_cd {
         information "Deploying level: $level caf_command: $caf_command"
         
         local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
-
+       
         if [ ${#stacks[@]} -eq 0 ]; then
           export code="1"
           error ${LINENO} "No stacks found, check that level ${level} exist and has stacks defined in ${symphony_yaml_file}"
@@ -143,7 +143,6 @@ function execute_cd {
           PARAMS=""
           
           information "deploying stack $stack"
-          join_path "$base_directory" "$integration_test_relative_path"
 
           landing_zone_path=$(get_landingzone_path_for_stack "$symphony_yaml_file" "$level" "$stack")
           config_path=$(get_config_path_for_stack "$symphony_yaml_file" "$level" "$stack")
