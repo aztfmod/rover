@@ -3,6 +3,14 @@
 
 function verify_cd_parameters {
   echo "@Verifying cd parameters"
+  
+  case "${cd_action}" in
+    run | apply | test)
+      echo "Found valid cd action ${cd_action}"
+    ;;
+    *)
+      error "invalid cd action: $cd_action. Possible values are (run, apply , test)"
+  esac    
 
   # verify symphony yaml
   if [ -z "$symphony_yaml_file" ]; then
@@ -136,7 +144,7 @@ function execute_cd {
                   run_integration_tests "$integration_test_absolute_path"
                   ;;
               *)
-                  error "unknown cd action: $actions"
+                  error "invalid cd action: $action"
           esac          
         done
     done
