@@ -93,8 +93,8 @@ while (( "$#" )); do
             export cd_action=${2}
             export TF_VAR_level="all"
             export caf_command="cd"
-            export devops="true"
-            shift 2
+            export devops="true"            
+            shift $#
             ;;            
         test)
             shift 1

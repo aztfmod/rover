@@ -1,15 +1,50 @@
 #!/bin/bash
 
+function cd_usuage {
+  _helpText="
+  Usage: 
+    rover cd <action> <flags>
+
+  actions:
+    Select one of the following options:
+      * run     Terraform plan, Terraform apply, run integration tests 
+      * apply   Terraform plan, Terraform apply
+      * test    run integration tests
+
+  flags:
+    -sc     <path>      required      path to symphony.yml file.
+    -b      <path>      required      base path to be used for symphony.yml file.
+    -env    <env name>  optional      name of the environment (defaults to sandpit)
+    -level  <level>     optional      Specifiy a level only performs cd on that level. If ommitted, action is performed on all levels in symphony.yml.
+    -h | --help         optional      Show the help usage guide (this.)
+"            
+  information "$_helpText" 1>&2
+  exit 0
+}
 
 function verify_cd_parameters {
   echo "@Verifying cd parameters"
   
+  # Handle 1st level sub commands
   case "${cd_action}" in
     run | apply | test)
-      echo "Found valid cd action ${cd_action}"
+      information "Found valid cd action ${cd_action}"
+    ;;
+    -h | --help)
+      cd_usuage
     ;;
     *)
-      error "invalid cd action: $cd_action. Possible values are (run, apply , test)"
+      if [ ! -z "$cd_action" ]; then
+        error_message "Invalid cd action ${cd_action}"
+      fi
+      cd_usuage
+  esac    
+
+  # Handle 2nd level sub commands. Only -h|--help is supported for now
+  case "${PARAMS}" in
+    "-h "| "--help ")
+      cd_usuage
+    ;;
   esac    
 
   # verify symphony yaml
