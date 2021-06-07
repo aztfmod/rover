@@ -1,6 +1,7 @@
 #!/bin/bash
 
-function cd_usuage {
+function cd_usage {
+  local code=$1
   _helpText="
   Usage: 
     rover cd <action> <flags>
@@ -19,9 +20,17 @@ function cd_usuage {
     -h | --help         optional      Show the help usage guide (this.)
 "            
   information "$_helpText" 1>&2
-  exit 0
+
+  if [ -z "$code" ]; then
+    escape 0
+  else
+    escape $code
+  fi
 }
 
+function escape {
+  exit $1
+}
 function verify_cd_parameters {
   echo "@Verifying cd parameters"
   
@@ -31,19 +40,19 @@ function verify_cd_parameters {
       information "Found valid cd action ${cd_action}"
     ;;
     -h | --help)
-      cd_usuage
+      cd_usage 
     ;;
     *)
       if [ ! -z "$cd_action" ]; then
         error_message "Invalid cd action ${cd_action}"
       fi
-      cd_usuage
+      cd_usage "1"
   esac    
 
   # Handle 2nd level sub commands. Only -h|--help is supported for now
   case "${PARAMS}" in
     "-h "| "--help ")
-      cd_usuage
+      cd_usage
     ;;
   esac    
 
