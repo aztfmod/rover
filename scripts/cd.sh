@@ -57,18 +57,12 @@ function set_autorest_environment_variables {
   esac
 }
 
-function process_cd_actions {
-  echo "@Process cd actions"
-  echo @"cd_action: $cd_action"
-
-  execute_cd "$cd_action"
-}
-
 function execute_cd {
-    local action=$1
+    local action=$cd_action
     echo "@Starting CD execution"
     echo "@CD action: $action"
 
+    local successMessage=""
     if [ "${TF_VAR_level}" == "all" ]; then
       # get all levels from symphony yaml (only useful in env where there is a single MSI for all levels.)
       local -a levels=($(get_all_level_names "$symphony_yaml_file"))
@@ -149,6 +143,6 @@ function execute_cd {
         done
     done
 
-    success "All levels deployed."
+    success "Continuous Deployment complete."
 }
 

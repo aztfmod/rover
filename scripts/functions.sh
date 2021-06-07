@@ -109,7 +109,7 @@ function process_actions {
         cd)
             verify_cd_parameters
             set_default_parameters
-            process_cd_actions
+            execute_cd
             ;;
         test)
             run_integration_tests "$base_directory"
