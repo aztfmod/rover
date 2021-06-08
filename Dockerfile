@@ -317,7 +317,7 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
 
 
-from base
+FROM base
 
 ARG versionTerraform
 ARG USERNAME=vscode
@@ -327,7 +327,6 @@ ARG versionTflintazrs
 ENV versionRover=${versionRover} \
     versionTerraform=${versionTerraform} \
     versionTflintazrs=${versionTflintazrs}
-
 #
 # Install Terraform
 #
@@ -341,7 +340,7 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     #
     echo ${versionRover} > /tf/rover/version.txt
 
-RUN echo "Installing Tflint Ruleset for Azure..." && \
+RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
