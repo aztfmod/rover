@@ -139,8 +139,9 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     # Install terraform docs
     #
     echo "Installing terraform docs ${versionTerraformDocs}..." && \
-    curl -sSL -o /bin/terraform-docs https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64 && \
-    chmod +x /bin/terraform-docs && \
+    curl -sSL -o /tmp/terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64.tar.gz && \
+    tar -zxf /tmp/terraform-docs.tar.gz --directory=/usr/bin && \
+    chmod +x /usr/bin/terraform-docs && \
     #
     # Install baash completions for git
     #
