@@ -322,11 +322,11 @@ from base
 ARG versionTerraform
 ARG USERNAME=vscode
 ARG versionRover
-ARG versionTflint
+ARG versionTflintazrs
 
 ENV versionRover=${versionRover} \
     versionTerraform=${versionTerraform} \
-    versionTflint=${versionTflint}
+    versionTflintazrs=${versionTflintazrs}
 
 #
 # Install Terraform
@@ -342,7 +342,7 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     echo ${versionRover} > /tf/rover/version.txt
 
 RUN echo "Installing Tflint Ruleset for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflint}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
