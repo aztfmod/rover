@@ -33,7 +33,7 @@ function escape {
 }
 function verify_cd_parameters {
   echo "@Verifying cd parameters"
-  
+  echo "symphony_yaml_file: $symphony_yaml_file"
   # Handle 1st level sub commands
   case "${cd_action}" in
     run | apply | test)
@@ -131,7 +131,7 @@ function execute_cd {
         information "Deploying level: $level caf_command: $caf_command"
         
         local -a stacks=($(get_all_stack_names_for_level "$symphony_yaml_file" "$level" ))
-       
+
         if [ ${#stacks[@]} -eq 0 ]; then
           export code="1"
           error ${LINENO} "No stacks found, check that level ${level} exist and has stacks defined in ${symphony_yaml_file}"

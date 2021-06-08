@@ -93,8 +93,14 @@ while (( "$#" )); do
             export cd_action=${2}
             export TF_VAR_level="all"
             export caf_command="cd"
-            export devops="true"            
-            shift $#
+            export devops="true"       
+            len=$#
+            if [ "$len" == "1" ]; then
+              shift 1
+            else
+              shift 2
+            fi
+            
             ;;            
         test)
             shift 1
