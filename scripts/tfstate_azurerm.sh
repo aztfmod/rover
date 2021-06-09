@@ -97,6 +97,33 @@ function upload_tfstate {
 
 }
 
+function download_tfstate {
+    echo "@calling download_tfstate"
+
+    echo "Downloading Remote state from the cloud"
+
+    stg=$(az storage account show --ids ${id} -o json)
+    stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
+    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    export access_key=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
+
+    az storage blob download \
+        --subscription ${TF_VAR_tfstate_subscription_id} \
+        --name ${TF_VAR_tf_name} \
+        --file "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        --container-name ${TF_VAR_workspace} \
+        --auth-mode "key" \
+        --account-name ${stg_name} \
+        --account-key ${access_key} \
+        --no-progress
+
+    RETURN_CODE=$?
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error Downloading the blob storage" $RETURN_CODE
+    fi
+}
+
 function deploy_from_remote_state {
     echo "@calling deploy_from_remote_state"
 

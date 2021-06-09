@@ -106,6 +106,10 @@ function process_actions {
             set_default_parameters
             execute_ci_actions
             ;;
+
+        test)
+            run_integration_tests
+            ;;
         *)
             display_instructions
     esac
