@@ -729,7 +729,7 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $2}')
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
         running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
 
         if [ "${required_version}" != "${running_version}" ]; then
