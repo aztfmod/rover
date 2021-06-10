@@ -229,5 +229,26 @@ Describe 'cd.sh'
       End
     End    
 
+    Context "level=1 cd_action=plan"
+      setup() {
+        export base_directory="base_dir/"
+        export TF_VAR_workspace="test1workspace"
+        export deploy_called=false
+        export run_integration_tests_called=false
+        export set_autorest_environment_variables_called=false
+
+        export TF_VAR_level="level1"
+        export symphony_yaml_file="spec/harness/symphony.yml"
+        export cd_action="plan"
+      }
+      BeforeEach 'setup'
+
+      It 'should set tf_action to plan'
+        When call execute_cd
+        The variable tf_action should equal "plan"
+        The output should include '@Starting CD execution'
+      End
+    End    
+
   End
 End

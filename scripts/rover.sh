@@ -84,12 +84,12 @@ while (( "$#" )); do
             shift 1
             export caf_command="login"
             ;;
-        ci)
+        validate | ci)
             shift 1
             export caf_command="ci"
             export devops="true"
             ;;
-        cd)
+        deploy | cd)
             export cd_action=${2}
             export TF_VAR_level="all"
             export caf_command="cd"

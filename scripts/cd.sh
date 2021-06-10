@@ -36,7 +36,10 @@ function verify_cd_parameters {
   echo "symphony_yaml_file: $symphony_yaml_file"
   # Handle 1st level sub commands
   case "${cd_action}" in
-    run | apply | test)
+    run | plan | apply )
+      information "Found valid cd action - terraform ${cd_action}"
+    ;;
+    test)
       information "Found valid cd action ${cd_action}"
     ;;
     -h | --help)
@@ -158,25 +161,34 @@ function execute_cd {
           export TF_VAR_level=${level}
           expand_tfvars_folder "$config_path"
           tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')                  
-          export tf_action="apply"
+          
 
           debug @"Starting Deployment"
           debug "                landingzone_name: $landingzone_name"
           debug "                  TF_VAR_tf_name: $TF_VAR_tf_name"
           debug "                  TF_VAR_tf_plan: $TF_VAR_tf_plan"
-          debug "                    TF_VAR_level: $TF_VAR_level"
-          debug "                       tf_action: $tf_action"          
+          debug "                    TF_VAR_level: $TF_VAR_level"   
           debug "                      tf_command: $tf_command"
           debug "                TF_VAR_workspace: $TF_VAR_workspace"
           debug "  integration_test_absolute_path: $integration_test_absolute_path"
 
          case "${action}" in
               run)
+                  export tf_action="apply"
+                  debug "                       tf_action: $tf_action"     
+
                   deploy "${TF_VAR_workspace}"
                   set_autorest_environment_variables
                   run_integration_tests "$integration_test_absolute_path"
                   ;;
+              plan)
+                  export tf_action="plan"
+                  debug "                       tf_action: $tf_action"     
+                  deploy "${TF_VAR_workspace}"                  
+                  ;;                  
               apply)
+                  export tf_action="apply"
+                  debug "                       tf_action: $tf_action"                   
                   deploy "${TF_VAR_workspace}"
                   ;;
               test)
