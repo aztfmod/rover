@@ -4,11 +4,12 @@ function cd_usage {
   local code=$1
   _helpText="
   Usage: 
-    rover cd <action> <flags>
+    rover deploy <action> <flags>
 
   actions:
     Select one of the following options:
       * run     Terraform plan, Terraform apply, run integration tests 
+      * plan    Terraform plan only
       * apply   Terraform plan, Terraform apply
       * test    run integration tests
 
