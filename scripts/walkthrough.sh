@@ -71,14 +71,14 @@ function clone_configurations {
   read proceed
   check_exit_case $proceed
 
-  # set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "Azure/caf-terraform-landingzones-starter" "starter"
-  set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "davesee/caf-terraform-landingzones-starter" "walkthrough"
+  set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "Azure/caf-terraform-landingzones-starter" "starter"
+  # set_clone_exports "${walkthrough_path}/configuration" "/configuration" "2" "davesee/caf-terraform-landingzones-starter" "walkthrough"
   clone_repository
   echo_section_break
 }
 
 function select_walkthrough_config {
-  echo "The following configurations were found in the starter repo, enter one for the walkthrough."
+  echo "The following configurations were found in the starter repo. Currenlty ONLY demo works with the walkthrough. This was accomplished by standardizing the tfstate file names to match the containing folder name."
   d=$(pwd)
   cd ${walkthrough_path}/configuration/
   ls -d */ | sort | sed 's/\///'
@@ -86,7 +86,7 @@ function select_walkthrough_config {
   echo ""
 
   config=""
-  echo -n "Configuration name: "
+  echo -n "Enter 'demo' to confirm this configuration: "
 
   while [ -z $config ]; do
     read config
