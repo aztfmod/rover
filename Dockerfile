@@ -283,6 +283,7 @@ COPY ./scripts/backend.hcl.tf .
 COPY ./scripts/ci.sh .
 COPY ./scripts/task.sh .
 COPY ./scripts/symphony_yaml.sh .
+COPY ./scripts/test_runner.sh .
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 #
 # Switch to non-root ${USERNAME} context
