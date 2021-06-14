@@ -2,6 +2,14 @@
 
 # helper functions for working with symphony yaml file
 
+function get_integration_test_path {
+  local symphony_yaml_file=$1
+
+  integration_test_path=$(yq -r '.integrationTestsPath' $symphony_yaml_file)
+  echo "$integration_test_path"
+}
+
+
 function get_level {
   symphony_yaml_file=$1
   index=$2
@@ -51,6 +59,17 @@ function get_config_path_for_stack {
     '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack) | .configurationPath' $symphony_yaml_file)
 
   echo "${base_directory}/${relativePath}"
+}
+
+function get_state_file_name_for_stack {
+  local symphony_yaml_file=$1
+  local level_name=$2
+  local stack_name=$3
+
+  stateFileName=$(yq -r -c --arg level $level_name --arg stack $stack_name \
+    '.levels[] | select(.level == $level) | .stacks[] | select (.stack == $stack) | .tfState' $symphony_yaml_file)
+
+  echo $stateFileName
 }
 
 function get_all_stack_names_for_level {

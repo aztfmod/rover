@@ -106,9 +106,13 @@ function process_actions {
             set_default_parameters
             execute_ci_actions
             ;;
-
+        cd)
+            verify_cd_parameters
+            set_default_parameters
+            execute_cd
+            ;;
         test)
-            run_integration_tests
+            run_integration_tests "$base_directory"
             ;;
         *)
             display_instructions
@@ -545,7 +549,7 @@ function export_azure_cloud_env {
     # Set landingzone cloud variables for modules
     echo "Initalizing az cloud variables"
     while IFS="=" read key value; do
-        echo " - TF_VAR_$key = $value"
+        debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
     done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
@@ -641,7 +645,11 @@ function deploy {
                         rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                         initialize_state
                     fi
-                    exit
+                    if [ "$devops" == "true" ]; then
+                        return
+                    else
+                        exit                     
+                    fi
                 fi
             else
                 error ${LINENO} "You need to initialise a launchpad first with the command \n

@@ -12,6 +12,7 @@ source /tf/rover/banner.sh
 
 # symphony
 source /tf/rover/ci.sh
+source /tf/rover/cd.sh
 source /tf/rover/symphony_yaml.sh
 source /tf/rover/test_runner.sh
 
@@ -30,6 +31,7 @@ export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
+export devops=${devops:="false"}
 
 unset PARAMS
 
@@ -82,21 +84,29 @@ while (( "$#" )); do
             shift 1
             export caf_command="login"
             ;;
-        ci)
+        validate | ci)
             shift 1
             export caf_command="ci"
             export devops="true"
             ;;
+        deploy | cd)
+            export cd_action=${2}
+            export TF_VAR_level="all"
+            export caf_command="cd"
+            export devops="true"       
+            len=$#
+            if [ "$len" == "1" ]; then
+              shift 1
+            else
+              shift 2
+            fi
+            
+            ;;            
         test)
             shift 1
             export caf_command="test"
             export devops="true"
             ;;            
-        cd)
-            shift 1
-            export caf_command="cd"
-            export devops="true"
-            ;;
         -sc|--symphony-config)
             export symphony_yaml_file=${2}
             shift 2
