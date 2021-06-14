@@ -23,8 +23,8 @@ function initialize_state {
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15"
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 init \
                 -upgrade=true
@@ -202,8 +202,8 @@ function destroy_from_remote_state {
 function terraform_init_remote {
 
     case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15"
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 init \
                 -reconfigure \
@@ -246,8 +246,8 @@ function plan {
     rm -f $STDERR_FILE
 
     case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15."
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 plan ${tf_command} \
                 -refresh=true \
@@ -291,8 +291,8 @@ function apply {
 
 
     case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15."
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 apply \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
@@ -373,8 +373,8 @@ function destroy {
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
         case ${terraform_version} in
-            *"15"*)
-                echo "Terraform version 15."
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
                     destroy \
                     -refresh=false \
@@ -407,8 +407,8 @@ function destroy {
 
 
         case ${terraform_version} in
-            *"15"*)
-                echo "Terraform version 15."
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
                     init \
                     -reconfigure=true \
@@ -429,8 +429,8 @@ function destroy {
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
         case ${terraform_version} in
-            *"15"*)
-                echo "Terraform version 15."
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
                     destroy ${tf_command} \
                     -refresh=false \
