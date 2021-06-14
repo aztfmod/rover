@@ -74,39 +74,46 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
-    workspace)
-        workspace ${tf_command}
-        exit 0
-        ;;
-    walkthrough)
-        execute_walkthrough
-        exit 0
-        ;;
-    clone)
-        clone_repository
-        exit 0
-        ;;
-    landingzone_mgmt)
-        landing_zone ${tf_command}
-        exit 0
-        ;;
-    launchpad | landingzone)
-        verify_parameters
-        deploy ${TF_VAR_workspace}
-        ;;
-    tfc)
-        verify_parameters
-        deploy_tfc ${TF_VAR_workspace}
-        ;;
-    ci)
-        register_ci_tasks
-        verify_ci_parameters
-        set_default_parameters
-        execute_ci_actions
-        ;;
-    *)
-        display_instructions
-        ;;
+        workspace)
+            workspace ${tf_command}
+            exit 0
+            ;;
+        walkthrough)
+            execute_walkthrough
+            exit 0
+            ;;
+        clone)
+            clone_repository
+            exit 0
+            ;;
+        landingzone_mgmt)
+            landing_zone ${tf_command}
+            exit 0
+            ;;
+        launchpad|landingzone)
+            verify_parameters
+            deploy ${TF_VAR_workspace}
+            ;;
+        tfc)
+            verify_parameters
+            deploy_tfc ${TF_VAR_workspace}
+            ;;
+        ci)
+            register_ci_tasks
+            verify_ci_parameters
+            set_default_parameters
+            execute_ci_actions
+            ;;
+        cd)
+            verify_cd_parameters
+            set_default_parameters
+            execute_cd
+            ;;
+        test)
+            run_integration_tests "$base_directory"
+            ;;
+        *)
+            display_instructions
     esac
 }
 
@@ -539,7 +546,7 @@ function export_azure_cloud_env {
     # Set landingzone cloud variables for modules
     echo "Initalizing az cloud variables"
     while IFS="=" read key value; do
-        echo " - TF_VAR_$key = $value"
+        debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
     done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
@@ -616,33 +623,37 @@ function deploy {
     get_logged_user_object_id
 
     case ${id} in
-    "")
-        echo "No launchpad found."
-        if [ "${caf_command}" == "launchpad" ]; then
-            if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                echo "Recover from an un-finished previous execution"
-                if [ "${tf_action}" == "destroy" ]; then
-                    destroy
+        "")
+            echo "No launchpad found."
+            if [ "${caf_command}" == "launchpad" ]; then
+                if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
+                    echo "Recover from an un-finished previous execution"
+                    if [ "${tf_action}" == "destroy" ]; then
+                        destroy
+                    else
+                        initialize_state
+                    fi
                 else
-                    initialize_state
+                    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                    if [ "${tf_action}" == "destroy" ]; then
+                        echo "There is no launchpad in this subscription"
+                    else
+                        echo "Deploying from scratch the launchpad"
+                        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                        initialize_state
+                    fi
+                    if [ "$devops" == "true" ]; then
+                        return
+                    else
+                        exit                     
+                    fi
                 fi
             else
-                rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-                if [ "${tf_action}" == "destroy" ]; then
-                    echo "There is no launchpad in this subscription"
-                else
-                    echo "Deploying from scratch the launchpad"
-                    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-                    initialize_state
-                fi
-                exit
-            fi
-        else
-            error ${LINENO} "You need to initialise a launchpad first with the command \n
+                error ${LINENO} "You need to initialise a launchpad first with the command \n
                 rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
-        fi
+            fi
         ;;
-    *)
+        *)
 
         # Get the launchpad version
         caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
@@ -666,7 +677,7 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan" | "apply" | "validate" | "import" | "output" | "taint" | "state list" | "state rm" | "state show")
+            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
                 deploy_from_remote_state
                 ;;
             *)
@@ -676,6 +687,7 @@ function deploy {
         fi
         ;;
     esac
+
 
 }
 
@@ -722,7 +734,7 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $2}')
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
         running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
 
         if [ "${required_version}" != "${running_version}" ]; then

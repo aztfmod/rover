@@ -1,4 +1,6 @@
 environment: prod
+integrationTestsPath: /symphony/tests
+
 repositories:
   - name: launchpad_lz
     uri: rguthrie-gitlab-ce.eastus.cloudapp.azure.com:reference_app_caf/caf_modules_public.git

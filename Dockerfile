@@ -139,8 +139,9 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     # Install terraform docs
     #
     echo "Installing terraform docs ${versionTerraformDocs}..." && \
-    curl -sSL -o /bin/terraform-docs https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64 && \
-    chmod +x /bin/terraform-docs && \
+    curl -sSL -o /tmp/terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64.tar.gz && \
+    tar -zxf /tmp/terraform-docs.tar.gz --directory=/usr/bin && \
+    chmod +x /usr/bin/terraform-docs && \
     #
     # Install baash completions for git
     #
@@ -283,6 +284,7 @@ COPY ./scripts/backend.hcl.tf .
 COPY ./scripts/ci.sh .
 COPY ./scripts/task.sh .
 COPY ./scripts/symphony_yaml.sh .
+COPY ./scripts/test_runner.sh .
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 #
 # Switch to non-root ${USERNAME} context
@@ -317,17 +319,16 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
 
 
-from base
+FROM base
 
 ARG versionTerraform
 ARG USERNAME=vscode
 ARG versionRover
-ARG versionTflint
+ARG versionTflintazrs
 
 ENV versionRover=${versionRover} \
     versionTerraform=${versionTerraform} \
-    versionTflint=${versionTflint}
-
+    versionTflintazrs=${versionTflintazrs}
 #
 # Install Terraform
 #
@@ -341,8 +342,8 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     #
     echo ${versionRover} > /tf/rover/version.txt
 
-RUN echo "Installing Tflint Ruleset for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflint}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \

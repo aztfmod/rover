@@ -22,18 +22,18 @@ function initialize_state {
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     case ${terraform_version} in
-    *"15"*)
-        echo "Terraform version 15"
-        terraform -chdir=${landingzone_name} \
-            init \
-            -upgrade=true
-        ;;
-    *)
-        terraform init \
-            -get-plugins=true \
-            -upgrade=true \
-            ${landingzone_name}
-        ;;
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
+            terraform -chdir=${landingzone_name} \
+                init \
+                -upgrade=true
+            ;;
+        *)
+            terraform init \
+                -get-plugins=true \
+                -upgrade=true \
+                ${landingzone_name}
+            ;;
     esac
 
     RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
@@ -94,6 +94,33 @@ function upload_tfstate {
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
+}
+
+function download_tfstate {
+    echo "@calling download_tfstate"
+
+    echo "Downloading Remote state from the cloud"
+
+    stg=$(az storage account show --ids ${id} -o json)
+    stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
+    export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
+    export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
+    export access_key=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
+
+    az storage blob download \
+        --subscription ${TF_VAR_tfstate_subscription_id} \
+        --name ${TF_VAR_tf_name} \
+        --file "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        --container-name ${TF_VAR_workspace} \
+        --auth-mode "key" \
+        --account-name ${stg_name} \
+        --account-key ${access_key} \
+        --no-progress
+
+    RETURN_CODE=$?
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error Downloading the blob storage" $RETURN_CODE
+    fi
 }
 
 function deploy_from_remote_state {
@@ -173,32 +200,32 @@ function destroy_from_remote_state {
 function terraform_init_remote {
 
     case ${terraform_version} in
-    *"15"*)
-        echo "Terraform version 15"
-        terraform -chdir=${landingzone_name} \
-            init \
-            -reconfigure \
-            -backend=true \
-            -upgrade=true \
-            -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
-            -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
-            -backend-config container_name=${TF_VAR_workspace} \
-            -backend-config key=${TF_VAR_tf_name} \
-            -backend-config subscription_id=${TF_VAR_tfstate_subscription_id}
-        ;;
-    *)
-        terraform init \
-            -reconfigure=true \
-            -backend=true \
-            -get-plugins=true \
-            -upgrade=true \
-            -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
-            -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
-            -backend-config container_name=${TF_VAR_workspace} \
-            -backend-config key=${TF_VAR_tf_name} \
-            -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
-            ${landingzone_name}
-        ;;
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
+            terraform -chdir=${landingzone_name} \
+                init \
+                -reconfigure \
+                -backend=true \
+                -upgrade=true \
+                -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
+                -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
+                -backend-config container_name=${TF_VAR_workspace} \
+                -backend-config key=${TF_VAR_tf_name} \
+                -backend-config subscription_id=${TF_VAR_tfstate_subscription_id}
+            ;;
+        *)
+            terraform init \
+                -reconfigure=true \
+                -backend=true \
+                -get-plugins=true \
+                -upgrade=true \
+                -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
+                -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
+                -backend-config container_name=${TF_VAR_workspace} \
+                -backend-config key=${TF_VAR_tf_name} \
+                -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
+                ${landingzone_name}
+            ;;
     esac
 }
 
@@ -216,21 +243,21 @@ function plan {
     rm -f $STDERR_FILE
 
     case ${terraform_version} in
-    *"15"*)
-        echo "Terraform version 15."
-        terraform -chdir=${landingzone_name} \
-            plan ${tf_command} \
-            -refresh=true \
-            -detailed-exitcode \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-            -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
-        ;;
-    *)
-        terraform plan ${tf_command} \
-            -refresh=true \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-            -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
-        ;;
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
+            terraform -chdir=${landingzone_name} \
+                plan ${tf_command} \
+                -refresh=true \
+                -detailed-exitcode \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+            ;;
+        *)
+            terraform plan ${tf_command} \
+                -refresh=true \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
+            ;;
     esac
 
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
@@ -259,18 +286,18 @@ function apply {
     rm -f $STDERR_FILE
 
     case ${terraform_version} in
-    *"15"*)
-        echo "Terraform version 15."
-        terraform -chdir=${landingzone_name} \
-            apply \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-            "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
-        ;;
-    *)
-        terraform apply \
-            -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-            "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
-        ;;
+        *"15"* | *"1."*)
+            echo "Terraform version 0.15 or greater"
+            terraform -chdir=${landingzone_name} \
+                apply \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+            ;;
+        *)
+            terraform apply \
+                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+            ;;
     esac
 
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
@@ -339,19 +366,19 @@ function destroy {
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
         case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15."
-            terraform -chdir=${landingzone_name} \
-                destroy \
-                -refresh=false \
-                ${tf_command} ${tf_approve}
-            ;;
-        *)
-            terraform destroy \
-                -refresh=false \
-                ${tf_command} \
-                ${landingzone_name} ${tf_approve}
-            ;;
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
+                terraform -chdir=${landingzone_name} \
+                    destroy \
+                    -refresh=false \
+                    ${tf_command} ${tf_approve}
+                ;;
+            *)
+                terraform destroy \
+                    -refresh=false \
+                    ${tf_command} ${tf_approve} \
+                    ${landingzone_name}
+                ;;
         esac
 
         RETURN_CODE=$?
@@ -372,20 +399,20 @@ function destroy {
         fi
 
         case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15."
-            terraform -chdir=${landingzone_name} \
-                init \
-                -reconfigure=true \
-                -upgrade=true
-            ;;
-        *)
-            terraform init \
-                -reconfigure=true \
-                -get-plugins=true \
-                -upgrade=true \
-                ${landingzone_name}
-            ;;
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
+                terraform -chdir=${landingzone_name} \
+                    init \
+                    -reconfigure=true \
+                    -upgrade=true
+                ;;
+            *)
+                terraform init \
+                    -reconfigure=true \
+                    -get-plugins=true \
+                    -upgrade=true \
+                    ${landingzone_name}
+                ;;
         esac
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
@@ -394,19 +421,19 @@ function destroy {
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
         case ${terraform_version} in
-        *"15"*)
-            echo "Terraform version 15."
-            terraform -chdir=${landingzone_name} \
-                destroy ${tf_command} ${tf_approve} \
-                -refresh=false \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-            ;;
-        *)
-            terraform destroy ${tf_command} ${tf_approve} \
-                -refresh=false \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                ${landingzone_name}
-            ;;
+            *"15"* | *"1."*)
+                echo "Terraform version 0.15 or greater"
+                terraform -chdir=${landingzone_name} \
+                    destroy ${tf_command} ${tf_approve} \
+                    -refresh=false \
+                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+                ;;
+            *)
+                terraform destroy ${tf_command} ${tf_approve} \
+                    -refresh=false \
+                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                    ${landingzone_name}
+                ;;
         esac
 
         RETURN_CODE=$?
