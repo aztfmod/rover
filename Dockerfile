@@ -278,6 +278,7 @@ COPY ./scripts/tfstate_azurerm.sh .
 COPY ./scripts/functions.sh .
 COPY ./scripts/banner.sh .
 COPY ./scripts/clone.sh .
+COPY ./scripts/walkthrough.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/backend.hcl.tf .
 COPY ./scripts/ci.sh .

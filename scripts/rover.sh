@@ -1,11 +1,11 @@
 #!/bin/bash
 
-
 # Initialize the launchpad first with rover
 # deploy a landingzone with
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 source /tf/rover/clone.sh
+source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/functions.sh
 source /tf/rover/banner.sh
@@ -41,6 +41,10 @@ mkdir -p ${TF_PLUGIN_CACHE_DIR}
 
 while (( "$#" )); do
     case "${1}" in
+        --walkthrough)
+            export caf_command="walkthrough"
+            shift 1
+            ;;
         --clone|--clone-branch|--clone-folder|--clone-destination|--clone-folder-strip)
             export caf_command="clone"
             process_clone_parameter $@
@@ -197,7 +201,6 @@ while (( "$#" )); do
         esac
 done
 
-
 set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
@@ -208,22 +211,25 @@ process_target_subscription
 
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"
-echo "terraform command output file : '$(echo ${tf_output_file})'"
-echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
-echo "tf_action                     : '$(echo ${tf_action})'"
-echo "command and parameters        : '$(echo ${tf_command})'"
-echo ""
-echo "level (current)               : '$(echo ${TF_VAR_level})'"
-echo "environment                   : '$(echo ${TF_VAR_environment})'"
-echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
-echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
-echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
-echo "target subscription           : '$(echo ${target_subscription_name})'"
-echo "CI/CD enabled                 : '$(echo ${devops})'"
-echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
-echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+
+if [ ${caf_command} != "walkthrough" ]; then
+  echo "terraform command output file : '$(echo ${tf_output_file})'"
+  echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
+  echo "tf_action                     : '$(echo ${tf_action})'"
+  echo "command and parameters        : '$(echo ${tf_command})'"
+  echo ""
+  echo "level (current)               : '$(echo ${TF_VAR_level})'"
+  echo "environment                   : '$(echo ${TF_VAR_environment})'"
+  echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
+  echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
+  echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
+  echo "target subscription           : '$(echo ${target_subscription_name})'"
+  echo "CI/CD enabled                 : '$(echo ${devops})'"
+  echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
+  echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+fi
 if [ $symphony_run_all_tasks == false ]; then
-    echo "Running task                  : '$(echo ${ci_task_name})'"
+  echo "Running task                  : '$(echo ${ci_task_name})'"
 fi
 echo ""
 

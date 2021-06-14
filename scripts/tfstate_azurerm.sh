@@ -1,4 +1,3 @@
-
 function initialize_state {
     echo "@calling initialize_state"
 
@@ -40,28 +39,28 @@ function initialize_state {
     RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
     case "${tf_action}" in
-        "plan")
-            echo "calling plan"
-            plan
-            ;;
-        "apply")
-            echo "calling plan and apply"
-            plan
-            apply
-            get_storage_id
-            upload_tfstate
-            ;;
-        "validate")
-            echo "calling validate"
-            validate
-            ;;
-        "destroy")
-            echo "No more tfstate file"
-            exit
-            ;;
-        *)
-            other
-            ;;
+    "plan")
+        echo "calling plan"
+        plan
+        ;;
+    "apply")
+        echo "calling plan and apply"
+        plan
+        apply
+        get_storage_id
+        upload_tfstate
+        ;;
+    "validate")
+        echo "calling validate"
+        validate
+        ;;
+    "destroy")
+        echo "No more tfstate file"
+        exit
+        ;;
+    *)
+        other
+        ;;
     esac
 
     rm -rf backend.azurerm.tf
@@ -198,7 +197,6 @@ function destroy_from_remote_state {
     cd "${current_path}"
 }
 
-
 function terraform_init_remote {
 
     case ${terraform_version} in
@@ -242,7 +240,6 @@ function plan {
     pwd
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-
     rm -f $STDERR_FILE
 
     case ${terraform_version} in
@@ -270,9 +267,8 @@ function plan {
         cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
     fi
 
-
     if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
+        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat $STDERR_FILE
         RETURN_CODE=2000
@@ -289,7 +285,6 @@ function apply {
     echo 'running terraform apply'
     rm -f $STDERR_FILE
 
-
     case ${terraform_version} in
         *"15"* | *"1."*)
             echo "Terraform version 0.15 or greater"
@@ -305,11 +300,10 @@ function apply {
             ;;
     esac
 
-
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
+        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat $STDERR_FILE
         RETURN_CODE=2001
@@ -330,7 +324,7 @@ function validate {
     RETURN_CODE=$? && echo "Terraform validate return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
+        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat $STDERR_FILE
         RETURN_CODE=2002
@@ -352,7 +346,6 @@ function destroy {
     echo "Calling function destroy"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -TF_VAR_tf_name: ${TF_VAR_tf_name}"
-
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
@@ -378,12 +371,12 @@ function destroy {
                 terraform -chdir=${landingzone_name} \
                     destroy \
                     -refresh=false \
-                    ${tf_command}
+                    ${tf_command} ${tf_approve}
                 ;;
             *)
                 terraform destroy \
                     -refresh=false \
-                    ${tf_command} \
+                    ${tf_command} ${tf_approve} \
                     ${landingzone_name}
                 ;;
         esac
@@ -404,7 +397,6 @@ function destroy {
             unset ARM_CLIENT_ID
             unset ARM_CLIENT_SECRET
         fi
-
 
         case ${terraform_version} in
             *"15"* | *"1."*)
@@ -432,12 +424,12 @@ function destroy {
             *"15"* | *"1."*)
                 echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
-                    destroy ${tf_command} \
+                    destroy ${tf_command} ${tf_approve} \
                     -refresh=false \
                     -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
                 ;;
             *)
-                terraform destroy ${tf_command} \
+                terraform destroy ${tf_command} ${tf_approve} \
                     -refresh=false \
                     -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                     ${landingzone_name}
@@ -450,7 +442,6 @@ function destroy {
         fi
     fi
 
-
     echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     get_storage_id
@@ -459,7 +450,7 @@ function destroy {
         echo "Delete state file on storage account:"
         echo " -tfstate: ${TF_VAR_tf_name}"
         stg_name=$(az storage account show \
-            --ids ${id} -o json | \
+            --ids ${id} -o json |
             jq -r .name) && echo " -stg_name: ${stg_name}"
 
         fileExists=$(az storage blob exists \
@@ -467,7 +458,7 @@ function destroy {
             --name ${TF_VAR_tf_name} \
             --container-name ${TF_VAR_workspace} \
             --auth-mode login \
-            --account-name ${stg_name} -o json | \
+            --account-name ${stg_name} -o json |
             jq .exists)
 
         if [ "${fileExists}" == "true" ]; then
@@ -483,7 +474,7 @@ function destroy {
         fi
     fi
 
-    rm -rf  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
+    rm -rf ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
     clean_up_variables
 }
@@ -502,7 +493,7 @@ function other {
     RETURN_CODE=$? && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >> ${tf_output_file}; fi
+        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
         echo "Terraform returned errors:"
         cat $STDERR_FILE
         RETURN_CODE=2003
