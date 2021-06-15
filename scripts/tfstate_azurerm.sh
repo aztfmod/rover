@@ -336,6 +336,17 @@ function validate {
 
 }
 
+function graph {
+    echo "@calling graph"
+
+    echo "running terraform ${tf_action} -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
+
+    plan
+
+    terraform graph \
+        -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${tf_command}
+}
+
 function destroy {
     echo "@calling destroy $1"
 

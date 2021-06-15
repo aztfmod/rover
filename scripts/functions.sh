@@ -353,6 +353,10 @@ function deploy_landingzone {
         echo "calling destroy"
         destroy
         ;;
+    "graph")
+        echo "calling graph"
+        graph
+        ;;
     "init")
         echo "init no-op"
         ;;
@@ -677,7 +681,7 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
+            "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
                 deploy_from_remote_state
                 ;;
             *)
@@ -735,7 +739,7 @@ function verify_rover_version {
 
     if [ "${ROVER_RUNNER}" = false ]; then
         required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
-        running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
+        running_version=$(cat /tf/rover/version.txt |  egrep -o '[^\/]+$')
 
         if [ "${required_version}" != "${running_version}" ]; then
             echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
