@@ -9,6 +9,8 @@
 **/~*.*
 **/*.log
 version.txt
+landingzones
+aztfmod
 public/
 walkthrough/
 .data
