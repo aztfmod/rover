@@ -38,7 +38,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
-    PATH="${PATH}:/opt/mssql-tools/bin" \
+    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
     LANG=en_US.UTF-8 \
@@ -282,6 +282,7 @@ COPY ./scripts/walkthrough.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/backend.hcl.tf .
 COPY ./scripts/ci.sh .
+COPY ./scripts/cd.sh .
 COPY ./scripts/task.sh .
 COPY ./scripts/symphony_yaml.sh .
 COPY ./scripts/test_runner.sh .
@@ -353,5 +354,10 @@ RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     rm /tmp/tflint-ruleset-azurerm.zip
 
 RUN echo "Installing shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes && \
-    export PATH=$PATH:/home/vscode/.local/lib/shellspec/bin
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes 
+
+
+RUN echo "Installing caflint..." && \
+    go install github.com/aztfmod/caflint@latest 
+
+

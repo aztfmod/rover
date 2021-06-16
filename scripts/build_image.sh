@@ -126,7 +126,7 @@ function build_rover_agents {
 
 echo "Building rover images."
 if [ "$strategy" == "ci" ]; then
-    build_base_rover_image "0.13.6" ${strategy}
+    build_base_rover_image "1.0.0" ${strategy}
 else
     while read versionTerraform; do
         build_base_rover_image ${versionTerraform} ${strategy}
