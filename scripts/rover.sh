@@ -193,6 +193,11 @@ while (( "$#" )); do
                 export target_subscription=${2}
                 shift 2
                 ;;
+        --impersonate-sp-from-keyvault-url)
+                export sp_keyvault_url=${2}
+                debug "Impersonate from keyvault ${sp_keyvault_url}"
+                shift 2
+                ;;
 
         *) # preserve positional arguments
                 PARAMS+="${1} "
@@ -209,10 +214,16 @@ tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 verify_azure_session
 process_target_subscription
 
+if [ ! -z "${sp_keyvault_url}" ]; then
+    # Impersonate the rover under sp credentials from keyvault
+    # created with caf azuread_service_principals object
+    login_as_sp_from_keyvault_secrets
+fi
+
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"
 
-if [ ${caf_command} != "walkthrough" ]; then
+if [ "${caf_command}" != "walkthrough" ]; then
   echo "terraform command output file : '$(echo ${tf_output_file})'"
   echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
   echo "tf_action                     : '$(echo ${tf_action})'"

@@ -191,8 +191,9 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show 2>/dev/null || true)
 
-        if [[ "${tf_command}" =~ '--from-keyvault-url' ]]; then
-            login_from_keyvault_secrets
+        if [ ! -z "${sp_keyvault_url}" ]; then
+            login_as_sp_from_keyvault_secrets
+            exit 0
         else
 
             # Cleanup any service principal variables
@@ -239,13 +240,24 @@ function verify_azure_session {
 
 }
 
-function login_from_keyvault_secrets {
+function login_as_sp_from_keyvault_secrets {
     information "Developer command. Not to be used in CI or production."
+    information "It will merge this azure session into the existing ones."
+    information "To prevent that, run az account clear before running this command."
+    information ""
     information "Getting secrets from keyvault..."
-    keyvault_url=$(echo ${tf_command} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
-    export ARM_CLIENT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
-    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
-    export ARM_TENANT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+
+    keyvault_url=$(echo ${sp_keyvault_url} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
+
+    shopt -s lastpipe
+
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv | read CLIENT_ID
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv | read CLIENT_SECRET
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv | read TENANT_ID
+
+    export ARM_CLIENT_ID=${CLIENT_ID}
+    export ARM_CLIENT_SECRET=${CLIENT_SECRET}
+    export ARM_TENANT_ID=${TENANT_ID}
 
     information "Loging with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
