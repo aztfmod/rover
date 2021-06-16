@@ -282,6 +282,7 @@ COPY ./scripts/walkthrough.sh .
 COPY ./scripts/sshd.sh .
 COPY ./scripts/backend.hcl.tf .
 COPY ./scripts/ci.sh .
+COPY ./scripts/cd.sh .
 COPY ./scripts/task.sh .
 COPY ./scripts/symphony_yaml.sh .
 COPY ./scripts/test_runner.sh .

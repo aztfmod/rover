@@ -229,10 +229,61 @@ function terraform_init_remote {
     esac
 }
 
+
+function purge_command {
+  PARAMS=''
+  case "${1}" in
+    graph)
+      shift 1
+      purge_command_graph $@
+      ;;
+    plan)
+      shift 1
+      purge_command_plan $@
+      ;;
+  esac
+
+  echo $PARAMS
+}
+
+function purge_command_graph {
+  while (( "$#" )); do
+    case "${1}" in
+      -var-file)
+        shift 2
+        ;;
+      *)
+        PARAMS+="${1} "
+        shift 1
+        ;;
+    esac      
+  done
+}
+
+
+function purge_command_plan {
+  while (( "$#" )); do
+    case "${1}" in
+      -draw-cycles)
+        shift 1
+        ;;
+      "-type"*)
+        shift 1
+        ;;
+      *)
+        PARAMS+="${1} "
+        shift 1
+        ;;
+    esac      
+  done
+}
+
+
 function plan {
     echo "@calling plan"
 
-    echo "running terraform plan with ${tf_command}"
+    plan_command=$(purge_command plan ${tf_command})
+    echo "running terraform plan with ${plan_command}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
@@ -246,14 +297,14 @@ function plan {
         *"15"* | *"1."*)
             echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
-                plan ${tf_command} \
+                plan ${plan_command} \
                 -refresh=true \
                 -detailed-exitcode \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
             ;;
         *)
-            terraform plan ${tf_command} \
+            terraform plan ${plan_command} \
                 -refresh=true \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
@@ -334,6 +385,22 @@ function validate {
         error ${LINENO} "Error running terraform validate" $RETURN_CODE
     fi
 
+}
+
+function graph {
+    echo "@calling graph"
+
+    graph_command=$(purge_command graph ${tf_command})
+    echo "running terraform ${tf_action} -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}"
+
+    echo "calling plan"
+    plan
+
+    echo "calling terraform graph"
+    terraform graph \
+        -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}
+
+    set +e
 }
 
 function destroy {

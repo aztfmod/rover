@@ -191,25 +191,29 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show 2>/dev/null || true)
 
-        # Cleanup any service principal variables
-        unset ARM_TENANT_ID
-        unset ARM_SUBSCRIPTION_ID
-        unset ARM_CLIENT_ID
-        unset ARM_CLIENT_SECRET
-
-        if [ ! -z "${tenant}" ]; then
-            echo "Login to azure with tenant ${tenant}"
-            ret=$(az login --use-device-code --tenant ${tenant} >/dev/null >&1)
+        if [[ "${tf_command}" =~ '--from-keyvault-url' ]]; then
+            login_from_keyvault_secrets
         else
-            ret=$(az login --use-device-code >/dev/null >&1)
-        fi
 
-        # the second parameter would be the subscription id to target
-        if [ ! -z "${subscription}" ]; then
-            echo "Set default subscription to ${subscription}"
-            az account set -s ${subscription}
-        fi
+            # Cleanup any service principal variables
+            unset ARM_TENANT_ID
+            unset ARM_SUBSCRIPTION_ID
+            unset ARM_CLIENT_ID
+            unset ARM_CLIENT_SECRET
 
+            if [ ! -z "${tenant}" ]; then
+                echo "Login to azure with tenant ${tenant}"
+                ret=$(az login --use-device-code --tenant ${tenant} >/dev/null >&1)
+            else
+                ret=$(az login --use-device-code >/dev/null >&1)
+            fi
+
+            # the second parameter would be the subscription id to target
+            if [ ! -z "${subscription}" ]; then
+                echo "Set default subscription to ${subscription}"
+                az account set -s ${subscription}
+            fi
+        fi
     fi
 
     if [ "${caf_command}" == "logout" ]; then
@@ -232,6 +236,26 @@ function verify_azure_session {
         display_login_instructions
         error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
     fi
+
+}
+
+function login_from_keyvault_secrets {
+    information "Developer command. Not to be used in CI or production."
+    information "Getting secrets from keyvault..."
+    keyvault_url=$(echo ${tf_command} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
+    export ARM_CLIENT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
+    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
+    export ARM_TENANT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+
+    information "Loging with service principal"
+    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
+
+    set +e
+    trap - ERR
+    trap - SIGHUP
+    trap - SIGINT
+    trap - SIGQUIT
+    trap - SIGABRT
 
 }
 
@@ -352,6 +376,10 @@ function deploy_landingzone {
     "destroy")
         echo "calling destroy"
         destroy
+        ;;
+    "graph")
+        echo "calling graph"
+        graph
         ;;
     "init")
         echo "init no-op"
@@ -481,7 +509,7 @@ function clean_up_variables {
     unset ARM_ENVIRONMENT
 
     echo "clean_up backend_files"
-    find /tf/caf -name backend.azurerm.tf -delete
+    find /tf/caf -name backend.azurerm.tf -delete || true
 
 }
 
@@ -677,7 +705,7 @@ function deploy {
             "destroy")
                 destroy_from_remote_state
                 ;;
-            "plan"|"apply"|"validate"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
+            "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
                 deploy_from_remote_state
                 ;;
             *)
@@ -735,7 +763,7 @@ function verify_rover_version {
 
     if [ "${ROVER_RUNNER}" = false ]; then
         required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
-        running_version=$(cat /tf/rover/version.txt | awk -F'/' '{print $2}')
+        running_version=$(cat /tf/rover/version.txt |  egrep -o '[^\/]+$')
 
         if [ "${required_version}" != "${running_version}" ]; then
             echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
