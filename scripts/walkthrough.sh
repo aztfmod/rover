@@ -78,7 +78,8 @@ function clone_configurations {
 }
 
 function select_walkthrough_config {
-  echo "The following configurations were found in the starter repo. Currenlty ONLY demo works with the walkthrough. This was accomplished by standardizing the tfstate file names to match the containing folder name."
+  echo "The following configurations were found in the starter repo. Currenlty ONLY demo works with the walkthrough."
+  echo "This was accomplished by standardizing the tfstate file names to match the containing folder name."
   d=$(pwd)
   cd ${walkthrough_path}/configuration/
   ls -d */ | sort | sed 's/\///'
