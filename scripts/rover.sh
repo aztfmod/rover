@@ -212,13 +212,14 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 verify_azure_session
-process_target_subscription
 
 if [ ! -z "${sp_keyvault_url}" ]; then
     # Impersonate the rover under sp credentials from keyvault
     # created with caf azuread_service_principals object
     login_as_sp_from_keyvault_secrets
 fi
+
+process_target_subscription
 
 echo ""
 echo "mode                          : '$(echo ${caf_command})'"

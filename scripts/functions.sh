@@ -193,7 +193,6 @@ function verify_azure_session {
 
         if [ ! -z "${sp_keyvault_url}" ]; then
             login_as_sp_from_keyvault_secrets
-            exit 0
         else
 
             # Cleanup any service principal variables
@@ -245,20 +244,25 @@ function login_as_sp_from_keyvault_secrets {
     information "It will merge this azure session into the existing ones."
     information "To prevent that, run az account clear before running this command."
     information ""
-    information "Getting secrets from keyvault..."
 
     keyvault_url=$(echo ${sp_keyvault_url} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
 
-    shopt -s lastpipe
+    information "Getting secrets from keyvault ${keyvault_url} ..."
 
+    # Test permissions
     az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv | read CLIENT_ID
-    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv | read CLIENT_SECRET
-    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv | read TENANT_ID
 
-    export ARM_CLIENT_ID=${CLIENT_ID}
-    export ARM_CLIENT_SECRET=${CLIENT_SECRET}
-    export ARM_TENANT_ID=${TENANT_ID}
+    if [ ! -z "${tenant}" ]; then
+        export ARM_TENANT_ID=${tenant}
+    else
+        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+    fi
 
+    information "Login to azure with tenant ${ARM_TENANT_ID}"
+
+    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
+    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
+    
     information "Loging with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
 
@@ -814,7 +818,7 @@ function process_target_subscription {
     echo "TF_VAR_tfstate_subscription_id ${TF_VAR_tfstate_subscription_id}"
 
     # Check if rover mode is set to launchpad
-    if [[ ("${caf_command}" == "launchpad") && ("${target_subscription_id}" != "${TF_VAR_tfstate_subscription_id}") ]]; then
+    if [[ ( ! -z "${sp_keyvault_url}") && ("${caf_command}" != "login") && ("${caf_command}" == "logout" ) ]]; then
         error 51 "To deploy the launchpad, the target and tfstate subscription must be the same."
     fi
 
