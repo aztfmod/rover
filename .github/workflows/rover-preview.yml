@@ -1,4 +1,4 @@
-name: Build Rover dev images
+name: Build Rover preview images
 
 on:
   workflow_dispatch:
