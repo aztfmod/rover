@@ -33,7 +33,7 @@ export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
-export log_folder_path=${log_folderpath:="~/caflogs/logs"}
+export log_folder_path=${log_folderpath:=~/caflogs/logs}
 
 unset PARAMS
 

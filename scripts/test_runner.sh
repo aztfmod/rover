@@ -13,7 +13,11 @@ function run_integration_tests {
   fi  
 
   get_storage_id
+
+  log_info "Downloading TFState for level $TF_VAR_level"
+  __set_text_log__ "${TF_VAR_level}_tests.log"
   download_tfstate 
+  __reset_log__
 
   local targetStateFile="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/terraform.tfstate"
   mv "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$TF_VAR_tf_name" $targetStateFile
@@ -23,16 +27,22 @@ function run_integration_tests {
   export ENVIRONMENT=$TF_VAR_environment
   export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
   
-  log_debug "  Test Directory   : $target_directory"
-  log_debug "  Environment      : $ENVIRONMENT"
-  log_debug "  Subscription Id  : $ARM_SUBSCRIPTION_ID"
-  log_debug "  STATE_FILE_PATH  : $STATE_FILE_PATH"
-  log_debug "  STATE_FILE       : $targetStateFile"
-  log_debug "  Level            : $TF_VAR_level"
-  log_debug "  Prefix           : $PREFIX"
+  information  "Running tests for level $TF_VAR_level"
+  log_debug "Test Directory   : $target_directory"
+  log_debug "Environment      : $ENVIRONMENT"
+  log_debug "Subscription Id  : $ARM_SUBSCRIPTION_ID"
+  log_debug "STATE_FILE_PATH  : $STATE_FILE_PATH"
+  log_debug "STATE_FILE       : $targetStateFile"
+  log_debug "Level            : $TF_VAR_level"
+  log_debug "Prefix           : $PREFIX"
    
   pushd $target_directory > /dev/null
+    __set_text_log__ "${TF_VAR_level}_tests"
+    local logFile=$CURRENT_LOG_FILE
     go test -v -tags $TF_VAR_level
+    __reset_log__
+    success "$TF_VAR_level tests passed, full log output $logFile"
+
   popd > /dev/null
 
   log_debug "Removing $targetStateFile"

@@ -15,7 +15,7 @@ __log_init__() {
    
     # hash to map loggers to their log levels
     # the default logger "default" has INFO as its default log level
-    _loggers_level_map["default"]=1  # the log level for the default logger is INFO
+    _loggers_level_map["default"]=3  # the log level for the default logger is INFO
 
     #------------------------------------------------------------------------------
     # make sure log directory exists in standard log folder
@@ -35,11 +35,18 @@ __create_dir__()  {
 }
 
 __set_text_log__() {
-
-    # output to file standard error to file
+    local name=$1
+    local logDate=$(date +%Y-%m-%d)
+    export LOG_TO_FILE=true
+    export CURRENT_LOG_FILE="$log_folder_path/$name.$logDate.log"
     exec 3>&1 4>&2
-    trap 'exec 2>&4 1>&3' 0 1 2 3
-    exec 1>roverlog.out 2>&1
+    exec 1>> $CURRENT_LOG_FILE 2>&1
+}
+
+__reset_log__() {
+    export LOG_TO_FILE=false
+    unset CURRENT_LOG_FILE
+    exec 2>&4 1>&3
 }
 
 #------------------------------------------------------------------------------
