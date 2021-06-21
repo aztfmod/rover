@@ -40,18 +40,15 @@ __set_text_log__() {
 #------------------------------------------------------------------------------
 set_log_level() {
     local logger=default in_level l
-    # echo "initial logger: $logger"
     [[ $1 = "-l" ]] && { logger=$2; shift 2 2>/dev/null; }
-    # echo "updated logger: $logger"
-    # echo "input: $1"
     in_level="${1:-INFO}"
-    # echo "initial in_level: $in_level"
+    
     if [[ $logger ]]; then
         l="${_log_levels[$in_level]}"
-        # echo "value of l : $l"
+      
         if [[ $l ]]; then
             _loggers_level_map[$logger]=$l
-            # echo "subsequent _loggers_level_map: $_loggers_level_map"
+           
         else
             printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 WARN \
                 "${BASH_SOURCE[2]}:${BASH_LINENO[1]} Unknown log level '$in_level' for logger '$logger'; setting to INFO"
