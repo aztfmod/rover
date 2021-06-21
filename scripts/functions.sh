@@ -23,12 +23,6 @@ error_message() {
     printf >&2 "\e[91m$@\n\e[0m"
 }
 
-debug() {
-    local message=$1
-    if [ "$debug_mode" == "true" ]; then
-        echo "$message"
-    fi
-}
 
 information() {
     printf "\e[36m$@\n\e[0m"

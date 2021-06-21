@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-
-
 __log_init__() {
 
     # Set Time zone to UTC / Comment out to use local time
@@ -17,14 +15,23 @@ __log_init__() {
    
     # hash to map loggers to their log levels
     # the default logger "default" has INFO as its default log level
-    _loggers_level_map["default"]=3  # the log level for the default logger is INFO
+    _loggers_level_map["default"]=1  # the log level for the default logger is INFO
 
     #------------------------------------------------------------------------------
     # make sure log directory exists in standard log folder
     #------------------------------------------------------------------------------
 
-    mkdir -p ~/caflogs/logs/
+    if [ -z "$log_folder_path" ]; then
+        error "0" "Log folder path is not set" 1
+    fi
+
+    __create_dir__ "$log_folder_path"
    
+}
+
+__create_dir__()  {
+    local path=$1
+    mkdir -p $path
 }
 
 __set_text_log__() {
@@ -36,9 +43,9 @@ __set_text_log__() {
 }
 
 #------------------------------------------------------------------------------
-# set_log_level
+# set_log_degree
 #------------------------------------------------------------------------------
-set_log_level() {
+set_log_degree() {
     local logger=default in_level l
     [[ $1 = "-l" ]] && { logger=$2; shift 2 2>/dev/null; }
     in_level="${1:-INFO}"
@@ -64,16 +71,18 @@ set_log_level() {
 _log() {
     local in_level=$1; shift
     local logger=default log_level_set log_level
-    [[ $1 = "-l" ]] && { logger=$2; shift 2; }
+   # [[ $1 = "-l" ]] && { logger=$2; shift 2; }
+        
     log_level="${_log_levels[$in_level]}"
     log_level_set="${_loggers_level_map[$logger]}"
+
     if [[ $log_level_set ]]; then
-        ((log_level_set >= log_level)) && {
+         if [ "$log_level_set" -ge "$log_level" ]; then
             printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 "[$in_level]" "[${BASH_SOURCE[2]}:${BASH_LINENO[1]}]"
             printf '%s\n' "$@"
-        }
-    else
-        printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 [WARN] "[${BASH_SOURCE[2]}:${BASH_LINENO[1]}] Unknown logger '$logger'"
+         fi
+     else
+         printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 [WARN] "[${BASH_SOURCE[2]}:${BASH_LINENO[1]}] Unknown logger '$logger'"
     fi
 }
 
@@ -97,3 +106,4 @@ log_verbose_enter() { _log VERBOSE "Entering function ${FUNCNAME[1]}"; }
 log_info_leave()    { _log INFO    "Leaving function ${FUNCNAME[1]}";  }
 log_debug_leave()   { _log DEBUG   "Leaving function ${FUNCNAME[1]}";  }
 log_verbose_leave() { _log VERBOSE "Leaving function ${FUNCNAME[1]}";  }
+

@@ -1,5 +1,6 @@
 Describe 'cd.sh'
   Include scripts/cd.sh
+  Include scripts/lib/logger.sh
   Include scripts/functions.sh
 
   Describe "verify_cd_parameters"
@@ -77,7 +78,7 @@ Describe 'cd.sh'
       End
     End   
 
-    Context "rover cd -h & valid Symphony Yaml Provided"
+    Context "rover deploy -h & valid Symphony Yaml Provided"
       setup() {
         export symphony_yaml_file="spec/harness/symphony.yml"
         export cd_action="-h"
@@ -88,7 +89,7 @@ Describe 'cd.sh'
         When call verify_cd_parameters
         The output should include '@Verifying cd parameters'
         The error should include 'Usage:'
-        The error should include 'rover cd <action> <flags>' 
+        The error should include 'rover deploy <action> <flags>' 
         The status should eq 0
       End
     End   
@@ -105,7 +106,7 @@ Describe 'cd.sh'
         When call verify_cd_parameters
         The output should include '@Verifying cd parameters'
         The error should include 'Usage:'
-        The error should include 'rover cd <action> <flags>' 
+        The error should include 'rover deploy <action> <flags>' 
         The status should eq 0
       End
     End  

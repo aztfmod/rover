@@ -1,5 +1,6 @@
 Describe 'cd.sh'
   Include scripts/cd.sh
+  Include scripts/lib/logger.sh
   Include scripts/functions.sh
 
   Describe "set_autorest_environment_variables"

@@ -164,19 +164,19 @@ function execute_cd {
           tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')                  
           
 
-          debug @"Starting Deployment"
-          debug "                landingzone_name: $landingzone_name"
-          debug "                  TF_VAR_tf_name: $TF_VAR_tf_name"
-          debug "                  TF_VAR_tf_plan: $TF_VAR_tf_plan"
-          debug "                    TF_VAR_level: $TF_VAR_level"   
-          debug "                      tf_command: $tf_command"
-          debug "                TF_VAR_workspace: $TF_VAR_workspace"
-          debug "  integration_test_absolute_path: $integration_test_absolute_path"
+          log_debug @"Starting Deployment"
+          log_debug "                landingzone_name: $landingzone_name"
+          log_debug "                  TF_VAR_tf_name: $TF_VAR_tf_name"
+          log_debug "                  TF_VAR_tf_plan: $TF_VAR_tf_plan"
+          log_debug "                    TF_VAR_level: $TF_VAR_level"   
+          log_debug "                      tf_command: $tf_command"
+          log_debug "                TF_VAR_workspace: $TF_VAR_workspace"
+          log_debug "  integration_test_absolute_path: $integration_test_absolute_path"
 
          case "${action}" in
               run)
                   export tf_action="apply"
-                  debug "                       tf_action: $tf_action"     
+                  log_debug "                       tf_action: $tf_action"     
 
                   deploy "${TF_VAR_workspace}"
                   set_autorest_environment_variables
@@ -184,12 +184,12 @@ function execute_cd {
                   ;;
               plan)
                   export tf_action="plan"
-                  debug "                       tf_action: $tf_action"     
+                  log_debug "                       tf_action: $tf_action"     
                   deploy "${TF_VAR_workspace}"                  
                   ;;                  
               apply)
                   export tf_action="apply"
-                  debug "                       tf_action: $tf_action"                   
+                  log_debug "                       tf_action: $tf_action"                   
                   deploy "${TF_VAR_workspace}"
                   ;;
               test)

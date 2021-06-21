@@ -23,19 +23,19 @@ function run_integration_tests {
   export ENVIRONMENT=$TF_VAR_environment
   export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
   
-  debug "  Test Directory   : $target_directory"
-  debug "  Environment      : $ENVIRONMENT"
-  debug "  Subscription Id  : $ARM_SUBSCRIPTION_ID"
-  debug "  STATE_FILE_PATH  : $STATE_FILE_PATH"
-  debug "  STATE_FILE       : $targetStateFile"
-  debug "  Level            : $TF_VAR_level"
-  debug "  Prefix           : $PREFIX"
+  log_debug "  Test Directory   : $target_directory"
+  log_debug "  Environment      : $ENVIRONMENT"
+  log_debug "  Subscription Id  : $ARM_SUBSCRIPTION_ID"
+  log_debug "  STATE_FILE_PATH  : $STATE_FILE_PATH"
+  log_debug "  STATE_FILE       : $targetStateFile"
+  log_debug "  Level            : $TF_VAR_level"
+  log_debug "  Prefix           : $PREFIX"
    
   pushd $target_directory > /dev/null
     go test -v -tags $TF_VAR_level
   popd > /dev/null
 
-  debug "Removing $targetStateFile"
+  log_debug "Removing $targetStateFile"
   rm $targetStateFile
 }
 

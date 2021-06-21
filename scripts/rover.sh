@@ -4,6 +4,7 @@
 # deploy a landingzone with
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
+source /tf/rover/lib/logger.sh
 source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate_azurerm.sh
@@ -32,12 +33,14 @@ export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
+export log_folder_path=${log_folderpath:="~/caflogs/logs"}
 
 unset PARAMS
 
 current_path=$(pwd)
 
 mkdir -p ${TF_PLUGIN_CACHE_DIR}
+__log_init__
 
 while (( "$#" )); do
     case "${1}" in
@@ -56,14 +59,23 @@ while (( "$#" )); do
             export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
             shift 2
             ;;
+        -lp|--log-path)
+            export log_folder_path=${2}
+            shift 2
+            ;;
         -c|--cloud)
             export cloud_name=${2}
             shift 2
             ;;
         -d|--debug)
             export debug_mode="true"
+            set_log_degree DEBUG
             shift 1
             ;;
+        --log-degree)
+            set_log_degree $2
+            shift 2    
+            ;;      
         -a|--action)
             export tf_action=${2}
             shift 2
@@ -205,6 +217,7 @@ set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
+
 
 verify_azure_session
 process_target_subscription

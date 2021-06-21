@@ -98,15 +98,15 @@ function task_print_debug {
   local task_flags=$6
   local task_parameters=$7
 
-  debug ""
-  debug " Running task        : $task_executable"
-  debug " sub command         : $task_sub_command"
-  debug " task init required  : $task_requires_init"
-  debug " landing zone folder : $landing_zone_path"
-  debug " config folder       : $config_path"
-  debug " flags               : $task_flags"
-  debug " parameters          : $(format_task_parameters "$task_parameters")"
-  debug " var files           : $PARAMS"
+  log_debug ""
+  log_debug " Running task        : $task_executable"
+  log_debug " sub command         : $task_sub_command"
+  log_debug " task init required  : $task_requires_init"
+  log_debug " landing zone folder : $landing_zone_path"
+  log_debug " config folder       : $config_path"
+  log_debug " flags               : $task_flags"
+  log_debug " parameters          : $(format_task_parameters "$task_parameters")"
+  log_debug " var files           : $PARAMS"
 }
 
 function run_task {
