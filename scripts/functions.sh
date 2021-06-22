@@ -574,7 +574,7 @@ function export_azure_cloud_env {
     # Set landingzone cloud variables for modules
     echo "Initalizing az cloud variables"
     while IFS="=" read key value; do
-        debug " - TF_VAR_$key = $value"
+        log_debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
     done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
