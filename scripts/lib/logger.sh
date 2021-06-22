@@ -50,9 +50,9 @@ __reset_log__() {
 }
 
 #------------------------------------------------------------------------------
-# set_log_degree
+# set_log_severity
 #------------------------------------------------------------------------------
-set_log_degree() {
+set_log_severity() {
     local logger=default in_level l
     [[ $1 = "-l" ]] && { logger=$2; shift 2 2>/dev/null; }
     in_level="${1:-INFO}"

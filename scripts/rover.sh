@@ -69,11 +69,11 @@ while (( "$#" )); do
             ;;
         -d|--debug)
             export debug_mode="true"
-            set_log_degree DEBUG
+            set_log_severity DEBUG
             shift 1
             ;;
-        --log-degree)
-            set_log_degree $2
+        --log-severity)
+            set_log_severity $2
             shift 2    
             ;;      
         -a|--action)

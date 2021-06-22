@@ -23,7 +23,7 @@ Usage: rover <command> <switches>
     -ct | --ci-task-name      <task name>   (ci workflow) CI Tool to invoke. If omitted all tools are run, if provided only that tool is run.
      -b | --base-dir                        (ci workflow) Base directory for paths in symphony.yml.
      -d | --debug                           Show debug (verbose) logs
-        | --log-degree        <degree>      This is the desired log degree. It can be set to FATAL,ERROR, WARN, INFO, DEBUG or VERBOSE         
+        | --log-severity        <degree>      This is the desired log degree. It can be set to FATAL,ERROR, WARN, INFO, DEBUG or VERBOSE         
     -lz | --landingzone                     Path to a landing zone
      -a | --action                          Terraform action to perform (plan, apply , destroy)
      -c | --cloud                           Name of the Azure Cloud to use (AzurePublic, AzureUSGovernment, AzureChinaCloud, AzureGermanCloud) or specific AzureStack name.
