@@ -774,7 +774,7 @@ function expand_tfvars_folder {
     done
 
     # Check there is some tfvars files
-    if [ ! -z  ${PARAMS} ]; then
+    if [ -z  "${PARAMS}" ]; then
         error ${LINENO} "Folder ${1} does not have any tfvars files." 1
     fi
 }

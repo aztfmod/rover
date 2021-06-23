@@ -224,7 +224,7 @@ case "${caf_command}" in
         ;;
 esac
 
-if [ ! -z "${sp_keyvault_url}" ]; then
+if [ -z "${sp_keyvault_url}" ]; then
     # Impersonate the rover under sp credentials from keyvault
     # created with caf azuread_service_principals object
     login_as_sp_from_keyvault_secrets
