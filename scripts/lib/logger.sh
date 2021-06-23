@@ -41,9 +41,16 @@ __set_text_log__() {
     export CURRENT_LOG_FILE="$log_folder_path/$name.$logDate.log"
     exec 3>&1 4>&2
     exec 1>> $CURRENT_LOG_FILE 2>&1
+    echo "------------------------------------------------------------------------------------------------------"
+    printf "STARTING LOG OUTPUT TO : %s\n" $CURRENT_LOG_FILE
+    echo "------------------------------------------------------------------------------------------------------"
 }
 
 __reset_log__() {
+    echo "------------------------------------------------------------------------------------------------------"
+    printf "STOPPING LOG OUTPUT TO : %s\n" $CURRENT_LOG_FILE
+    echo "------------------------------------------------------------------------------------------------------"
+    sed -i 's/\x1b\[[0-9;]*m//g' $CURRENT_LOG_FILE
     export LOG_TO_FILE=false
     unset CURRENT_LOG_FILE
     exec 2>&4 1>&3
