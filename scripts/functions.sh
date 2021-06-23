@@ -38,6 +38,11 @@ success() {
     printf "\e[32m$@\n\e[0m"
 }
 
+debug() {
+    local message=$1
+    log_debug $message
+}
+
 #
 # Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
 #
