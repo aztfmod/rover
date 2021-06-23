@@ -52,12 +52,12 @@ while (( "$#" )); do
             ;;
         -lz|--landingzone)
             export caf_command="landingzone"
-            export landingzone_name=${2}
+            export landingzone_name=$(parameter_value --landingzone ${2})
             export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
             shift 2
             ;;
         -c|--cloud)
-            export cloud_name=${2}
+            export cloud_name=$(parameter_value --cloud ${2})
             shift 2
             ;;
         -d|--debug)
@@ -65,7 +65,7 @@ while (( "$#" )); do
             shift 1
             ;;
         -a|--action)
-            export tf_action=${2}
+            export tf_action=$(parameter_value --action ${2})
             shift 2
             ;;
         --clone-launchpad)
@@ -112,16 +112,16 @@ while (( "$#" )); do
             export devops="true"
             ;;            
         -sc|--symphony-config)
-            export symphony_yaml_file=${2}
+            export symphony_yaml_file=$(parameter_value --symphony-config ${2})
             shift 2
             ;;
         -ct|--ci-task-name)
-            export ci_task_name=${2}
+            export ci_task_name=$(parameter_value --ci-task-name ${2})
             export symphony_run_all_tasks=false
             shift 2
             ;;
         -b|--base-dir)
-            export base_directory=${2}
+            export base_directory=$(parameter_value --base-dir ${2})
             shift 2
             ;;
         -tfc|--tfc)
@@ -129,11 +129,11 @@ while (( "$#" )); do
             export caf_command="tfc"
             ;;
         -t|--tenant)
-            export tenant=${2}
+            export tenant=$(parameter_value --tenant ${2})
             shift 2
             ;;
         -s|--subscription)
-            export subscription=${2}
+            export subscription=$(parameter_value --subscription ${2})
             shift 2
             ;;
         logout)
@@ -141,7 +141,7 @@ while (( "$#" )); do
             export caf_command="logout"
             ;;
         -tfstate)
-                export TF_VAR_tf_name=${2}
+                export TF_VAR_tf_name=$(parameter_value -tfstate ${2})
                 if [ ${TF_VAR_tf_name##*.} != "tfstate" ]; then
                     echo "tfstate name extension must be .tfstate"
                     exit 50
@@ -150,7 +150,7 @@ while (( "$#" )); do
                 shift 2
                 ;;
         -env|--environment)
-                export TF_VAR_environment=${2}
+                export TF_VAR_environment=$(parameter_value --environment ${2})
                 shift 2
                 ;;
         -launchpad)
@@ -158,19 +158,19 @@ while (( "$#" )); do
                 shift 1
                 ;;
         -o|--output)
-                tf_output_file=${2}
+                tf_output_file=$(parameter_value --output ${2})
                 shift 2
                 ;;
         -p|--plan)
-                tf_output_plan_file=${2}
+                tf_output_plan_file=$(parameter_value '-p or --plan' ${2})
                 shift 2
                 ;;
         -w|--workspace)
-                export TF_VAR_workspace=${2}
+                export TF_VAR_workspace=$(parameter_value '--workspace' ${2})
                 shift 2
                 ;;
         -l|-level)
-                export TF_VAR_level=${2}
+                export TF_VAR_level=$(parameter_value '-level' ${2})
                 shift 2
                 ;;
         --impersonate)
@@ -182,19 +182,19 @@ while (( "$#" )); do
                 shift 1
                 ;;
         -var-folder)
-                expand_tfvars_folder ${2}
+                expand_tfvars_folder $(parameter_value '-var-folder' ${2})
                 shift 2
                 ;;
         -tfstate_subscription_id)
-                export TF_VAR_tfstate_subscription_id=${2}
+                export TF_VAR_tfstate_subscription_id=$(parameter_value -tfstate_subscription_id ${2})
                 shift 2
                 ;;
         -target_subscription)
-                export target_subscription=${2}
+                export target_subscription=$(parameter_value -target_subscription ${2})
                 shift 2
                 ;;
         --impersonate-sp-from-keyvault-url)
-                export sp_keyvault_url=${2}
+                export sp_keyvault_url=$(parameter_value --impersonate-sp-from-keyvault-url ${2})
                 debug "Impersonate from keyvault ${sp_keyvault_url}"
                 shift 2
                 ;;
@@ -212,6 +212,17 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 verify_azure_session
+
+# Check command and parameters
+case "${caf_command}" in
+    launchpad|landingzone)
+        if [ ! -z "${tf_command}" ]; then
+            error ${LINENO} "No parameters have been set in ${caf_command}." 1
+        fi
+        ;;
+    *)
+        ;;
+esac
 
 if [ ! -z "${sp_keyvault_url}" ]; then
     # Impersonate the rover under sp credentials from keyvault
@@ -240,10 +251,12 @@ if [ "${caf_command}" != "walkthrough" ]; then
   echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
   echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
 fi
+
 if [ $symphony_run_all_tasks == false ]; then
   echo "Running task                  : '$(echo ${ci_task_name})'"
 fi
 echo ""
+
 
 export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
