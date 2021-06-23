@@ -41,13 +41,13 @@ __set_text_log__() {
     if [ ! -d "$log_folder_path/$logDate" ]; then
       mkdir -p "$log_folder_path/$logDate"
     fi
-    
+
     export LOG_TO_FILE=true
     export CURRENT_LOG_FILE="$log_folder_path/$logDate/$name.log"
     exec 3>&1 4>&2
     exec 1>> $CURRENT_LOG_FILE 2>&1
     echo "------------------------------------------------------------------------------------------------------"
-    printf "STARTING LOG OUTPUT TO : %s\n" $CURRENT_LOG_FILE
+    printf "$(date +"%Y-%m-%dT%H:%M:%S %Z") - STARTING LOG OUTPUT TO : %s\n" $CURRENT_LOG_FILE
     echo "------------------------------------------------------------------------------------------------------"
 }
 
