@@ -65,10 +65,12 @@ RUN apt-get update && \
     make \
     sudo \
     locales \
+    vault \
     vim \
     gpg \
     apt-utils \
     gpg-agent && \
+    setcap cap_ipc_lock=-ep /usr/bin/vault && \
     #
     # Create USERNAME
     #
