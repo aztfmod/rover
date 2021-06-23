@@ -65,12 +65,10 @@ RUN apt-get update && \
     make \
     sudo \
     locales \
-    vault \
     vim \
     gpg \
     apt-utils \
     gpg-agent && \
-    setcap cap_ipc_lock=-ep /usr/bin/vault && \
     #
     # Create USERNAME
     #
@@ -203,6 +201,9 @@ RUN apt-get install -y --no-install-recommends \
     packer=${versionPacker}
 
 RUN apt-get install -y --no-install-recommends \
+    vault
+
+RUN apt-get install -y --no-install-recommends \
     docker-ce-cli
 
 RUN apt-get install -y --no-install-recommends \
@@ -263,6 +264,7 @@ RUN mkdir -p /tf/caf \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
+    setcap cap_ipc_lock=-ep /usr/bin/vault && \
     # for non-root user
     mkdir /commandhistory && \
     touch /commandhistory/.bash_history && \
