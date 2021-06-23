@@ -15,7 +15,7 @@ function run_integration_tests {
   get_storage_id
 
   log_info "Downloading TFState for level $TF_VAR_level"
-  __set_text_log__ "${TF_VAR_level}_tests.log"
+  __set_text_log__ "${TF_VAR_level}_tests"
   download_tfstate 
   __reset_log__
 

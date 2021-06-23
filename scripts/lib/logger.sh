@@ -36,9 +36,14 @@ __create_dir__()  {
 
 __set_text_log__() {
     local name=$1
-    local logDate=$(date +%Y-%m-%d)
+    local logDate=$(date +%Y.%m.%d)
+
+    if [ ! -d "$log_folder_path/$logDate" ]; then
+      mkdir -p "$log_folder_path/$logDate"
+    fi
+    
     export LOG_TO_FILE=true
-    export CURRENT_LOG_FILE="$log_folder_path/$name.$logDate.log"
+    export CURRENT_LOG_FILE="$log_folder_path/$logDate/$name.log"
     exec 3>&1 4>&2
     exec 1>> $CURRENT_LOG_FILE 2>&1
 }

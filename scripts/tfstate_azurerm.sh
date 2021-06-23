@@ -293,6 +293,10 @@ function plan {
 
     rm -f $STDERR_FILE
 
+    local colorFlag=""
+    if [ "$tf_no_color" == "true" ]; then
+      colorFlag="-no-color"
+    fi
     case ${terraform_version} in
         *"15"* | *"1."*)
             echo "Terraform version 0.15 or greater"
