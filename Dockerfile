@@ -184,9 +184,7 @@ RUN apt-get install -y python3-pip && \
     #
     # Clean-up
     #
-    pip3 cache purge && \
-    apt-get remove -y \
-    python3-pip
+    pip3 cache purge
 
     #
     # ################ Install apt packages ##################

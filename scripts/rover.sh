@@ -216,7 +216,7 @@ verify_azure_session
 # Check command and parameters
 case "${caf_command}" in
     launchpad|landingzone)
-        if [ ! -z "${tf_command}" ]; then
+        if [ -z "${tf_command}" ]; then
             error ${LINENO} "No parameters have been set in ${caf_command}." 1
         fi
         ;;
@@ -224,7 +224,7 @@ case "${caf_command}" in
         ;;
 esac
 
-if [ -z "${sp_keyvault_url}" ]; then
+if [ ! -z "${sp_keyvault_url}" ]; then
     # Impersonate the rover under sp credentials from keyvault
     # created with caf azuread_service_principals object
     login_as_sp_from_keyvault_secrets
