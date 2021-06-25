@@ -72,10 +72,14 @@ while (( "$#" )); do
             set_log_severity DEBUG
             shift 1
             ;;
-        --log-severity)
+        -log-severity)
             set_log_severity $2
             shift 2    
             ;;      
+        -stack)
+           export stake_name=${2}
+           shift 2
+           ;;
         -a|--action)
             export tf_action=${2}
             shift 2

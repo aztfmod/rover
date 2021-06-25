@@ -15,7 +15,7 @@ function run_integration_tests {
   get_storage_id
 
   log_info "Downloading TFState for level $TF_VAR_level"
-  __set_text_log__ "${TF_VAR_level}_tests"
+  __set_text_log__ "${TF_VAR_level}_tests_download"
   download_tfstate 
   __reset_log__
 
@@ -39,7 +39,8 @@ function run_integration_tests {
   pushd $target_directory > /dev/null
     __set_text_log__ "${TF_VAR_level}_tests"
     local logFile=$CURRENT_LOG_FILE
-    go test -v -tags $TF_VAR_level
+    go test -v -tags "$TF_VAR_level,$stack_name" 
+    #go test -v -tags "$TF_VAR_level,$stackName" 2>&1 | $(System.DefaultWorkingDirectory)/go-junit-report > ~/.terraform.logs/level2-networking-test-report.xml
     __reset_log__
     success "$TF_VAR_level tests passed, full log output $logFile"
 
