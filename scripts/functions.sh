@@ -346,7 +346,7 @@ function login_as_launchpad {
             export ARM_CLIENT_SECRET=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
             export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
             export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
-
+            unset TF_VAR_logged_user_objectId
             echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
             az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID}
         fi
@@ -357,6 +357,9 @@ function login_as_launchpad {
 
 function deploy_landingzone {
     echo "@calling deploy_landingzone"
+
+    echo "Logged_User_ObjectId:${TF_VAR_logged_user_objectId}"
+    echo "Logged_aad_app_objectId:${TF_VAR_logged_aad_app_objectId}"
 
     echo "Deploying '${landingzone_name}'"
 
@@ -627,11 +630,11 @@ function get_logged_user_object_id {
                     computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
                     principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
                     echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
-                    export TF_VAR_logged_user_objectId=${principalId}
+                    export TF_VAR_logged_aad_app_objectId=${principalId}
                     export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
                 else
                     echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
+                    export TF_VAR_logged_aad_app_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
                     export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
                 fi
                 ;;
@@ -639,8 +642,7 @@ function get_logged_user_object_id {
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)  && echo " Logged in rover msi object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
                 export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
                 ;;
