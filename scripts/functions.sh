@@ -345,6 +345,7 @@ function login_as_launchpad {
             export ARM_CLIENT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
             export ARM_CLIENT_SECRET=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
             export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
+            export ARM_SUBSCRIPTION_ID=${TF_VAR_tfstate_subscription_id}
             export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
             unset TF_VAR_logged_user_objectId
             echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
@@ -456,7 +457,7 @@ function workspace_list {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --auth-mode "login" \
         --account-name ${storage_account_name} -o json |
-        jq -r '["workspace", "last modification", "lease ststus"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
+        jq -r '["workspace", "last modification", "lease status"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
         column -t -s ','
 
     echo ""
