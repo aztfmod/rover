@@ -77,7 +77,7 @@ while (( "$#" )); do
             shift 2    
             ;;      
         -stack)
-           export stake_name=${2}
+           export stack_name=${2}
            shift 2
            ;;
         -a|--action)
