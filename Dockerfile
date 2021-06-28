@@ -176,7 +176,7 @@ RUN apt-get install -y python3-pip && \
     #
     # Install Azure-cli
     #
-    pip3 install azure-cli==${versionAzureCli} && \
+    pip3 install azure-cli==${versionAzureCli} --use-deprecated=legacy-resolver && \
     #
     # Install pywinrm
     #
@@ -356,10 +356,10 @@ RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     rm /tmp/tflint-ruleset-azurerm.zip
 
 RUN echo "Installing shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes 
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes
 
 
 RUN echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest 
+    go install github.com/aztfmod/caflint@latest
 
 
