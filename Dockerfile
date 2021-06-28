@@ -177,7 +177,6 @@ RUN apt-get install -y python3-pip && \
     #
     echo "Installing Checkov ${versionCheckov} ..." && \
     pip3 install checkov==${versionCheckov} && \
-
     #
     # Install pywinrm
     #
@@ -186,7 +185,6 @@ RUN apt-get install -y python3-pip && \
     # Clean-up
     #
     pip3 cache purge
-
     #
     # ################ Install apt packages ##################
     #
