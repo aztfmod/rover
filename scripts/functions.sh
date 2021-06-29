@@ -75,6 +75,14 @@ function execute_with_backoff {
     return $exitCode
 }
 
+function parameter_value {
+    if [[ ${2} = -* ]]; then
+        error ${LINENO} "Value not set for paramater ${1}" 1
+    fi
+
+    echo ${2}
+} 
+
 function process_actions {
     echo "@calling process_actions"
 
@@ -137,19 +145,9 @@ function display_login_instructions {
 function display_instructions {
     echo ""
     echo "You can deploy a landingzone with the rover by running:"
-    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|validate|import|taint|state list]"
+    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|'state list'|'state rm'|'state show']"
     echo ""
-    echo "List of the landingzones loaded in the rover:"
 
-    if [ -d "/tf/caf/landingzones" ]; then
-        for i in $(ls -d /tf/caf/landingzones/*); do echo ${i%%/}; done
-        echo ""
-    fi
-
-    if [ -d "/tf/caf/public/landingzones" ]; then
-        for i in $(ls -d /tf/caf/public/landingzones/*); do echo ${i%%/}; done
-        echo ""
-    fi
 }
 
 function display_launchpad_instructions {
@@ -196,8 +194,8 @@ function verify_azure_session {
         echo "Checking existing Azure session"
         session=$(az account show 2>/dev/null || true)
 
-        if [[ "${tf_command}" =~ '--from-keyvault-url' ]]; then
-            login_from_keyvault_secrets
+        if [ ! -z "${sp_keyvault_url}" ]; then
+            login_as_sp_from_keyvault_secrets
         else
 
             # Cleanup any service principal variables
@@ -244,14 +242,30 @@ function verify_azure_session {
 
 }
 
-function login_from_keyvault_secrets {
-    information "Developer command. Not to be used in CI or production."
-    information "Getting secrets from keyvault..."
-    keyvault_url=$(echo ${tf_command} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
-    export ARM_CLIENT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
-    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
-    export ARM_TENANT_ID=$(az keyvault secret show --id ${keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+function login_as_sp_from_keyvault_secrets {
+    information "Transition the azure session from the credentials stored in the keyvault."
+    information "It will merge this azure session into the existing ones."
+    information "To prevent that, run az account clear before running this command."
+    information ""
 
+    keyvault_url=$(echo ${sp_keyvault_url} | sed 's/[^ ]\+ //') && echo "keyvault url: ${keyvault_url}"
+
+    information "Getting secrets from keyvault ${keyvault_url} ..."
+
+    # Test permissions
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv | read CLIENT_ID
+
+    if [ ! -z "${tenant}" ]; then
+        export ARM_TENANT_ID=${tenant}
+    else
+        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+    fi
+
+    information "Login to azure with tenant ${ARM_TENANT_ID}"
+
+    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
+    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
+    
     information "Loging with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
 
@@ -314,7 +328,7 @@ function login_as_launchpad {
 
     # If the logged in user does not have access to the launchpad
     if [ "${TF_VAR_tenant_id}" == "" ]; then
-        error 326 "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
+        error ${LINENO} "Not authorized to manage landingzones. User must be member of the security group to access the launchpad and deploy a landing zone" 102
     fi
 
     export TF_VAR_tfstate_storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name (current): ${TF_VAR_tfstate_storage_account_name}"
@@ -336,7 +350,7 @@ function login_as_launchpad {
             export ARM_CLIENT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-client-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - client id: ${ARM_CLIENT_ID}"
             export ARM_CLIENT_SECRET=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-client-secret --vault-name ${keyvault} -o json | jq -r .value)
             export ARM_TENANT_ID=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n ${SECRET_PREFIX}-tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant id: ${ARM_TENANT_ID}"
-            export TF_VAR_logged_aad_app_objectId=$(az ad sp show --subscription ${TF_VAR_tfstate_subscription_id} --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
+            export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${ARM_CLIENT_ID} --query objectId -o tsv) && echo " - Set logged in aad app object id from keyvault: ${TF_VAR_logged_aad_app_objectId}"
 
             echo "Impersonating with the azure session with the launchpad service principal to deploy the landingzone"
             az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} --tenant ${ARM_TENANT_ID}
@@ -742,6 +756,12 @@ function landing_zone {
 
 function expand_tfvars_folder {
 
+    # Check the folder path exist
+    if [ ! -d  ${1} ]; then
+        error ${LINENO} "Folder ${1} does not exist." 1
+    fi
+
+
     echo " Expanding variable files: ${1}/*.tfvars"
 
     for filename in "${1}"/*.tfvars; do
@@ -757,6 +777,11 @@ function expand_tfvars_folder {
             PARAMS+="-var-file ${filename} "
         fi
     done
+
+    # Check there is some tfvars files
+    if [ -z  "${PARAMS}" ]; then
+        error ${LINENO} "Folder ${1} does not have any tfvars files." 1
+    fi
 }
 
 #
@@ -807,7 +832,7 @@ function process_target_subscription {
     echo "TF_VAR_tfstate_subscription_id ${TF_VAR_tfstate_subscription_id}"
 
     # Check if rover mode is set to launchpad
-    if [[ ("${caf_command}" == "launchpad") && ("${target_subscription_id}" != "${TF_VAR_tfstate_subscription_id}") ]]; then
+    if [[ ( ! -z "${sp_keyvault_url}") && ("${caf_command}" != "login") && ("${caf_command}" == "logout" ) ]]; then
         error 51 "To deploy the launchpad, the target and tfstate subscription must be the same."
     fi
 

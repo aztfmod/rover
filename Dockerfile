@@ -38,7 +38,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
-    PATH="${PATH}:/opt/mssql-tools/bin" \
+    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
     LANG=en_US.UTF-8 \
@@ -184,9 +184,7 @@ RUN apt-get install -y python3-pip && \
     #
     # Clean-up
     #
-    pip3 cache purge && \
-    apt-get remove -y \
-    python3-pip
+    pip3 cache purge
 
     #
     # ################ Install apt packages ##################
@@ -199,6 +197,9 @@ RUN apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y --no-install-recommends \
     packer=${versionPacker}
+
+RUN apt-get install -y --no-install-recommends \
+    vault
 
 RUN apt-get install -y --no-install-recommends \
     docker-ce-cli
@@ -262,6 +263,7 @@ RUN mkdir -p /tf/caf \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
+    setcap cap_ipc_lock=-ep /usr/bin/vault && \
     # for non-root user
     mkdir /commandhistory && \
     touch /commandhistory/.bash_history && \
@@ -356,5 +358,10 @@ RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     rm /tmp/tflint-ruleset-azurerm.zip
 
 RUN echo "Installing shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes && \
-    export PATH=$PATH:/home/vscode/.local/lib/shellspec/bin
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes 
+
+
+RUN echo "Installing caflint..." && \
+    go install github.com/aztfmod/caflint@latest 
+
+
