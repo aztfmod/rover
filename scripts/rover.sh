@@ -34,6 +34,7 @@ export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
+export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
 
 unset PARAMS
 
@@ -41,6 +42,7 @@ current_path=$(pwd)
 
 mkdir -p ${TF_PLUGIN_CACHE_DIR}
 __log_init__
+set_log_severity INFO # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
 
 while (( "$#" )); do
     case "${1}" in
@@ -244,6 +246,12 @@ if [ ${caf_command} != "walkthrough" ]; then
   echo "CI/CD enabled                 : '$(echo ${devops})'"
   echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
   echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+  if [ ! -z "$TF_LOG" ]; then
+    echo "TF_LOG                        : '$(echo ${TF_LOG})'"
+  fi
+  if [ ! -z "$TF_IN_AUTOMATION" ]; then
+    echo "TF_IN_AUTOMATION              : '$(echo ${TF_IN_AUTOMATION})'"
+  fi
 fi
 if [ $symphony_run_all_tasks == false ]; then
   echo "Running task                  : '$(echo ${ci_task_name})'"

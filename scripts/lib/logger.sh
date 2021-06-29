@@ -34,6 +34,18 @@ __create_dir__()  {
     mkdir -p $path
 }
 
+__set_tf_log__() {
+    local name=$1
+    local logDate=$(date +%Y.%m.%d)
+
+    if [ ! -d "$log_folder_path/$logDate" ]; then
+      mkdir -p "$log_folder_path/$logDate"
+    fi
+  
+    export TF_LOG_PATH="$log_folder_path/$logDate/tf_raw_$name.log"
+    __set_text_log__ "$name"
+}
+
 __set_text_log__() {
     local name=$1
     local logDate=$(date +%Y.%m.%d)
@@ -58,7 +70,69 @@ __reset_log__() {
     sed -i 's/\x1b\[[0-9;]*m//g' $CURRENT_LOG_FILE
     export LOG_TO_FILE=false
     unset CURRENT_LOG_FILE
+    unset TF_LOG_PATH
+    export_tf_environment_variables $LOG_SEVERITY #reset log to serverity to original values
     exec 2>&4 1>&3
+}
+
+#------------------------------------------------------------------------------
+# export_tf_environment_variables
+#
+# ROVER             TF            AUTOMATION
+# ------------------------------------------
+# VERBOSE          TRACE          OFF
+# DEBUG            DEBUG          ON
+# INFO             INFO           ON
+# WARN             WARN           ON
+# ERROR            ERROR          ON
+# FATAL            ERROR          ON
+#
+#------------------------------------------------------------------------------
+export_tf_environment_variables() {
+  local severity=$1
+  export LOG_SEVERITY=$severity
+  
+  local tfLog
+  local isAutomation=false
+  case $severity in
+    VERBOSE)
+      tfLog="TRACE"
+      isAutomation=false
+      ;;
+    DEBUG)
+      tfLog="DEBUG"
+      isAutomation=true
+      ;;
+    INFO)
+      tfLog="INFO"
+      isAutomation=true
+      ;;
+    WARN)
+      tfLog="WARN"
+      isAutomation=true
+      ;;
+    ERROR)
+      tfLog="ERROR"
+      isAutomation=true
+      ;;
+    FATAL)
+      tfLog="ERROR"
+      isAutomation=true
+      ;;                  
+    *)
+      error 0 "Uknown serverity"
+      ;;
+  esac
+
+  export TF_LOG=$tfLog
+
+  if [ "$isAutomation" == "true" ]; then
+    export TF_IN_AUTOMATION="true"
+  else
+    unset TF_IN_AUTOMATION
+  fi
+
+  
 }
 
 #------------------------------------------------------------------------------
@@ -66,6 +140,8 @@ __reset_log__() {
 #------------------------------------------------------------------------------
 set_log_severity() {
     local logger=default in_level l
+    export_tf_environment_variables "$1"
+   
     [[ $1 = "-l" ]] && { logger=$2; shift 2 2>/dev/null; }
     in_level="${1:-INFO}"
     
@@ -74,7 +150,7 @@ set_log_severity() {
       
         if [[ $l ]]; then
             _loggers_level_map[$logger]=$l
-           
+   
         else
             printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 WARN \
                 "${BASH_SOURCE[2]}:${BASH_LINENO[1]} Unknown log level '$in_level' for logger '$logger'; setting to INFO"
@@ -115,6 +191,13 @@ log_warn()    { _log WARN    "$@"; }
 log_info()    { _log INFO    "$@"; }
 log_debug()   { _log DEBUG   "$@"; }
 log_verbose() { _log VERBOSE "$@"; }
+log_if_exists() {
+  local raw=$1
+  local formatted=$2
+   if [ ! -z "$raw" ]; then
+    echo $formatted
+  fi 
+}
 
 #------------------------------------------------------------------------------
 # logging for function entry and exit

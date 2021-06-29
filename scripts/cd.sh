@@ -177,7 +177,7 @@ function execute_cd {
               run)
                   export tf_action="apply"
                   log_debug "                       tf_action: $tf_action"     
-                  __set_text_log__ "rover.deploy.run"
+                  __set_tf_log__ "rover.deploy.run"
                   deploy "${TF_VAR_workspace}"
                   __reset_log__   
                   set_autorest_environment_variables
@@ -186,14 +186,14 @@ function execute_cd {
               plan)
                   export tf_action="plan"
                   log_debug "                       tf_action: $tf_action"     
-                  __set_text_log__ "rover.deploy.plan"
+                  __set_tf_log__ "rover.deploy.plan"
                   deploy "${TF_VAR_workspace}" 
                   __reset_log__                 
                   ;;                  
               apply)
                   export tf_action="apply"
                   log_debug "                       tf_action: $tf_action"                   
-                  __set_text_log__ "rover.deploy.apply"
+                  __set_tf_log__ "rover.deploy.apply"
                   deploy "${TF_VAR_workspace}"
                   __reset_log__   
                   ;;
