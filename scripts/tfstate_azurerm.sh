@@ -101,6 +101,8 @@ function download_tfstate {
 
     echo "Downloading Remote state from the cloud"
 
+    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    
     stg=$(az storage account show --ids ${id} -o json)
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
