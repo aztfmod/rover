@@ -325,9 +325,10 @@ function plan {
         RETURN_CODE=2000
     fi
 
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform plan" $RETURN_CODE
-    fi
+    # Temporary fix until plan and apply properly decoupled.
+    # if [ $RETURN_CODE != 0 ]; then
+    #     error ${LINENO} "Error running terraform plan" $RETURN_CODE
+    # fi
 }
 
 function apply {
