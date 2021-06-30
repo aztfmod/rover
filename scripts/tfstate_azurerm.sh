@@ -63,7 +63,7 @@ function initialize_state {
         ;;
     esac
 
-    rm -rf backend.azurerm.tf
+    rm -rf backend.azurerm.tf || true
 
     cd "${current_path}"
 }
@@ -311,9 +311,7 @@ function plan {
             ;;
     esac
 
-    debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
-
-    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ ! -z ${tf_output_plan_file} ]; then
         echo "Copying plan file to ${tf_output_plan_file}"
@@ -353,9 +351,7 @@ function apply {
             ;;
     esac
 
-    debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
-
-    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform apply return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform apply return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
         if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
@@ -561,9 +557,7 @@ function other {
         -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
         ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
 
-    debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
-
-    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
 
     if [ -s $STDERR_FILE ]; then
         if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
