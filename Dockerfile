@@ -169,14 +169,14 @@ RUN apt-get install -y python3-pip && \
     echo "Installing yq ..." && \
     pip3 install yq && \
     #
+    # Install Azure-cli
+    #
+    pip3 install azure-cli==${versionAzureCli}  && \
+    #
     # Install checkov
     #
     echo "Installing Checkov ${versionCheckov} ..." && \
     pip3 install checkov==${versionCheckov} && \
-    #
-    # Install Azure-cli
-    #
-    pip3 install azure-cli==${versionAzureCli} && \
     #
     # Install pywinrm
     #
@@ -185,7 +185,6 @@ RUN apt-get install -y python3-pip && \
     # Clean-up
     #
     pip3 cache purge
-
     #
     # ################ Install apt packages ##################
     #
@@ -356,10 +355,10 @@ RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     rm /tmp/tflint-ruleset-azurerm.zip
 
 RUN echo "Installing shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes 
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes
 
 
 RUN echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest 
+    go install github.com/aztfmod/caflint@latest
 
 
