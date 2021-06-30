@@ -42,8 +42,18 @@ __set_tf_log__() {
       mkdir -p "$log_folder_path/$logDate"
     fi
   
-    export TF_LOG_PATH="$log_folder_path/$logDate/tf_raw_$name.log"
+  #  export TF_LOG_PATH="$log_folder_path/$logDate/tf_raw_$name.log"
     __set_text_log__ "$name"
+}
+
+
+get_log_folder(){
+  local logDate=$(date +%Y.%m.%d)
+  local current_log_folder="$log_folder_path/$logDate"
+  if [ ! -d "$current_log_folder" ]; then
+    mkdir -p "$current_log_folder"
+  fi
+  echo $current_log_folder
 }
 
 __set_text_log__() {
@@ -124,10 +134,10 @@ export_tf_environment_variables() {
       ;;
   esac
 
-  export TF_LOG=$tfLog
+  #export TF_LOG=$tfLog
 
   if [ "$isAutomation" == "true" ]; then
-    export TF_IN_AUTOMATION="true"
+  export TF_IN_AUTOMATION="true"
   else
     unset TF_IN_AUTOMATION
   fi

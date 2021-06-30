@@ -39,8 +39,9 @@ function run_integration_tests {
   pushd $target_directory > /dev/null
     __set_text_log__ "${TF_VAR_level}_tests"
     local logFile=$CURRENT_LOG_FILE
+    local logFolder=$(get_log_folder)
     go test -v -tags "$TF_VAR_level,$stack_name" 
-    #go test -v -tags "$TF_VAR_level,$stackName" 2>&1 | $(System.DefaultWorkingDirectory)/go-junit-report > ~/.terraform.logs/level2-networking-test-report.xml
+    #cat $CURRENT_LOG_FILE | go-junit-report > "$logFolder/${TF_VAR_level}_test_report.xml"
     __reset_log__
     success "$TF_VAR_level tests passed, full log output $logFile"
 
