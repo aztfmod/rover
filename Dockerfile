@@ -197,8 +197,8 @@ RUN apt-get install -y --no-install-recommends \
 RUN apt-get install -y --no-install-recommends \
     packer=${versionPacker}
 
-RUN apt-get install -y --no-install-recommends \
-    vault
+# RUN apt-get install -y --no-install-recommends \
+#     vault
 
 RUN apt-get install -y --no-install-recommends \
     docker-ce-cli
@@ -261,7 +261,6 @@ RUN mkdir -p /tf/caf \
     chmod 700 /home/${USERNAME}/.ssh && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
-    setcap cap_ipc_lock=-ep /usr/bin/vault && \
     # for non-root user
     mkdir /commandhistory && \
     touch /commandhistory/.bash_history && \
@@ -324,11 +323,13 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
 FROM base
 
 ARG versionTerraform
+ARG versionVault
 ARG USERNAME=vscode
 ARG versionRover
 ARG versionTflintazrs
 
 ENV versionRover=${versionRover} \
+    versionVault=${versionVault} \
     versionTerraform=${versionTerraform} \
     versionTflintazrs=${versionTflintazrs}
 #
@@ -343,6 +344,13 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     rm /tmp/terraform.zip && \
     #
     echo ${versionRover} > /tf/rover/version.txt
+
+RUN echo "Installing Vault ${versionVault}..." && \
+    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_linux_amd64.zip 2>&1 && \
+    sudo unzip -d /usr/bin /tmp/vault.zip && \
+    sudo chmod +x /usr/bin/vault && \
+    sudo setcap cap_ipc_lock=-ep /usr/bin/vault && \
+    rm /tmp/vault.zip
 
 RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
