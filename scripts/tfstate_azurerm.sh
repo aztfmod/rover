@@ -92,7 +92,7 @@ function upload_tfstate {
         error ${LINENO} "Error uploading the blob storage" $RETURN_CODE
     fi
 
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" || true
 
 }
 
