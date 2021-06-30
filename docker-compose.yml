@@ -23,6 +23,7 @@ services:
         - versionJq
         - versionDockerCompose
         - versionTfsec
+        - versionVault
         - versionTerraformDocs
         - versionAnsible
         - versionPacker
