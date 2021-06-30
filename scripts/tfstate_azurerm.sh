@@ -313,7 +313,7 @@ function plan {
 
     debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
 
-    RETURN_CODE=$? && echo "Terraform plan return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${PIPESTATUS[0]}"
 
     if [ ! -z ${tf_output_plan_file} ]; then
         echo "Copying plan file to ${tf_output_plan_file}"
@@ -355,7 +355,7 @@ function apply {
 
     debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
 
-    RETURN_CODE=$? && echo "Terraform apply return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform apply return code: ${PIPESTATUS[0]}"
 
     if [ -s $STDERR_FILE ]; then
         if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
@@ -563,7 +563,7 @@ function other {
 
     debug "${PIPESTATUS[0]} ${PIPESTATUS[1]}"
 
-    RETURN_CODE=$? && echo "Terraform ${tf_action} return code: ${PIPESTATUS[0]}"
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${PIPESTATUS[0]}"
 
     if [ -s $STDERR_FILE ]; then
         if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
