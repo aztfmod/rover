@@ -66,6 +66,8 @@ function initialize_state {
     rm -rf backend.azurerm.tf || true
 
     cd "${current_path}"
+
+    exit 0
 }
 
 function upload_tfstate {
