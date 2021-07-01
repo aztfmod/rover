@@ -699,40 +699,40 @@ function deploy {
                 error ${LINENO} "You need to initialise a launchpad first with the command \n
                 rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
             fi
-        ;;
+            ;;
         *)
 
-        # Get the launchpad version
-        caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
-        echo ""
-        echo "${caf_launchpad} already installed"
-        echo ""
+            # Get the launchpad version
+            caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
+            echo ""
+            echo "${caf_launchpad} already installed"
+            echo ""
 
-        if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-            echo "Recover from an un-finished previous execution"
-            if [ "${tf_action}" == "destroy" ]; then
-                if [ "${caf_command}" == "landingzone" ]; then
-                    login_as_launchpad
+            if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
+                echo "Recover from an un-finished previous execution"
+                if [ "${tf_action}" == "destroy" ]; then
+                    if [ "${caf_command}" == "landingzone" ]; then
+                        login_as_launchpad
+                    fi
+                    destroy
+                else
+                    initialize_state
                 fi
-                destroy
+                exit 0
             else
-                initialize_state
+                case "${tf_action}" in
+                "destroy")
+                    destroy_from_remote_state
+                    ;;
+                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
+                    deploy_from_remote_state
+                    ;;
+                *)
+                    display_instructions
+                    ;;
+                esac
             fi
-            exit 0
-        else
-            case "${tf_action}" in
-            "destroy")
-                destroy_from_remote_state
-                ;;
-            "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
-                deploy_from_remote_state
-                ;;
-            *)
-                display_instructions
-                ;;
-            esac
-        fi
-        ;;
+            ;;
     esac
 
 
