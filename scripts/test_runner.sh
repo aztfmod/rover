@@ -9,6 +9,16 @@ function get_test_file_name() {
   echo $name
 }
 
+function create_junit_report {
+  if [ ! -f ~/go/bin/go-junit-report ]; then     
+    __reset_log__ 
+    log_warn "go-junit-report not found. Will not generate a junit xml report for test." 
+    log_warn "https://github.com/jstemmer/go-junit-report"
+  else
+    cat $CURRENT_LOG_FILE | ~/go/bin/go-junit-report > "$logFolder/${fileName}_test_report.xml"
+    __reset_log__
+  fi  
+}
 function run_integration_tests {
   information @"Run Integration Tests"
   local target_directory=$1
@@ -48,10 +58,11 @@ function run_integration_tests {
    
   pushd $target_directory > /dev/null
     __set_text_log__ "${fileName}_tests"
+    log_debug "starting test run"
     local logFile=$CURRENT_LOG_FILE
     local logFolder=$(get_log_folder)
     go test -v -tags "$TF_VAR_level,$stack_name" 
-    
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ ! -f ~/go/bin/go-junit-report ]; then     
       __reset_log__ 

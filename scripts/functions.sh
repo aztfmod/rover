@@ -1,8 +1,8 @@
 error() {
     if [ "$LOG_TO_FILE" == "true" ];then
         local logFile=$CURRENT_LOG_FILE
-        __reset_log__
-         echo >&2 -e "\e[41mError: see log file $logFile\e[0m"
+        create_junit_report
+        echo >&2 -e "\e[41mError: see log file $logFile\e[0m"
     fi
 
     local parent_lineno="$1"
