@@ -66,8 +66,10 @@ function initialize_state {
     rm -rf backend.azurerm.tf || true
 
     cd "${current_path}"
-
-    exit 0
+    
+    if [ "$devops" != "true" ]; then
+        exit 0
+    fi
 }
 
 function upload_tfstate {
@@ -309,7 +311,7 @@ function plan {
                 -refresh=true \
                 -detailed-exitcode \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
+                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
             ;;
         *)
             terraform plan ${plan_command} \
@@ -318,7 +320,7 @@ function plan {
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD | tee ${tf_output_file}
             ;;
     esac
-
+    
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ ! -z ${tf_output_plan_file} ]; then
@@ -326,12 +328,18 @@ function plan {
         cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
     fi
 
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2000
-    fi
+    case "${RETURN_CODE}" in
+      "0")
+        export text_log_status="terraform plan succeeded"
+        ;;
+      "1")        
+        error ${LINENO} "Error running terraform plan" $RETURN_CODE
+        ;;
+      "2")
+        log_info "terraform plan succeeded with non-empty diff"
+        export text_log_status="terraform plan succeeded with non-empty diff"
+        ;;
+    esac    
 
     # Temporary fix until plan and apply properly decoupled.
     # if [ $RETURN_CODE != 0 ]; then
@@ -351,26 +359,21 @@ function apply {
             terraform -chdir=${landingzone_name} \
                 apply \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
             ;;
         *)
             terraform apply \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
             ;;
     esac
 
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform apply return code: ${RETURN_CODE}"
 
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2001
-    fi
-
     if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform apply" $RETURN_CODE
+      error ${LINENO} "Error running terraform apply" $RETURN_CODE
+    else
+      export text_log_status="terraform apply succeeded"
     fi
 
 }

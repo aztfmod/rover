@@ -204,9 +204,12 @@ function execute_cd {
               *)
                   error "invalid cd action: $action"
           esac          
+
+          if [ ! -z "$text_log_status" ]; then
+            information "$text_log_status"
+          fi
         done
     done
-
     success "Continuous Deployment complete."
 }
 

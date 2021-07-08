@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# Continual logging methods. These always print regardless of log level
+error_message() {
+    printf >&2 "\e[91m$@\n\e[0m"
+}
+
+information() {
+    printf "\e[36m$@\n\e[0m"
+}
+
+success() {
+    printf "\e[32m$@\n\e[0m"
+}
+
+# legacy shim
+debug() {
+    local message=$1
+    log_debug $message
+}
+
 __log_init__() {
 
     # Set Time zone to UTC / Comment out to use local time
@@ -66,6 +85,7 @@ __set_text_log__() {
 
     export LOG_TO_FILE=true
     export CURRENT_LOG_FILE="$log_folder_path/$logDate/$name.log"
+    information "Detailed Logs @ $CURRENT_LOG_FILE"
     exec 3>&1 4>&2
     exec 1>> $CURRENT_LOG_FILE 2>&1
     echo "------------------------------------------------------------------------------------------------------"
@@ -134,15 +154,13 @@ export_tf_environment_variables() {
       ;;
   esac
 
-  #export TF_LOG_PROVIDER=$tfLog
+  export TF_LOG=$tfLog
 
   if [ "$isAutomation" == "true" ]; then
     export TF_IN_AUTOMATION="true"
   else
     unset TF_IN_AUTOMATION
   fi
-
-  
 }
 
 #------------------------------------------------------------------------------

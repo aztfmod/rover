@@ -25,23 +25,6 @@ error() {
     exit ${code}
 }
 
-error_message() {
-    printf >&2 "\e[91m$@\n\e[0m"
-}
-
-
-information() {
-    printf "\e[36m$@\n\e[0m"
-}
-
-success() {
-    printf "\e[32m$@\n\e[0m"
-}
-
-debug() {
-    local message=$1
-    log_debug $message
-}
 
 #
 # Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
@@ -690,8 +673,10 @@ function deploy {
                         initialize_state
                     fi
                     if [ "$devops" == "true" ]; then
+                        echo "5"
                         return
                     else
+                        echo "6"
                         exit                     
                     fi
                 fi
@@ -739,17 +724,17 @@ function deploy {
 }
 
 function landing_zone {
-    echo "@calling landing_zone"
+    log_info "@calling landing_zone"
 
     get_storage_id
 
     case "${1}" in
     "list")
-        echo "Listing the deployed landing zones"
+        log_info "Listing the deployed landing zones"
         list_deployed_landingzones
         ;;
     *)
-        echo "rover landingzone [ list ]"
+        log_info "rover landingzone [ list ]"
         ;;
     esac
 }
@@ -762,7 +747,7 @@ function expand_tfvars_folder {
     fi
 
 
-    echo " Expanding variable files: ${1}/*.tfvars"
+    log_info " Expanding variable files: ${1}/*.tfvars"
 
     for filename in "${1}"/*.tfvars; do
         if [ "${filename}" != "${1}/*.tfvars" ]; then
@@ -770,7 +755,7 @@ function expand_tfvars_folder {
         fi
     done
 
-    echo " Expanding variable files: ${1}/*.tfvars.json"
+    log_info " Expanding variable files: ${1}/*.tfvars.json"
 
     for filename in "${1}"/*.tfvars.json; do
         if [ "${filename}" != "${1}/*.tfvars.json" ]; then
