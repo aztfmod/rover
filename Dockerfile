@@ -252,6 +252,7 @@ RUN mkdir -p /tf/caf \
     /home/${USERNAME}/.packer.d \
     /home/${USERNAME}/.ssh \
     /home/${USERNAME}/.ssh-localhost \
+    /home/${USERNAME}/.terraform.logs \
     /home/${USERNAME}/.terraform.cache \
     /home/${USERNAME}/.terraform.cache/tfstates \
     /home/${USERNAME}/.vscode-server \
@@ -287,6 +288,7 @@ COPY ./scripts/task.sh .
 COPY ./scripts/symphony_yaml.sh .
 COPY ./scripts/test_runner.sh .
 COPY ./scripts/ci_tasks/* ./ci_tasks/
+COPY ./scripts/lib/* ./lib/
 #
 # Switch to non-root ${USERNAME} context
 #

@@ -4,6 +4,7 @@
 # deploy a landingzone with
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
+source /tf/rover/lib/logger.sh
 source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate_azurerm.sh
@@ -32,12 +33,16 @@ export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
+export log_folder_path=${log_folderpath:=~/.terraform.logs}
+export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
 
 unset PARAMS
 
 current_path=$(pwd)
 
 mkdir -p ${TF_PLUGIN_CACHE_DIR}
+__log_init__
+set_log_severity INFO # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
 
 while (( "$#" )); do
     case "${1}" in
@@ -56,14 +61,27 @@ while (( "$#" )); do
             export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
             shift 2
             ;;
+        -lp|--log-path)
+            export log_folder_path=${2}
+            shift 2
+            ;;
         -c|--cloud)
             export cloud_name=$(parameter_value --cloud ${2})
             shift 2
             ;;
         -d|--debug)
             export debug_mode="true"
+            set_log_severity DEBUG
             shift 1
             ;;
+        -log-severity)
+            set_log_severity $2
+            shift 2    
+            ;;      
+        -stack)
+           export stack_name=${2}
+           shift 2
+           ;;
         -a|--action)
             export tf_action=$(parameter_value --action ${2})
             shift 2
@@ -211,6 +229,7 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+
 verify_azure_session
 
 # Check command and parameters
@@ -250,6 +269,12 @@ if [ "${caf_command}" != "walkthrough" ]; then
   echo "CI/CD enabled                 : '$(echo ${devops})'"
   echo "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
   echo "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"
+  if [ ! -z "$TF_LOG" ]; then
+    echo "TF_LOG                        : '$(echo ${TF_LOG})'"
+  fi
+  if [ ! -z "$TF_IN_AUTOMATION" ]; then
+    echo "TF_IN_AUTOMATION              : '$(echo ${TF_IN_AUTOMATION})'"
+  fi
 fi
 
 if [ $symphony_run_all_tasks == false ]; then
