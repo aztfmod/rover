@@ -154,7 +154,7 @@ export_tf_environment_variables() {
       ;;
   esac
 
-  export TF_LOG=$tfLog
+  export TF_LOG_PROVIDER=$tfLog
 
   if [ "$isAutomation" == "true" ]; then
     export TF_IN_AUTOMATION="true"
