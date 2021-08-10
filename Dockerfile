@@ -68,7 +68,8 @@ RUN apt-get update && \
     vim \
     gpg \
     apt-utils \
-    gpg-agent && \
+    gpg-agent \
+    bsdmainutils && \
     #
     # Create USERNAME
     #
