@@ -64,7 +64,7 @@ function parameter_value {
     fi
 
     echo ${2}
-} 
+}
 
 function process_actions {
     echo "@calling process_actions"
@@ -128,7 +128,7 @@ function display_login_instructions {
 function display_instructions {
     echo ""
     echo "You can deploy a landingzone with the rover by running:"
-    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|'state list'|'state rm'|'state show']"
+    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show']"
     echo ""
 
 }
@@ -248,7 +248,7 @@ function login_as_sp_from_keyvault_secrets {
 
     export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
     export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
-    
+
     information "Loging with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
 
@@ -633,9 +633,17 @@ function get_logged_user_object_id {
                 export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
                 ;;
             *)
+                # Service Principal
+                # Set the security context for Azure Terraform providers
+                session=$(az account show --sdk-auth -o json 2> /dev/null)
+                export ARM_CLIENT_ID=$(echo $session | jq -r .clientId)
+                export ARM_CLIENT_SECRET=$(echo $session | jq -r .clientSecret)
+                export ARM_TENANT_ID=$(echo $session | jq -r .tenantId)
+                export ARM_SUBSCRIPTION_ID=$(echo $session | jq -r .subscriptionId)
+
                 # When connected with a service account the name contains the objectId
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
-                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
                 ;;
         esac
@@ -677,7 +685,7 @@ function deploy {
                         return
                     else
                         echo "6"
-                        exit                     
+                        exit
                     fi
                 fi
             else
@@ -709,7 +717,7 @@ function deploy {
                 "destroy")
                     destroy_from_remote_state
                     ;;
-                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"state list"|"state rm"|"state show")
+                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
                     deploy_from_remote_state
                     ;;
                 *)
