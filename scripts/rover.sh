@@ -42,7 +42,7 @@ current_path=$(pwd)
 
 mkdir -p ${TF_PLUGIN_CACHE_DIR}
 __log_init__
-set_log_severity INFO # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
+set_log_severity ERROR # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
 
 while (( "$#" )); do
     case "${1}" in
@@ -76,8 +76,8 @@ while (( "$#" )); do
             ;;
         -log-severity)
             set_log_severity $2
-            shift 2    
-            ;;      
+            shift 2
+            ;;
         -stack)
            export stack_name=${2}
            shift 2
@@ -115,20 +115,20 @@ while (( "$#" )); do
             export cd_action=${2}
             export TF_VAR_level="all"
             export caf_command="cd"
-            export devops="true"       
+            export devops="true"
             len=$#
             if [ "$len" == "1" ]; then
               shift 1
             else
               shift 2
             fi
-            
-            ;;            
+
+            ;;
         test)
             shift 1
             export caf_command="test"
             export devops="true"
-            ;;            
+            ;;
         -sc|--symphony-config)
             export symphony_yaml_file=$(parameter_value --symphony-config ${2})
             shift 2
