@@ -633,9 +633,17 @@ function get_logged_user_object_id {
                 export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
                 ;;
             *)
+                # Service Principal
+                # Set the security context for Azure Terraform providers
+                session=$(az account show --sdk-auth -o json 2> /dev/null)
+                export ARM_CLIENT_ID=$(echo $session | jq -r .clientId)
+                export ARM_CLIENT_SECRET=$(echo $session | jq -r .clientSecret)
+                export ARM_TENANT_ID=$(echo $session | jq -r .tenantId)
+                export ARM_SUBSCRIPTION_ID=$(echo $session | jq -r .subscriptionId)
+
                 # When connected with a service account the name contains the objectId
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
-                export TF_VAR_logged_user_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv)"
                 ;;
         esac
