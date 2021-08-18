@@ -1,5 +1,7 @@
 {
     "files.eol": "\n",
+    "terminal.integrated.cwd": "/tf/caf",
+    "terminal.integrated.defaultProfile.linux": "zsh",
     "editor.tabSize": 2,
     "terminal.integrated.scrollback": 32000,
     "terminal.integrated.profiles.linux": {

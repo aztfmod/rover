@@ -3,7 +3,6 @@
     // Update the 'dockerComposeFile' list if you have more compose files or use different names.
     "dockerComposeFile": "docker-compose.yml",
     // Container user to use in VSCode Online and GitHub Codespaces
-    "containerUser": "vscode",
     "remoteUser": "vscode",
     // The 'service' property is the name of the service for the container that VS Code should
     // use. Update this value and .devcontainer/docker-compose.yml to the real service name.
@@ -15,9 +14,9 @@
     // You can edit these settings after create using File > Preferences > Settings > Remote.
     "settings": {
         "files.eol": "\n",
-        "terminal.integrated.defaultProfile.linux": "/bin/bash",
+        "terminal.integrated.defaultProfile.linux": "zsh",
         "editor.tabSize": 2,
-        "terminal.integrated.scrollback": 8000,
+        "terminal.integrated.scrollback": 32000,
     },
     // Uncomment the next line if you want start specific services in your Docker Compose config.
     // "runServices": [],
