@@ -70,6 +70,10 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
+        init)
+            init ${tf_command}
+            exit 0
+            ;;
         workspace)
             workspace ${tf_command}
             exit 0
@@ -165,6 +169,24 @@ function verify_parameters {
             error ${LINENO} "action must be set when deploying a landing zone" 11
         fi
     fi
+}
+
+
+# Isolate rover runs into isolated cached folder. Used to support parallel executions and keep trace of previous executions
+# Note the launchpad cannot be executed in parallel to another execution as it has a built-in mecanism to recover in case of failure.
+# Launchpad initialize in ~/.terraform.cache folder.
+function setup_rover_job {
+    job_id=$(date '+%Y%m%d%H%M%S%N')
+    job_path="${TF_CACHE_FOLDER}/rover_jobs/${job_id}"
+    mkdir -p "${job_path}"
+    echo ${job_path}
+}
+
+function purge {
+    echo "@calling verify_azure_session"
+    rm -rf ${TF_CACHE_FOLDER}
+    echo "Purged cache folder ${TF_CACHE_FOLDER}"
+    exit 0
 }
 
 # The rover stores the Azure sessions in a local rover/.azure subfolder
@@ -493,6 +515,12 @@ function workspace_delete {
 function clean_up_variables {
     echo "@calling clean_up_variables"
 
+    if [ -d ${TF_DATA_DIR} ]; then
+        if [ -z "$(ls -A ${TF_DATA_DIR})" ]; then
+            rm -rf ${TF_DATA_DIR}
+        fi
+    fi
+
     echo "cleanup variables"
     unset TF_VAR_lower_storage_account_name
     unset TF_VAR_lower_resource_group_name
@@ -509,6 +537,7 @@ function clean_up_variables {
     unset keyvault
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
+    unset TF_DATA_DIR
 
     echo "clean_up backend_files"
     find /tf/caf -name backend.azurerm.tf -delete || true

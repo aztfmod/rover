@@ -25,7 +25,7 @@ export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
-export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
+export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
@@ -111,6 +111,9 @@ while (( "$#" )); do
             export caf_command="ci"
             export devops="true"
             ;;
+        purge)
+            purge
+            ;;
         deploy | cd)
             export cd_action=${2}
             export TF_VAR_level="all"
@@ -173,6 +176,7 @@ while (( "$#" )); do
                 ;;
         -launchpad)
                 export caf_command="launchpad"
+                export TF_DATA_DIR="$(echo ~)/.terraform.cache/launchpad"
                 shift 1
                 ;;
         -o|--output)
@@ -229,6 +233,9 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+if [ "${caf_command}" != "launchpad" ]; then
+    export TF_DATA_DIR=$(setup_rover_job ${TF_CACHE_FOLDER})
+fi
 
 verify_azure_session
 
@@ -257,6 +264,7 @@ echo "mode                          : '$(echo ${caf_command})'"
 if [ "${caf_command}" != "walkthrough" ]; then
   echo "terraform command output file : '$(echo ${tf_output_file})'"
   echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
+  echo "directory cache               : '$(echo ${TF_DATA_DIR})'"
   echo "tf_action                     : '$(echo ${tf_action})'"
   echo "command and parameters        : '$(echo ${tf_command})'"
   echo ""
@@ -286,3 +294,4 @@ echo ""
 export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
 process_actions
+clean_up_variables

@@ -66,8 +66,9 @@ function initialize_state {
     rm -rf backend.azurerm.tf || true
 
     cd "${current_path}"
-    
+
     if [ "$devops" != "true" ]; then
+        clean_up_variables
         exit 0
     fi
 }
@@ -106,7 +107,7 @@ function download_tfstate {
     echo "Downloading Remote state from the cloud"
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    
+
     stg=$(az storage account show --ids ${id} -o json)
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
@@ -262,7 +263,7 @@ function purge_command_graph {
         PARAMS+="${1} "
         shift 1
         ;;
-    esac      
+    esac
   done
 }
 
@@ -280,7 +281,7 @@ function purge_command_plan {
         PARAMS+="${1} "
         shift 1
         ;;
-    esac      
+    esac
   done
 }
 
@@ -320,7 +321,7 @@ function plan {
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD | tee ${tf_output_file}
             ;;
     esac
-    
+
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
     if [ ! -z ${tf_output_plan_file} ]; then
@@ -332,14 +333,14 @@ function plan {
       "0")
         export text_log_status="terraform plan succeeded"
         ;;
-      "1")        
+      "1")
         error ${LINENO} "Error running terraform plan" $RETURN_CODE
         ;;
       "2")
         log_info "terraform plan succeeded with non-empty diff"
         export text_log_status="terraform plan succeeded with non-empty diff"
         ;;
-    esac    
+    esac
 
     # Temporary fix until plan and apply properly decoupled.
     # if [ $RETURN_CODE != 0 ]; then
