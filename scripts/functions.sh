@@ -171,6 +171,17 @@ function verify_parameters {
     fi
 }
 
+# The rover init command processes the jinja templates to generate json configuation file.
+function init {
+    echo "@calling verify_azure_session"
+
+    command=(ansible-playbook ${caf_init_playbook} ${caf_init_environment})
+
+    debug "running: ${command}"
+
+    "${command[@]}"
+
+}
 
 # Isolate rover runs into isolated cached folder. Used to support parallel executions and keep trace of previous executions
 # Note the launchpad cannot be executed in parallel to another execution as it has a built-in mecanism to recover in case of failure.
