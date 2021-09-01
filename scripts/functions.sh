@@ -171,11 +171,11 @@ function verify_parameters {
     fi
 }
 
-# The rover init command processes the jinja templates to generate json configuation file.
-function init {
+# The rover ignite command processes the jinja templates to generate json configuation file.
+function ignite {
     echo "@calling verify_azure_session"
 
-    command=(ansible-playbook ${caf_init_playbook} ${caf_init_environment})
+    command=(ansible-playbook ${caf_ignite_playbook} ${caf_ignite_environment})
 
     debug "running: ${command}"
 

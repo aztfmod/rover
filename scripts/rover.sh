@@ -112,16 +112,16 @@ while (( "$#" )); do
             export caf_command="ci"
             export devops="true"
             ;;
-        init)
+        ignite)
             shift 1
-            export caf_command="init"
+            export caf_command="ignite"
             ;;
         --playbook)
-            export caf_init_playbook=${2}
+            export caf_ignite_playbook=${2}
             shift 2
             ;;
         -e)
-            export caf_init_environment+="${1} ${2} "
+            export caf_ignite_environment+="${1} ${2} "
             shift 2
             ;;
         purge)
