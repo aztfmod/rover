@@ -27,6 +27,7 @@ export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
 export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
+export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
