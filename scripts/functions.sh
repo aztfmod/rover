@@ -259,7 +259,7 @@ function verify_azure_session {
 }
 
 function login_as_sp_from_keyvault_secrets {
-    information "Transition the azure session from the credentials stored in the keyvault."
+    information "Transition the current azure session to the credentials stored in the keyvault."
     information "It will merge this azure session into the existing ones."
     information "To prevent that, run az account clear before running this command."
     information ""
@@ -283,7 +283,7 @@ function login_as_sp_from_keyvault_secrets {
     export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
 
     information "Loging with service principal"
-    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
+    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID} 1> /dev/null
 
     set +e
     trap - ERR
