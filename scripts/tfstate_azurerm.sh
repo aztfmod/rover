@@ -554,8 +554,6 @@ function destroy {
         fi
     fi
 
-    rm -rf ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
-
     clean_up_variables
 }
 

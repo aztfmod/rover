@@ -70,8 +70,8 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
-        init)
-            init ${tf_command}
+        ignite)
+            ignite ${tf_command}
             exit 0
             ;;
         workspace)
@@ -424,7 +424,6 @@ function deploy_landingzone {
         ;;
     esac
 
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
     cd "${current_path}"
@@ -525,12 +524,6 @@ function workspace_delete {
 
 function clean_up_variables {
     echo "@calling clean_up_variables"
-
-    if [ -d ${TF_DATA_DIR} ]; then
-        if [ -z "$(ls -A ${TF_DATA_DIR})" ]; then
-            rm -rf ${TF_DATA_DIR}
-        fi
-    fi
 
     echo "cleanup variables"
     unset TF_VAR_lower_storage_account_name
