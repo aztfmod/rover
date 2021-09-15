@@ -12,7 +12,7 @@ function initialize_state_tfc {
 
     sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
     sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-    rm -f -- "${TF_VAR_environment}/${TF_DATA_DIR}/terraform.tfstate"
+    rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
 
     cp -f /tf/rover/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
 
@@ -20,9 +20,9 @@ function initialize_state_tfc {
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
+    export STDERR_FILE="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
-    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     terraform init \
         -get-plugins=true \
@@ -69,19 +69,19 @@ function plan_tfc {
     echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
 
     pwd
-    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
 
     rm -f $STDERR_FILE
 
     terraform plan ${tf_command} \
         -refresh=true \
-        -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        -out="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
+        -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        -out="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
 
     if [ ! -z ${tf_output_plan_file} ]; then
         echo "Copying plan file to ${tf_output_plan_file}"
-        cp "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
+        cp "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
     fi
 
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
@@ -105,8 +105,8 @@ function apply_tfc {
     rm -f $STDERR_FILE
 
     terraform apply \
-        -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+        -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
 
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
 
