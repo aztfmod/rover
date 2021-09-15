@@ -188,13 +188,14 @@ function ignite {
 # Launchpad initialize in ~/.terraform.cache folder.
 function setup_rover_job {
     job_id=$(date '+%Y%m%d%H%M%S%N')
-    job_path="${TF_CACHE_FOLDER}/rover_jobs/${job_id}"
+    job_path="${1}/rover_jobs/${job_id}"
     mkdir -p "${job_path}"
     echo ${job_path}
 }
 
 function purge {
-    echo "@calling verify_azure_session"
+    echo "@calling purge"
+    echo "purging ${TF_CACHE_FOLDER}"
     rm -rf ${TF_CACHE_FOLDER}
     echo "Purged cache folder ${TF_CACHE_FOLDER}"
     exit 0
@@ -385,10 +386,10 @@ function deploy_landingzone {
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
-    rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
+    export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
+    rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
 
-    mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     terraform_init_remote
 
@@ -424,7 +425,7 @@ function deploy_landingzone {
         ;;
     esac
 
-    rm -f "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
     cd "${current_path}"
 }
@@ -697,20 +698,20 @@ function deploy {
         "")
             echo "No launchpad found."
             if [ "${caf_command}" == "launchpad" ]; then
-                if [ -e "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                    echo "Recover from an un-finished previous execution"
+                if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
+                    echo "Recover from an un-finished previous execution - ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
                     if [ "${tf_action}" == "destroy" ]; then
                         destroy
                     else
                         initialize_state
                     fi
                 else
-                    rm -rf "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                     if [ "${tf_action}" == "destroy" ]; then
                         echo "There is no launchpad in this subscription"
                     else
                         echo "Deploying from scratch the launchpad"
-                        rm -rf "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+                        rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                         initialize_state
                     fi
                     if [ "$devops" == "true" ]; then
@@ -734,7 +735,7 @@ function deploy {
             echo "${caf_launchpad} already installed"
             echo ""
 
-            if [ -e "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
+            if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
                 echo "Recover from an un-finished previous execution"
                 if [ "${tf_action}" == "destroy" ]; then
                     if [ "${caf_command}" == "landingzone" ]; then

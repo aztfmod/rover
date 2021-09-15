@@ -247,7 +247,9 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
 if [ "${caf_command}" == "landingzone" ]; then
-    TF_DATA_DIR=$(setup_rover_job ${TF_CACHE_FOLDER})
+    TF_DATA_DIR=$(setup_rover_job "${TF_CACHE_FOLDER}/${TF_VAR_environment}")
+elif [ "${caf_command}" == "launchpad" ]; then
+    TF_DATA_DIR+="/${TF_VAR_environment}"
 fi
 
 verify_azure_session

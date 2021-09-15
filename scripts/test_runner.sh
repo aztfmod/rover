@@ -44,10 +44,10 @@ function run_integration_tests {
   download_tfstate
   __reset_log__
 
-  local targetStateFile="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/terraform.tfstate"
-  mv "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$TF_VAR_tf_name" $targetStateFile
+  local targetStateFile="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/terraform.tfstate"
+  mv "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$TF_VAR_tf_name" $targetStateFile
   local prefix=$(find_and_export_prefix)
-  export STATE_FILE_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+  export STATE_FILE_PATH="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
   export PREFIX=$prefix
   export ENVIRONMENT=$TF_VAR_environment
   export ARM_SUBSCRIPTION_ID=$(echo ${account} | jq -r .id)
