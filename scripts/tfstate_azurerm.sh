@@ -311,6 +311,7 @@ function plan {
                 plan ${plan_command} \
                 -refresh=true \
                 -detailed-exitcode \
+                -lock=false \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
             ;;
