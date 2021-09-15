@@ -13,13 +13,13 @@ function initialize_state {
 
     sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
 
-    rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
+    rm -f -- "${TF_VAR_environment}/${TF_DATA_DIR}/terraform.tfstate"
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
+    export STDERR_FILE="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     case ${terraform_version} in
         *"15"* | *"1."*)
@@ -84,7 +84,7 @@ function upload_tfstate {
     export resource_group=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group: ${resource_group}"
     export access_key=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${storage_account_name} --resource-group ${resource_group} -o json | jq -r .[0].value) && echo " - storage_key: retrieved"
 
-    az storage blob upload -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+    az storage blob upload -f "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
         --container-name ${TF_VAR_workspace} \
         --name ${TF_VAR_tf_name} \
         --account-name ${storage_account_name} \
@@ -97,7 +97,7 @@ function upload_tfstate {
         error ${LINENO} "Error uploading the blob storage" $RETURN_CODE
     fi
 
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" || true
+    rm -f "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" || true
 
 }
 
@@ -106,7 +106,7 @@ function download_tfstate {
 
     echo "Downloading Remote state from the cloud"
 
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     stg=$(az storage account show --ids ${id} -o json)
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
@@ -117,7 +117,7 @@ function download_tfstate {
     az storage blob download \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name ${TF_VAR_tf_name} \
-        --file "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        --file "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
         --container-name ${TF_VAR_workspace} \
         --auth-mode "key" \
         --account-name ${stg_name} \
@@ -160,13 +160,13 @@ function destroy_from_remote_state {
 
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
+    export STDERR_FILE="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
 
     # Cleanup previous deployments
-    rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    rm -rf "${TF_DATA_DIR}/tfstates/terraform.tfstate"
+    rm -rf "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    rm -rf "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/terraform.tfstate"
 
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
 
@@ -182,7 +182,7 @@ function destroy_from_remote_state {
             az storage blob download \
                 --subscription ${TF_VAR_tfstate_subscription_id} \
                 --name ${TF_VAR_tf_name} \
-                --file "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                --file "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 --container-name ${TF_VAR_workspace} \
                 --auth-mode "login" \
                 --account-name ${stg_name} \
@@ -296,7 +296,7 @@ function plan {
     echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
 
     pwd
-    mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+    mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     rm -f $STDERR_FILE
 
@@ -312,14 +312,14 @@ function plan {
                 -refresh=true \
                 -detailed-exitcode \
                 -lock=false \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
+                -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                -out="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
             ;;
         *)
             terraform plan ${plan_command} \
                 -refresh=true \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD | tee ${tf_output_file}
+                -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                -out="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD | tee ${tf_output_file}
             ;;
     esac
 
@@ -327,7 +327,7 @@ function plan {
 
     if [ ! -z ${tf_output_plan_file} ]; then
         echo "Copying plan file to ${tf_output_plan_file}"
-        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
+        cp "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
     fi
 
     case "${RETURN_CODE}" in
@@ -360,13 +360,13 @@ function apply {
             echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 apply \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
+                -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
             ;;
         *)
             terraform apply \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
+                -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
             ;;
     esac
 
@@ -405,14 +405,14 @@ function graph {
     echo "@calling graph"
 
     graph_command=$(purge_command graph ${tf_command})
-    echo "running terraform ${tf_action} -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}"
+    echo "running terraform ${tf_action} -plan="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}"
 
     echo "calling plan"
     plan
 
     echo "calling terraform graph"
     terraform graph \
-        -plan="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}
+        -plan="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" ${graph_command}
 
     set +e
 }
@@ -428,7 +428,7 @@ function destroy {
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -TF_VAR_tf_name: ${TF_VAR_tf_name}"
 
-    rm -f "${TF_DATA_DIR}/terraform.tfstate"
+    rm -f "${TF_VAR_environment}/${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
 
     if [ "$1" == "remote" ]; then
@@ -499,7 +499,7 @@ function destroy {
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
         echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-        mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+        mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
         case ${terraform_version} in
             *"15"* | *"1."*)
@@ -507,12 +507,12 @@ function destroy {
                 terraform -chdir=${landingzone_name} \
                     destroy ${tf_command} ${tf_approve} \
                     -refresh=false \
-                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+                    -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
                 ;;
             *)
                 terraform destroy ${tf_command} ${tf_approve} \
                     -refresh=false \
-                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                    -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                     ${landingzone_name}
                 ;;
         esac
@@ -524,7 +524,7 @@ function destroy {
     fi
 
     echo "Removing ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    rm -f "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     get_storage_id
 
     if [[ ! -z ${id} ]]; then
@@ -561,12 +561,12 @@ function destroy {
 function other {
     echo "@calling other"
 
-    echo "running terraform ${tf_action} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
+    echo "running terraform ${tf_action} -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
 
     rm -f $STDERR_FILE
 
     terraform ${tf_action} \
-        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        -state="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
         ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
 
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"

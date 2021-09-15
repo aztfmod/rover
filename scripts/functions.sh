@@ -386,7 +386,7 @@ function deploy_landingzone {
     export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
     export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
     export STDERR_FILE="${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
-    rm -f -- "${TF_DATA_DIR}/terraform.tfstate"
+    rm -f -- "${TF_VAR_environment}/${TF_DATA_DIR}/terraform.tfstate"
 
     mkdir -p "${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
