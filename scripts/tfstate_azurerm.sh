@@ -44,8 +44,7 @@ function initialize_state {
         plan
         ;;
     "apply")
-        echo "calling plan and apply"
-        plan
+        echo "calling apply"
         apply
         get_storage_id
         upload_tfstate
@@ -325,9 +324,9 @@ function plan {
 
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
-    if [ ! -z ${tf_output_plan_file} ]; then
-        echo "Copying plan file to ${tf_output_plan_file}"
-        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
+    if [ ! -z ${tf_plan_file} ]; then
+        echo "Copying plan file to ${tf_plan_file}"
+        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_plan_file}"
     fi
 
     case "${RETURN_CODE}" in
