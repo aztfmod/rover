@@ -401,8 +401,7 @@ function deploy_landingzone {
         plan
         ;;
     "apply")
-        echo "calling plan and apply"
-        plan
+        echo "calling apply"
         apply
         ;;
     "validate")
