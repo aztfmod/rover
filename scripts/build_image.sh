@@ -80,7 +80,9 @@ function build_base_rover_image {
     echo "Image ${rover} created."
 
     # echo "Building CI/CD images."
-    build_rover_agents "${rover}" "${tag}" "${registry}"
+    if [ "$strategy" != "local" ]; then
+        build_rover_agents "${rover}" "${tag}" "${registry}"
+    fi
 
 }
 
@@ -107,7 +109,7 @@ function build_rover_agents {
             --build-arg versionRover="${rover}"
     fi
 
-        case "${strategy}" in
+    case "${strategy}" in
         "local")
             ;;
         *)

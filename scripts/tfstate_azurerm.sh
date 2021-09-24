@@ -44,8 +44,7 @@ function initialize_state {
         plan
         ;;
     "apply")
-        echo "calling plan and apply"
-        plan
+        echo "calling apply"
         apply
         get_storage_id
         upload_tfstate
@@ -66,8 +65,9 @@ function initialize_state {
     rm -rf backend.azurerm.tf || true
 
     cd "${current_path}"
-    
+
     if [ "$devops" != "true" ]; then
+        clean_up_variables
         exit 0
     fi
 }
@@ -106,7 +106,7 @@ function download_tfstate {
     echo "Downloading Remote state from the cloud"
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-    
+
     stg=$(az storage account show --ids ${id} -o json)
     stg_name=$(az storage account show --ids ${id} -o json | jq -r .name)
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
@@ -235,60 +235,10 @@ function terraform_init_remote {
     esac
 }
 
-
-function purge_command {
-  PARAMS=''
-  case "${1}" in
-    graph)
-      shift 1
-      purge_command_graph $@
-      ;;
-    plan)
-      shift 1
-      purge_command_plan $@
-      ;;
-  esac
-
-  echo $PARAMS
-}
-
-function purge_command_graph {
-  while (( "$#" )); do
-    case "${1}" in
-      -var-file)
-        shift 2
-        ;;
-      *)
-        PARAMS+="${1} "
-        shift 1
-        ;;
-    esac      
-  done
-}
-
-
-function purge_command_plan {
-  while (( "$#" )); do
-    case "${1}" in
-      -draw-cycles)
-        shift 1
-        ;;
-      "-type"*)
-        shift 1
-        ;;
-      *)
-        PARAMS+="${1} "
-        shift 1
-        ;;
-    esac      
-  done
-}
-
-
 function plan {
     echo "@calling plan"
 
-    plan_command=$(purge_command plan ${tf_command})
+    plan_command=$(purge_command plan ${tf_command} $1)
     echo "running terraform plan with ${plan_command}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
@@ -310,6 +260,7 @@ function plan {
                 plan ${plan_command} \
                 -refresh=true \
                 -detailed-exitcode \
+                -lock=false \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
             ;;
@@ -320,31 +271,27 @@ function plan {
                 -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD | tee ${tf_output_file}
             ;;
     esac
-    
+
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform plan return code: ${RETURN_CODE}"
 
-    if [ ! -z ${tf_output_plan_file} ]; then
-        echo "Copying plan file to ${tf_output_plan_file}"
-        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_output_plan_file}"
+    if [ ! -z ${tf_plan_file} ]; then
+        echo "Copying plan file to ${tf_plan_file}"
+        cp "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_plan_file}"
     fi
 
     case "${RETURN_CODE}" in
       "0")
         export text_log_status="terraform plan succeeded"
         ;;
-      "1")        
+      "1")
         error ${LINENO} "Error running terraform plan" $RETURN_CODE
         ;;
       "2")
         log_info "terraform plan succeeded with non-empty diff"
         export text_log_status="terraform plan succeeded with non-empty diff"
         ;;
-    esac    
+    esac
 
-    # Temporary fix until plan and apply properly decoupled.
-    # if [ $RETURN_CODE != 0 ]; then
-    #     error ${LINENO} "Error running terraform plan" $RETURN_CODE
-    # fi
 }
 
 function apply {
@@ -353,18 +300,27 @@ function apply {
     echo 'running terraform apply'
     rm -f $STDERR_FILE
 
+    if [ -z ${tf_plan_file} ]; then
+        echo "Plan not provided with -p or --plan so calling terraform plan"
+        plan
+
+        tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+    fi
+
+    echo "Running Terraform apply with plan ${tf_plan_file}"
+
     case ${terraform_version} in
         *"15"* | *"1."*)
             echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 apply \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
+                "${tf_plan_file}" | tee ${tf_output_file}
             ;;
         *)
             terraform apply \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" | tee ${tf_output_file}
+                "${tf_plan_file}" | tee ${tf_output_file}
             ;;
     esac
 
@@ -425,6 +381,7 @@ function destroy {
     echo "Calling function destroy"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -TF_VAR_tf_name: ${TF_VAR_tf_name}"
+    echo "terraform destroy parameters: -chdir=${landingzone_name} apply -refresh=false $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} ${tf_plan_file}"
 
     rm -f "${TF_DATA_DIR}/terraform.tfstate"
     sudo rm -f ${landingzone_name}/backend.azurerm.tf
@@ -435,12 +392,15 @@ function destroy {
             sudo cp -f backend.azurerm backend.azurerm.tf
         fi
 
-        # if [ -z "${ARM_USE_MSI}" ]; then
-        #     export ARM_ACCESS_KEY=$(az storage account keys list --subscription ${TF_VAR_tfstate_subscription_id} --account-name ${TF_VAR_tfstate_storage_account_name} --resource-group ${TF_VAR_tfstate_resource_group_name} -o json | jq -r .[0].value)
-        # fi
-
         echo 'running terraform destroy remote'
         terraform_init_remote
+
+        if [ -z ${tf_plan_file} ]; then
+            echo "Plan not provided with -p or --plan so calling terraform plan"
+            plan "-destroy"
+
+            tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+        fi
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
@@ -448,9 +408,10 @@ function destroy {
             *"15"* | *"1."*)
                 echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
-                    destroy \
+                    apply \
                     -refresh=false \
-                    ${tf_command} ${tf_approve}
+                    $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} \
+                    "${tf_plan_file}"
                 ;;
             *)
                 terraform destroy \
@@ -496,6 +457,13 @@ function destroy {
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
+        if [ -z ${tf_plan_file} ]; then
+            echo "Plan not provided with -p or --plan so calling terraform plan"
+            plan "-destroy"
+
+            tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+        fi
+
         echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
         mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
@@ -503,9 +471,11 @@ function destroy {
             *"15"* | *"1."*)
                 echo "Terraform version 0.15 or greater"
                 terraform -chdir=${landingzone_name} \
-                    destroy ${tf_command} ${tf_approve} \
+                    apply \
+                    $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} \
                     -refresh=false \
-                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+                    -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+                    "${tf_plan_file}"
                 ;;
             *)
                 terraform destroy ${tf_command} ${tf_approve} \
@@ -552,8 +522,6 @@ function destroy {
             echo " -deleted"
         fi
     fi
-
-    rm -rf ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
     clean_up_variables
 }

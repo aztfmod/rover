@@ -7,26 +7,30 @@ SHELL ["/bin/bash", "-c"]
 
 # Arguments set during docker-compose build -b --build from .env file
 
-ARG versionAzureCli
-ARG versionKubectl
-ARG versionTflint
-ARG versionGit
-ARG versionJq
-ARG versionDockerCompose
-ARG versionTfsec
-ARG versionAnsible
-ARG versionPacker
-ARG versionCheckov
-ARG versionMssqlTools
-ARG versionTerraformDocs
+ARG versionAzureCli \
+    versionVault \
+    versionKubectl \
+    versionTflint \
+    versionGit \
+    versionJq \
+    versionDockerCompose \
+    versionTfsec \
+    versionAnsible \
+    versionPacker \
+    versionCheckov \
+    versionMssqlTools \
+    versionTerraformDocs \
+    versionTflintazrs \
+    SSH_PASSWD
+
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
-ARG SSH_PASSWD
 
 ENV SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \
     versionAzureCli=${versionAzureCli} \
+    versionVault=${versionVault} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
@@ -38,6 +42,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionCheckov=${versionCheckov} \
     versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
+    versionTflintazrs=${versionTflintazrs} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
@@ -62,6 +67,7 @@ RUN apt-get update && \
     software-properties-common \
     unzip \
     zip \
+    less \
     make \
     sudo \
     locales \
@@ -198,8 +204,12 @@ RUN apt-get install -y --no-install-recommends \
 RUN apt-get install -y --no-install-recommends \
     packer=${versionPacker}
 
-# RUN apt-get install -y --no-install-recommends \
-#     vault
+RUN echo "Installing Vault ${versionVault}..." && \
+    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_linux_amd64.zip 2>&1 && \
+    sudo unzip -d /usr/bin /tmp/vault.zip && \
+    sudo chmod +x /usr/bin/vault && \
+    sudo setcap cap_ipc_lock=-ep /usr/bin/vault && \
+    rm /tmp/vault.zip
 
 RUN apt-get install -y --no-install-recommends \
     docker-ce-cli
@@ -226,6 +236,24 @@ RUN apt-get install -y --no-install-recommends \
     powershell && \
     pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
     pwsh -Command Install-Module -name Az.Resources -Force
+
+RUN echo "Installing shellspec..." && \
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes
+
+RUN echo "Installing caflint..." && \
+    go install github.com/aztfmod/caflint@latest
+
+RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
+    mkdir -p /home/${USERNAME}/.tflint.d/config  && \
+    echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
+    sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
+    rm /tmp/tflint-ruleset-azurerm.zip
+
+
 
     #
     # Patch
@@ -275,19 +303,7 @@ RUN mkdir -p /tf/caf \
 
 
 
-COPY ./scripts/rover.sh .
-COPY ./scripts/tfstate_azurerm.sh .
-COPY ./scripts/functions.sh .
-COPY ./scripts/banner.sh .
-COPY ./scripts/clone.sh .
-COPY ./scripts/walkthrough.sh .
-COPY ./scripts/sshd.sh .
-COPY ./scripts/backend.hcl.tf .
-COPY ./scripts/ci.sh .
-COPY ./scripts/cd.sh .
-COPY ./scripts/task.sh .
-COPY ./scripts/symphony_yaml.sh .
-COPY ./scripts/test_runner.sh .
+COPY ./scripts/rover.sh ./scripts/tfstate_azurerm.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 COPY ./scripts/lib/* ./lib/
 #
@@ -325,16 +341,12 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
 
 FROM base
 
-ARG versionTerraform
-ARG versionVault
-ARG USERNAME=vscode
-ARG versionRover
-ARG versionTflintazrs
+ARG versionTerraform \
+    USERNAME=vscode \
+    versionRover
 
 ENV versionRover=${versionRover} \
-    versionVault=${versionVault} \
-    versionTerraform=${versionTerraform} \
-    versionTflintazrs=${versionTflintazrs}
+    versionTerraform=${versionTerraform}
 #
 # Install Terraform
 #
@@ -347,29 +359,4 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     rm /tmp/terraform.zip && \
     #
     echo ${versionRover} > /tf/rover/version.txt
-
-RUN echo "Installing Vault ${versionVault}..." && \
-    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_linux_amd64.zip 2>&1 && \
-    sudo unzip -d /usr/bin /tmp/vault.zip && \
-    sudo chmod +x /usr/bin/vault && \
-    sudo setcap cap_ipc_lock=-ep /usr/bin/vault && \
-    rm /tmp/vault.zip
-
-RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
-    mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
-    mkdir -p /home/${USERNAME}/.tflint.d/config  && \
-    echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
-    echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
-    echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
-    sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
-    rm /tmp/tflint-ruleset-azurerm.zip
-
-RUN echo "Installing shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes
-
-
-RUN echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest
-
 

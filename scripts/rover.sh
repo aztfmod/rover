@@ -9,6 +9,7 @@ source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate_azurerm.sh
 source /tf/rover/functions.sh
+source /tf/rover/parse_command.sh
 source /tf/rover/banner.sh
 
 # symphony
@@ -25,8 +26,9 @@ export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
 export TF_VAR_rover_version=$(echo $(cat /tf/rover/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
-export TF_DATA_DIR=${TF_DATA_DIR:=$(echo ~)}
+export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
+export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
 export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
@@ -111,6 +113,21 @@ while (( "$#" )); do
             export caf_command="ci"
             export devops="true"
             ;;
+        ignite)
+            shift 1
+            export caf_command="ignite"
+            ;;
+        --playbook)
+            export caf_ignite_playbook=${2}
+            shift 2
+            ;;
+        -e)
+            export caf_ignite_environment+="${1} ${2} "
+            shift 2
+            ;;
+        purge)
+            purge
+            ;;
         deploy | cd)
             export cd_action=${2}
             export TF_VAR_level="all"
@@ -173,6 +190,7 @@ while (( "$#" )); do
                 ;;
         -launchpad)
                 export caf_command="launchpad"
+                export TF_DATA_DIR="$(echo ~)/.terraform.cache/launchpad"
                 shift 1
                 ;;
         -o|--output)
@@ -180,7 +198,7 @@ while (( "$#" )); do
                 shift 2
                 ;;
         -p|--plan)
-                tf_output_plan_file=$(parameter_value '-p or --plan' ${2})
+                tf_plan_file=$(parameter_value '-p or --plan' ${2})
                 shift 2
                 ;;
         -w|--workspace)
@@ -201,6 +219,7 @@ while (( "$#" )); do
                 ;;
         -var-folder)
                 expand_tfvars_folder $(parameter_value '-var-folder' ${2})
+                var_folder_set=true
                 shift 2
                 ;;
         -tfstate_subscription_id)
@@ -229,13 +248,20 @@ trap 'error ${LINENO}' ERR 1 2 3 6
 
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+if [ "${caf_command}" == "landingzone" ]; then
+    TF_DATA_DIR=$(setup_rover_job "${TF_CACHE_FOLDER}/${TF_VAR_environment}")
+elif [ "${caf_command}" == "launchpad" ]; then
+    TF_DATA_DIR+="/${TF_VAR_environment}"
+fi
 
 verify_azure_session
 
 # Check command and parameters
 case "${caf_command}" in
     launchpad|landingzone)
-        if [ -z "${tf_command}" ]; then
+        if [[ ("${tf_action}" == "destroy") && (${var_folder_set} == true) && ( ! -z "${tf_plan_file}" ) ]]; then
+            error ${LINENO} "-var-folder or -var-file must not be set when using a plan in the destroy operation." 1
+        elif [[ ("${tf_action}" != "destroy") && (-z "${tf_command}") ]]; then
             error ${LINENO} "No parameters have been set in ${caf_command}." 1
         fi
         ;;
@@ -256,7 +282,8 @@ echo "mode                          : '$(echo ${caf_command})'"
 
 if [ "${caf_command}" != "walkthrough" ]; then
   echo "terraform command output file : '$(echo ${tf_output_file})'"
-  echo "terraform plan output file    : '$(echo ${tf_output_plan_file})'"
+  echo "terraform plan output file    : '$(echo ${tf_plan_file})'"
+  echo "directory cache               : '$(echo ${TF_DATA_DIR})'"
   echo "tf_action                     : '$(echo ${tf_action})'"
   echo "command and parameters        : '$(echo ${tf_command})'"
   echo ""
@@ -286,3 +313,4 @@ echo ""
 export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
 process_actions
+clean_up_variables

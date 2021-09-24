@@ -70,6 +70,10 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
+        ignite)
+            ignite ${tf_command}
+            exit 0
+            ;;
         workspace)
             workspace ${tf_command}
             exit 0
@@ -167,6 +171,36 @@ function verify_parameters {
     fi
 }
 
+# The rover ignite command processes the jinja templates to generate json configuation file.
+function ignite {
+    echo "@calling verify_azure_session"
+
+    command=(ansible-playbook ${caf_ignite_playbook} ${caf_ignite_environment})
+
+    debug "running: ${command}"
+
+    "${command[@]}"
+
+}
+
+# Isolate rover runs into isolated cached folder. Used to support parallel executions and keep trace of previous executions
+# Note the launchpad cannot be executed in parallel to another execution as it has a built-in mecanism to recover in case of failure.
+# Launchpad initialize in ~/.terraform.cache folder.
+function setup_rover_job {
+    job_id=$(date '+%Y%m%d%H%M%S%N')
+    job_path="${1}/rover_jobs/${job_id}"
+    mkdir -p "${job_path}"
+    echo ${job_path}
+}
+
+function purge {
+    echo "@calling purge"
+    echo "purging ${TF_CACHE_FOLDER}"
+    rm -rf ${TF_CACHE_FOLDER}
+    echo "Purged cache folder ${TF_CACHE_FOLDER}"
+    exit 0
+}
+
 # The rover stores the Azure sessions in a local rover/.azure subfolder
 # This function verifies the rover has an opened azure session
 function verify_azure_session {
@@ -226,7 +260,7 @@ function verify_azure_session {
 }
 
 function login_as_sp_from_keyvault_secrets {
-    information "Transition the azure session from the credentials stored in the keyvault."
+    information "Transition the current azure session to the credentials stored in the keyvault."
     information "It will merge this azure session into the existing ones."
     information "To prevent that, run az account clear before running this command."
     information ""
@@ -250,7 +284,7 @@ function login_as_sp_from_keyvault_secrets {
     export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
 
     information "Loging with service principal"
-    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}
+    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID} 1> /dev/null
 
     set +e
     trap - ERR
@@ -367,8 +401,7 @@ function deploy_landingzone {
         plan
         ;;
     "apply")
-        echo "calling plan and apply"
-        plan
+        echo "calling apply"
         apply
         ;;
     "validate")
@@ -391,7 +424,6 @@ function deploy_landingzone {
         ;;
     esac
 
-    rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
     cd "${current_path}"
@@ -464,7 +496,7 @@ function workspace_create {
         --auth-mode login \
         --account-name ${storage_account_name}
 
-    mkdir -p ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
+    mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
     echo ""
 }
@@ -485,7 +517,7 @@ function workspace_delete {
         --auth-mode login \
         --account-name ${storage_account_name}
 
-    mkdir -p ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
+    mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
     echo ""
 }
@@ -509,6 +541,7 @@ function clean_up_variables {
     unset keyvault
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
+    unset TF_DATA_DIR
 
     echo "clean_up backend_files"
     find /tf/caf -name backend.azurerm.tf -delete || true
@@ -665,7 +698,7 @@ function deploy {
             echo "No launchpad found."
             if [ "${caf_command}" == "launchpad" ]; then
                 if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                    echo "Recover from an un-finished previous execution"
+                    echo "Recover from an un-finished previous execution - ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
                     if [ "${tf_action}" == "destroy" ]; then
                         destroy
                     else
