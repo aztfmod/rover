@@ -436,11 +436,6 @@ function workspace {
     echo "@calling workspace function with $@"
     get_storage_id
 
-    if [ "${id}" == "null" ]; then
-        display_launchpad_instructions
-        exit 1000
-    fi
-
     case "${1}" in
     "list")
         workspace_list
