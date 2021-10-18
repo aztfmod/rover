@@ -189,7 +189,13 @@ function ignite {
 function setup_rover_job {
     job_id=$(date '+%Y%m%d%H%M%S%N')
     job_path="${1}/rover_jobs/${job_id}"
+    modules_folder="${1}/modules"
+    providers_folder="${1}/providers"
     mkdir -p "${job_path}"
+    mkdir -p "${modules_folder}"
+    mkdir -p "${providers_folder}"
+    ln -s ${modules_folder} ${job_path}/modules
+    ln -s ${providers_folder} ${job_path}/providers
     echo ${job_path}
 }
 
