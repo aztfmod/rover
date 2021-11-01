@@ -557,13 +557,13 @@ function get_storage_id {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}[0]" -o json | jq -r .id)
 
-    if [[ ${id} == null ]] && [ "${caf_command}" != "launchpad" ]; then
+    if [[ -z ${id} ]] && [ "${caf_command}" != "launchpad" ]; then
         # Check if other launchpad are installed
         id=$(execute_with_backoff az storage account list \
             --subscription ${TF_VAR_tfstate_subscription_id} \
             --query "[?tags.tfstate=='${TF_VAR_level}'].{id:id}[0]" -o json | jq -r .id)
 
-        if [ ${id} == null ]; then
+        if [[ -z ${id} ]]; then
             if [ ${TF_VAR_level} != "level0" ]; then
                 echo "You need to initialize that level first before using it or you do not have permission to that level."
             else
