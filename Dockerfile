@@ -21,6 +21,7 @@ ARG versionAzureCli \
     versionMssqlTools \
     versionTerraformDocs \
     versionTflintazrs \
+    extensionsAzureCli \
     SSH_PASSWD
 
 ARG USERNAME=vscode
@@ -43,6 +44,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
     versionTflintazrs=${versionTflintazrs} \
+    extensionsAzureCli=${extensionsAzureCli} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
@@ -192,6 +194,14 @@ RUN apt-get install -y python3-pip && \
     # Clean-up
     #
     pip3 cache purge
+
+    #
+    # ################# Install Azure CLI extensions ###################
+    #
+    # Provide a comma separated list of Azure CLI extensions to add.
+    #
+RUN ext=(${extensionsAzureCli//,/ }); for i in "${ext[@]}"; do az extension add --name "$i"; done
+
     #
     # ################ Install apt packages ##################
     #
