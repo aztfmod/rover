@@ -346,7 +346,7 @@ function login_as_launchpad {
 
     stg=$(az storage account show --ids ${id} -o json)
 
-    export TF_VAR_tenant_id=$(echo "${keyvault}" | jq -r .tenantId ) && echo " - tenant_id : ${TF_VAR_tenant_id}"
+    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${TF_VAR_tenant_id}"
 
     # If the logged in user does not have access to the launchpad
     if [ "${TF_VAR_tenant_id}" == "" ]; then
