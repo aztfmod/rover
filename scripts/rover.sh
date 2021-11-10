@@ -30,7 +30,6 @@ export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
-export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
@@ -208,10 +207,6 @@ while (( "$#" )); do
         -l|-level)
                 export TF_VAR_level=$(parameter_value '-level' ${2})
                 shift 2
-                ;;
-        --impersonate)
-                export impersonate=true
-                shift 1
                 ;;
         -skip-permission-check)
                 export skip_permission_check=true
