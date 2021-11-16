@@ -304,7 +304,7 @@ function apply {
         echo "Plan not provided with -p or --plan so calling terraform plan"
         plan
 
-        tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+        local tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
     fi
 
     echo "Running Terraform apply with plan ${tf_plan_file}"
@@ -399,7 +399,7 @@ function destroy {
             echo "Plan not provided with -p or --plan so calling terraform plan"
             plan "-destroy"
 
-            tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+            local tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
         fi
 
         RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
@@ -461,7 +461,7 @@ function destroy {
             echo "Plan not provided with -p or --plan so calling terraform plan"
             plan "-destroy"
 
-            tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+            local tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
         fi
 
         echo "using tfstate from ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
