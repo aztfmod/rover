@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM ubuntu:21.04 as base
+FROM --platform=linux/amd64 ubuntu:21.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
