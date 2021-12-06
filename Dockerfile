@@ -11,7 +11,6 @@ ARG versionAzureCli \
     versionVault \
     versionKubectl \
     versionTflint \
-    versionGit \
     versionJq \
     versionDockerCompose \
     versionTfsec \
@@ -35,7 +34,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
-    versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
@@ -65,6 +63,7 @@ RUN apt-get update && \
     curl \
     ca-certificates \
     apt-transport-https \
+    git \
     gettext \
     software-properties-common \
     unzip \
@@ -99,17 +98,17 @@ RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >
     # Add Microsoft repository
     #
     curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && \
-    curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
+    #curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
     #
     # Add Docker repository
     #
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu hirsute stable" > /etc/apt/sources.list.d/docker.list && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
     #
     # Add Terraform repository
     #
     curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/hashicorp-archive-keyring.gpg && \
-    echo "deb [arch=amd64] https://apt.releases.hashicorp.com hirsute main" > /etc/apt/sources.list.d/hashicorp.list && \
+    echo "deb [arch=amd64] https://apt.releases.hashicorp.com focal main" > /etc/apt/sources.list.d/hashicorp.list && \
     #
     # Kubernetes repo
     #
@@ -152,7 +151,7 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     tar -zxf /tmp/terraform-docs.tar.gz --directory=/usr/bin && \
     chmod +x /usr/bin/terraform-docs && \
     #
-    # Install baash completions for git
+    # Install bash completions for git
     #
     echo "Installing bash completions for git" && \
     mkdir -p /etc/bash_completion.d/ && \
@@ -189,11 +188,11 @@ RUN apt-get install -y python3-pip && \
     #
     # Install pywinrm
     #
-    pip3 install pywinrm && \
+    pip3 install pywinrm
     #
     # Clean-up
     #
-    pip3 cache purge
+    #pip3 cache purge
 
     #
     # ################# Install Azure CLI extensions ###################
@@ -222,25 +221,13 @@ RUN echo "Installing Vault ${versionVault}..." && \
     rm /tmp/vault.zip
 
 RUN apt-get install -y --no-install-recommends \
-    docker-ce-cli
-
-RUN apt-get install -y --no-install-recommends \
-    golang
-
-RUN apt-get install -y --no-install-recommends \
-    git=${versionGit}
-
-RUN apt-get install -y --no-install-recommends \
-    ansible=${versionAnsible}
-
-RUN apt-get install -y --no-install-recommends \
-    openssh-server
-
-RUN apt-get install -y --no-install-recommends \
-    fonts-powerline
-
-RUN apt-get install -y --no-install-recommends \
-    jq=${versionJq}
+    docker-ce-cli \
+    golang \
+    git \
+    ansible \
+    openssh-server \
+    fonts-powerline \
+    jq
 
 RUN apt-get install -y --no-install-recommends \
     powershell && \
@@ -250,8 +237,8 @@ RUN apt-get install -y --no-install-recommends \
 RUN echo "Installing shellspec..." && \
     curl -fsSL https://git.io/shellspec | sh -s -- --yes
 
-RUN echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest
+# RUN echo "Installing caflint..." && \
+#     go install github.com/aztfmod/caflint@latest
 
 RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
