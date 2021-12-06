@@ -63,10 +63,9 @@ function build_base_rover_image {
     echo "Creating version ${registry}${rover}"
 
     # Build the rover base image
-    sudo versionRover="${rover}" docker-compose build \
-        --build-arg versionTerraform=${versionTerraform} \
-        --build-arg versionRover="${rover}"
-
+    sudo versionRover="${rover}" docker buildx bake -f ./docker-compose.yml
+    # --build-arg versionTerraform=${versionTerraform} \
+    # --build-arg versionRover="${rover}"
 
     case "${strategy}" in
         "local")

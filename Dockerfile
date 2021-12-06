@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM --platform=linux/amd64 ubuntu:21.04 as base
+FROM --platform=${TARGETPLATFORM} ubuntu:21.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
@@ -22,11 +22,14 @@ ARG versionAzureCli \
     versionTerraformDocs \
     versionTflintazrs \
     extensionsAzureCli \
-    SSH_PASSWD
+    SSH_PASSWD \
+    TARGETARCH \
+    TARGETOS
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
+ARG TARGETOS
 
 ENV SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \
@@ -73,6 +76,7 @@ RUN apt-get update && \
     make \
     sudo \
     locales \
+    wget \
     vim \
     gpg \
     apt-utils \
@@ -94,28 +98,35 @@ RUN apt-get update && \
     #
     # Add Microsoft key
     #
-RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
     #
     # Add Microsoft repository
     #
-    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && \
-    curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
+    # curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && \
+    sudo apt-add-repository https://packages.microsoft.com/ubuntu/20.04/prod && \
+    # sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list)" && \
+    # curl https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list > /etc/apt/sources.list.d/mssql-server-2019.list && \
+
+    # echo "deb [arch=${TARGETARCH}] https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list focal main" > /etc/apt/sources.list.d/msprod.list && \
+    # curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
     #
     # Add Docker repository
     #
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
-    echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu hirsute stable" > /etc/apt/sources.list.d/docker.list && \
+    echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
     #
     # Add Terraform repository
     #
     curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/hashicorp-archive-keyring.gpg && \
-    echo "deb [arch=amd64] https://apt.releases.hashicorp.com hirsute main" > /etc/apt/sources.list.d/hashicorp.list && \
+    echo "deb [arch=${TARGETARCH}] https://apt.releases.hashicorp.com focal main" > /etc/apt/sources.list.d/hashicorp.list && \
     #
     # Kubernetes repo
     #
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |  gpg --dearmor > /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg && \
-    echo "deb [arch=amd64] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
-    #
+    # curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |  gpg --dearmor > /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg && \
+    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
+    # echo "deb [arch=${TARGETARCH}] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
+    # #
     apt-get update
 
     #
@@ -125,7 +136,7 @@ RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >
     # Install Docker-Compose - required to rebuild the rover
     #
 RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
-    curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-Linux-x86_64" && \
+    curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-${TARGETOS}-x86_64" && \
     chmod +x /usr/bin/docker-compose && \
     #
     # Install Helm
@@ -135,23 +146,23 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     # Install tflint
     #
     echo "Installing tflint ${versionTflint}..." && \
-    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_linux_amd64.zip && \
+    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_${TARGETOS}_${TARGETARCH}.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
     #
     # Install tfsec
     #
     echo "Installing tfsec ${versionTfsec} ..." && \
-    curl -sSL -o /bin/tfsec https://github.com/tfsec/tfsec/releases/download/v${versionTfsec}/tfsec-linux-amd64 && \
+    curl -sSL -o /bin/tfsec https://github.com/tfsec/tfsec/releases/download/v${versionTfsec}/tfsec-${TARGETOS}-${TARGETARCH} && \
     chmod +x /bin/tfsec && \
     #
     # Install terraform docs
     #
     echo "Installing terraform docs ${versionTerraformDocs}..." && \
-    curl -sSL -o /tmp/terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-linux-amd64.tar.gz && \
+    curl -sSL -o /tmp/terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-${TARGETOS}-${TARGETARCH}.tar.gz && \
     tar -zxf /tmp/terraform-docs.tar.gz --directory=/usr/bin && \
     chmod +x /usr/bin/terraform-docs && \
-    #
+
     # Install baash completions for git
     #
     echo "Installing bash completions for git" && \
@@ -180,20 +191,18 @@ RUN apt-get install -y python3-pip && \
     #
     # Install Azure-cli
     #
-    pip3 install azure-cli==${versionAzureCli}  && \
+    pip3 install azure-cli  && \
+    az config set extension.use_dynamic_install=yes_without_prompt && \
+    #pip3 install azure-cli==${versionAzureCli}  && \
     #
     # Install checkov
     #
     echo "Installing Checkov ${versionCheckov} ..." && \
-    pip3 install checkov==${versionCheckov} && \
+    pip3 install checkov && \
     #
     # Install pywinrm
     #
-    pip3 install pywinrm && \
-    #
-    # Clean-up
-    #
-    pip3 cache purge
+    pip3 install pywinrm
 
     #
     # ################# Install Azure CLI extensions ###################
@@ -205,17 +214,18 @@ RUN ext=(${extensionsAzureCli//,/ }); for i in "${ext[@]}"; do az extension add 
     #
     # ################ Install apt packages ##################
     #
-RUN ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
-    mssql-tools=${versionMssqlTools}-1
-    #
-RUN apt-get install -y --no-install-recommends \
-    kubectl=${versionKubectl}-00
+# Todo: Need to implement conditional for amd64 only && check if version of arm64 is available/planned.
+# RUN apt-get install -y --no-install-recommends \
+#     mssql-tools unixodbc-dev
 
 RUN apt-get install -y --no-install-recommends \
-    packer=${versionPacker}
+    kubectl
+
+RUN apt-get install -y --no-install-recommends \
+    packer
 
 RUN echo "Installing Vault ${versionVault}..." && \
-    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_linux_amd64.zip 2>&1 && \
+    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/vault.zip && \
     sudo chmod +x /usr/bin/vault && \
     sudo setcap cap_ipc_lock=-ep /usr/bin/vault && \
@@ -228,10 +238,10 @@ RUN apt-get install -y --no-install-recommends \
     golang
 
 RUN apt-get install -y --no-install-recommends \
-    git=${versionGit}
+    git
 
 RUN apt-get install -y --no-install-recommends \
-    ansible=${versionAnsible}
+    ansible
 
 RUN apt-get install -y --no-install-recommends \
     openssh-server
@@ -240,21 +250,21 @@ RUN apt-get install -y --no-install-recommends \
     fonts-powerline
 
 RUN apt-get install -y --no-install-recommends \
-    jq=${versionJq}
+    jq
 
-RUN apt-get install -y --no-install-recommends \
-    powershell && \
-    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
-    pwsh -Command Install-Module -name Az.Resources -Force
+# RUN apt-get install -y --no-install-recommends \
+#     powershell
+#     pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
+#     pwsh -Command Install-Module -name Az.Resources -Force
 
 RUN echo "Installing shellspec..." && \
     curl -fsSL https://git.io/shellspec | sh -s -- --yes
 
-RUN echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest
+# RUN echo "Installing caflint..." && \
+#     go install github.com/aztfmod/caflint@latest
 
 RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_linux_amd64.zip 2>&1 && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
@@ -262,8 +272,6 @@ RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
     echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
     rm /tmp/tflint-ruleset-azurerm.zip
-
-
 
     #
     # Patch
@@ -362,7 +370,7 @@ ENV versionRover=${versionRover} \
 #
 # Keeping this method to support alpha build installations
 RUN echo "Installing Terraform ${versionTerraform}..." && \
-    curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_linux_amd64.zip 2>&1 && \
+    curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/terraform.zip && \
     sudo chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \

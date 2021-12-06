@@ -12,7 +12,7 @@ services:
     image: rover
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
       args:
         - versionTerraform
         - versionAzureCli
@@ -29,6 +29,11 @@ services:
         - versionPacker
         - versionMssqlTools
         - versionRover
+
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
 
   rover_registry:
       extends: rover_local
