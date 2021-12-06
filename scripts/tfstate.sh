@@ -88,13 +88,13 @@ function initialize_state {
             echo "Terraform version 0.15 or greater"
             terraform -chdir=${landingzone_name} \
                 init \
-                -upgrade=true
+                -upgrade=true | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
             terraform init \
                 -get-plugins=true \
                 -upgrade=true \
-                ${landingzone_name}
+                ${landingzone_name} | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
     esac
 
@@ -278,7 +278,7 @@ function terraform_init_remote_azurerm {
                 -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
                 -backend-config container_name=${TF_VAR_workspace} \
                 -backend-config key=${TF_VAR_tf_name} \
-                -backend-config subscription_id=${TF_VAR_tfstate_subscription_id}
+                -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
             terraform init \
@@ -291,7 +291,7 @@ function terraform_init_remote_azurerm {
                 -backend-config container_name=${TF_VAR_workspace} \
                 -backend-config key=${TF_VAR_tf_name} \
                 -backend-config subscription_id=${TF_VAR_tfstate_subscription_id} \
-                ${landingzone_name}
+                ${landingzone_name} | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
     esac
 
@@ -545,14 +545,14 @@ function destroy {
                 terraform -chdir=${landingzone_name} \
                     init \
                     -reconfigure=true \
-                    -upgrade=true
+                    -upgrade=true | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
                 ;;
             *)
                 terraform init \
                     -reconfigure=true \
                     -get-plugins=true \
                     -upgrade=true \
-                    ${landingzone_name}
+                    ${landingzone_name} | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
                 ;;
         esac
 
