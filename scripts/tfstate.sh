@@ -630,15 +630,13 @@ function destroy {
 function other {
     echo "@calling other"
 
-    echo "running terraform ${tf_action} ${tf_command}"
+    echo "running terraform ${tf_action} -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"  ${tf_command}"
 
     rm -f $STDERR_FILE
 
-    if [[ -z ${tf_plan_file} ]]; then
-      terraform ${tf_action} ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
-    else
-      terraform ${tf_action} ${tf_command} ${tf_plan_file} 2>$STDERR_FILE | tee ${tf_output_file}
-    fi
+    terraform ${tf_action} \
+        -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
+        ${tf_command} 2>$STDERR_FILE | tee ${tf_output_file}
 
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
 

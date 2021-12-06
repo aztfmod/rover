@@ -269,7 +269,7 @@ case "${caf_command}" in
     launchpad|landingzone)
         if [[ ("${tf_action}" == "destroy") && (${var_folder_set} == true) && ( ! -z "${tf_plan_file}" ) ]]; then
             error ${LINENO} "-var-folder or -var-file must not be set when using a plan in the destroy operation." 1
-        elif [[ ("${tf_action}" != "destroy" && "${tf_action}" != "show") && (-z "${tf_command}") ]]; then
+        elif [[ ("${tf_action}" != "destroy") && (-z "${tf_command}") ]]; then
             error ${LINENO} "No parameters have been set in ${caf_command}." 1
         fi
         ;;
