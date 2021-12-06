@@ -179,6 +179,7 @@ RUN apt-get install -y python3-pip && \
     # Install Azure-cli
     #
     pip3 install azure-cli==${versionAzureCli}  && \
+    az config set extension.use_dynamic_install=yes_without_prompt && \
     #
     # Install checkov
     #
