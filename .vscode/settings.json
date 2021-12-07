@@ -1,12 +1,16 @@
 {
     "files.eol": "\n",
-    "terminal.integrated.defaultProfile.linux": "caf (rover on docker)",
+    "terminal.integrated.defaultProfile.linux": "caf (zsh)",
     "editor.tabSize": 2,
     "terminal.integrated.scrollback": 32000,
     "terminal.integrated.profiles.linux": {
         "caf (rover on docker)": {
             "path": "docker-compose",
             "args": ["-f", "rover_on_ssh_host.yml", "run", "-e", "ROVER_RUNNER=true", "--rm", "-w", "/tf/caf" ,"rover", "/usr/bin/zsh"],
+            "overrideName": true
+        },
+        "caf (zsh)": {
+            "path": "zsh",
             "overrideName": true
         }
     }

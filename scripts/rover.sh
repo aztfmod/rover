@@ -7,7 +7,7 @@
 source /tf/rover/lib/logger.sh
 source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
-source /tf/rover/tfstate_azurerm.sh
+source /tf/rover/tfstate.sh
 source /tf/rover/functions.sh
 source /tf/rover/parse_command.sh
 source /tf/rover/banner.sh
@@ -30,13 +30,14 @@ export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
 export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}
 export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
-export impersonate=${impersonate:=false}
 export skip_permission_check=${skip_permission_check:=false}
 export symphony_run_all_tasks=true
 export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
 export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
+export TF_backend_type=${TF_backend_type:="azurerm"}
+export TFC_hostname=${TFC_hostname:="app.terraform.io"}
 
 unset PARAMS
 
@@ -161,7 +162,17 @@ while (( "$#" )); do
             ;;
         -tfc|--tfc)
             shift 1
-            export caf_command="tfc"
+            export TF_backend_type="tfc"
+            ;;
+        -tfc_organization|--tfc_organization)
+            export TFC_organization="${2}"
+            export TF_backend_type="tfc"
+            shift 2
+            ;;
+        -tfc_hostname|--tfc_hostname)
+            export TFC_hostname="${2}"
+            export TF_backend_type="tfc"
+            shift 2
             ;;
         -t|--tenant)
             export tenant=$(parameter_value --tenant ${2})
@@ -209,16 +220,13 @@ while (( "$#" )); do
                 export TF_VAR_level=$(parameter_value '-level' ${2})
                 shift 2
                 ;;
-        --impersonate)
-                export impersonate=true
-                shift 1
-                ;;
         -skip-permission-check)
                 export skip_permission_check=true
                 shift 1
                 ;;
         -var-folder)
                 expand_tfvars_folder $(parameter_value '-var-folder' ${2})
+                export TF_var_folder="${2}"
                 var_folder_set=true
                 shift 2
                 ;;
@@ -290,6 +298,7 @@ if [ "${caf_command}" != "walkthrough" ]; then
   echo "level (current)               : '$(echo ${TF_VAR_level})'"
   echo "environment                   : '$(echo ${TF_VAR_environment})'"
   echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
+  echo "terraform backend type        : '$(echo ${TF_backend_type})'"
   echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
   echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
   echo "target subscription           : '$(echo ${target_subscription_name})'"
@@ -314,3 +323,5 @@ export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
 process_actions
 clean_up_variables
+
+exit ${RETURN_CODE}
