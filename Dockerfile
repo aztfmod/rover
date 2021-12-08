@@ -180,7 +180,6 @@ RUN apt-get install -y python3-pip && \
     # Install Azure-cli
     #
     pip3 install azure-cli==${versionAzureCli}  && \
-    az config set extension.use_dynamic_install=yes_without_prompt && \
     #
     # Install checkov
     #
@@ -334,8 +333,7 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
     echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
-    echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc && \
-    az config set extension.use_dynamic_install=yes_without_prompt
+    echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
 
 
 
