@@ -321,6 +321,9 @@ echo ""
 
 export terraform_version=$(terraform --version | head -1 | cut -d ' ' -f 2)
 
+# set az cli extension context
+az config set extension.use_dynamic_install=yes_without_prompt 2>/dev/null
+
 process_actions
 clean_up_variables
 

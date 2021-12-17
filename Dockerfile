@@ -11,7 +11,6 @@ ARG versionAzureCli \
     versionVault \
     versionKubectl \
     versionTflint \
-    versionGit \
     versionJq \
     versionDockerCompose \
     versionTfsec \
@@ -38,7 +37,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionKubectl=${versionKubectl} \
     versionTflint=${versionTflint} \
     versionJq=${versionJq} \
-    versionGit=${versionGit} \
     versionDockerCompose=${versionDockerCompose} \
     versionTfsec=${versionTfsec} \
     versionAnsible=${versionAnsible} \
@@ -51,6 +49,8 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
+    TF_REGISTRY_DISCOVERY_RETRY=5 \
+    TF_REGISTRY_CLIENT_TIMEOUT=15 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
@@ -68,6 +68,7 @@ RUN apt-get update && \
     curl \
     ca-certificates \
     apt-transport-https \
+    git \
     gettext \
     software-properties-common \
     unzip \
@@ -162,8 +163,8 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     curl -sSL -o /tmp/terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v${versionTerraformDocs}/terraform-docs-v${versionTerraformDocs}-${TARGETOS}-${TARGETARCH}.tar.gz && \
     tar -zxf /tmp/terraform-docs.tar.gz --directory=/usr/bin && \
     chmod +x /usr/bin/terraform-docs && \
-
-    # Install baash completions for git
+    #
+    # Install bash completions for git
     #
     echo "Installing bash completions for git" && \
     mkdir -p /etc/bash_completion.d/ && \
@@ -232,24 +233,12 @@ RUN echo "Installing Vault ${versionVault}..." && \
     rm /tmp/vault.zip
 
 RUN apt-get install -y --no-install-recommends \
-    docker-ce-cli
-
-RUN apt-get install -y --no-install-recommends \
-    golang
-
-RUN apt-get install -y --no-install-recommends \
-    git
-
-RUN apt-get install -y --no-install-recommends \
-    ansible
-
-RUN apt-get install -y --no-install-recommends \
-    openssh-server
-
-RUN apt-get install -y --no-install-recommends \
-    fonts-powerline
-
-RUN apt-get install -y --no-install-recommends \
+    docker-ce-cli \
+    golang \
+    git \
+    ansible \
+    openssh-server \
+    fonts-powerline \
     jq
 
 # RUN apt-get install -y --no-install-recommends \
@@ -355,6 +344,7 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
     echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
+
 
 
 FROM base
