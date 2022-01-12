@@ -121,15 +121,21 @@ RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
     # ################# Install binary clients ###################
     #
     #
-    # Install Docker-Compose - required to rebuild the rover
+    # Install Docker-Compose - required to rebuild the rover and dynamic terminal in VSCode
     #
 RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
-    curl -L -o /usr/bin/docker-compose "https://github.com/docker/compose/releases/download/${versionDockerCompose}/docker-compose-${TARGETOS}-x86_64" && \
-    chmod +x /usr/bin/docker-compose && \
+    mkdir -p /usr/libexec/docker/cli-plugins/ && \
+    if [ ${TARGETARCH} == "amd64" ]; then \
+        curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-x86_64 ; \
+    else  \
+        curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-aarch64 ; \
+    fi  \
+    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+    
     #
     # Install Helm
     #
-    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
+RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
     #
     # Install tflint
     #

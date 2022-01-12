@@ -1,6 +1,6 @@
 versionKubectl="1.22.1"
 versionVault="1.9.0"
-versionDockerCompose="1.29.2"
+versionDockerCompose="2.2.3"
 versionPacker="1.7.8"
 versionPowershell="7.2.1"
 extensionsAzureCli="resource-graph"
