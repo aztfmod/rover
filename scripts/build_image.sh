@@ -22,7 +22,7 @@ function build_base_rover_image {
 
     echo "@build_base_rover_image"
     echo "Building base image with:"
-    echo " - regversionTerraformistry - ${versionTerraform}"
+    echo " - versionTerraform - ${versionTerraform}"
     echo " - strategy                 - ${strategy}"
 
     echo "Terraform version - ${versionTerraform}"
@@ -60,33 +60,31 @@ function build_base_rover_image {
             ;;
     esac
 
-    echo "Creating version ${registry}${rover}"
-
-    # Build the rover base image
-    sudo versionRover="${rover}" docker buildx bake -f ./docker-compose.yml
-    # --build-arg versionTerraform=${versionTerraform} \
-    # --build-arg versionRover="${rover}"
+    echo "Creating version ${rover}"
 
     case "${strategy}" in
         "local")
+            echo "Building rover locally"
+            platform=$(uname -m)
+            sudo versionRover="${rover}" tag="${tag}" docker buildx bake --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
             ;;
         *)
-            echo "Pushing rover image to the docker regsitry"
-            sudo versionRover="${rover}" docker-compose push rover_registry
+            echo "Building rover image and pushing to Docker Hub"
+            sudo versionRover="${rover}" tag="${tag}" docker buildx bake --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
             ;;
     esac
 
     echo "Image ${rover} created."
 
     # echo "Building CI/CD images."
-    if [ "$strategy" != "local" ]; then
-        build_rover_agents "${rover}" "${tag}" "${registry}"
-    fi
+    # if [ "$strategy" != "local" ]; then
+    #     build_rover_agents "${rover}" "${tag}" "${registry}"
+    # fi
 
 }
 
 function build_rover_agents {
-    # Build de rover agents and runners
+    # Build the rover agents and runners
     rover=${1}
     tag=${2}
     registry=${3}

@@ -1,25 +1,19 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM --platform=${TARGETPLATFORM} ubuntu:21.04 as base
+FROM --platform=${TARGETPLATFORM} ubuntu:20.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
 # Arguments set during docker-compose build -b --build from .env file
 
-ARG versionAzureCli \
-    versionVault \
+ARG versionVault \
     versionKubectl \
-    versionTflint \
-    versionJq \
     versionDockerCompose \
-    versionTfsec \
-    versionAnsible \
+    versionPowershell \
     versionPacker \
-    versionCheckov \
-    versionMssqlTools \
+    versionGolang \
     versionTerraformDocs \
-    versionTflintazrs \
     extensionsAzureCli \
     SSH_PASSWD \
     TARGETARCH \
@@ -32,21 +26,15 @@ ARG TARGETOS
 
 ENV SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \
-    versionAzureCli=${versionAzureCli} \
     versionVault=${versionVault} \
+    versionGolang=${versionGolang} \
     versionKubectl=${versionKubectl} \
-    versionTflint=${versionTflint} \
-    versionJq=${versionJq} \
     versionDockerCompose=${versionDockerCompose} \
-    versionTfsec=${versionTfsec} \
-    versionAnsible=${versionAnsible} \
-    versionPacker=${versionPacker} \
-    versionCheckov=${versionCheckov} \
-    versionMssqlTools=${versionMssqlTools} \
     versionTerraformDocs=${versionTerraformDocs} \
-    versionTflintazrs=${versionTflintazrs} \
+    versionPacker=${versionPacker} \
+    versionPowershell=${versionPowershell} \
     extensionsAzureCli=${extensionsAzureCli} \
-    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin" \
+    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
     TF_REGISTRY_DISCOVERY_RETRY=5 \
@@ -60,7 +48,6 @@ WORKDIR /tf/rover
 COPY ./.pip_to_patch_latest .
 COPY ./scripts/.kubectl_aliases .
 COPY ./scripts/zsh-autosuggestions.zsh .
-
 
     # installation common tools
 RUN apt-get update && \
@@ -107,9 +94,8 @@ RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
     sudo apt-add-repository https://packages.microsoft.com/ubuntu/20.04/prod && \
     # sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list)" && \
     # curl https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list > /etc/apt/sources.list.d/mssql-server-2019.list && \
-
     # echo "deb [arch=${TARGETARCH}] https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list focal main" > /etc/apt/sources.list.d/msprod.list && \
-    # curl https://packages.microsoft.com/config/ubuntu/21.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
+    # curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
     #
     # Add Docker repository
     #
@@ -124,11 +110,12 @@ RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
     # Kubernetes repo
     #
     # curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |  gpg --dearmor > /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg && \
-    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
+    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
     # echo "deb [arch=${TARGETARCH}] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
     # #
-    apt-get update
+    apt-get update && \
+    apt-get clean
 
     #
     # ################# Install binary clients ###################
@@ -146,15 +133,15 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     #
     # Install tflint
     #
-    echo "Installing tflint ${versionTflint}..." && \
-    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${versionTflint}/tflint_${TARGETOS}_${TARGETARCH}.zip && \
+    echo "Installing latest tflint ..." && \
+    curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/latest/download/tflint_${TARGETOS}_${TARGETARCH}.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
     #
     # Install tfsec
     #
-    echo "Installing tfsec ${versionTfsec} ..." && \
-    curl -sSL -o /bin/tfsec https://github.com/tfsec/tfsec/releases/download/v${versionTfsec}/tfsec-${TARGETOS}-${TARGETARCH} && \
+    echo "Installing latest tfsec ..." && \
+    curl -sSL -o /bin/tfsec https://github.com/tfsec/tfsec/releases/latest/download/tfsec-${TARGETOS}-${TARGETARCH} && \
     chmod +x /bin/tfsec && \
     #
     # Install terraform docs
@@ -170,11 +157,34 @@ RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
     mkdir -p /etc/bash_completion.d/ && \
     curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o /etc/bash_completion.d/git-completion.bash && \
     #
+    # Install PowerShell via alternate method as apt not working for arm64
+    # https://docs.microsoft.com/en-us/powershell/scripting/install/install-other-linux?view=powershell-7.2#binary-archives
+    #
+    echo "Installing PowerShell ${versionPowershell}..." && \
+    if [ ${TARGETARCH} == "amd64" ]; then curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-x64.tar.gz ; \
+    else curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-${TARGETARCH}.tar.gz ; \
+    fi  && \
+    mkdir -p /opt/microsoft/powershell/7 && \
+    tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
+    chmod +x /opt/microsoft/powershell/7/pwsh && \
+    ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
+    echo "Installing PowerShell modules..." && \
+    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
+    pwsh -Command Install-Module -name Az.Resources -Force && \
+    #
     # kubectl node shell
     #
     curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
     chmod +x /usr/local/bin/kubectl-node_shell
-
+    #
+    # Hashicorp Vault
+    #
+RUN echo "Installing Vault ${versionVault}..." && \
+    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
+    unzip -d /usr/bin /tmp/vault.zip && \
+    chmod +x /usr/bin/vault && \
+    setcap cap_ipc_lock=-ep /usr/bin/vault && \
+    rm /tmp/vault.zip
     #
     # ################# Install PIP clients ###################
     #
@@ -182,84 +192,70 @@ RUN apt-get install -y python3-pip && \
     #
     # Install pre-commit
     #
-    echo "Installing pre-commit ..." && \
+    echo "Installing latest pre-commit ..." && \
     pip3 install pre-commit && \
     #
     # Install yq
     #
-    echo "Installing yq ..." && \
+    echo "Installing latest yq ..." && \
     pip3 install yq && \
     #
     # Install Azure-cli
     #
+    echo "Installing latest Azure CLI ..." && \
     pip3 install azure-cli  && \
     az config set extension.use_dynamic_install=yes_without_prompt && \
-    #pip3 install azure-cli==${versionAzureCli}  && \
     #
     # Install checkov
     #
-    echo "Installing Checkov ${versionCheckov} ..." && \
+    echo "Installing latest Checkov ..." && \
     pip3 install checkov && \
     #
     # Install pywinrm
     #
+    echo "Installing latest pywinrm ..." && \
     pip3 install pywinrm
 
     #
-    # ################# Install Azure CLI extensions ###################
-    #
-    # Provide a comma separated list of Azure CLI extensions to add.
-    #
-RUN ext=(${extensionsAzureCli//,/ }); for i in "${ext[@]}"; do az extension add --name "$i"; done
-
-    #
     # ################ Install apt packages ##################
-    #
-# Todo: Need to implement conditional for amd64 only && check if version of arm64 is available/planned.
-# RUN apt-get install -y --no-install-recommends \
-#     mssql-tools unixodbc-dev
+    # For amd64 only - as no arm64 version packages available per:  https://packages.microsoft.com/ubuntu/20.04/prod/pool/main/m/mssql-tools/
+RUN if [ ${TARGETARCH} == "amd64" ]; then \
+        echo ACCEPT_EULA=Y apt-get install -y --no-install-recommends unixodbc mssql-tools; \
+    else \
+        echo "mssql-tools skipped as not running on amd64"; \
+    fi
 
 RUN apt-get install -y --no-install-recommends \
-    kubectl
-
-RUN apt-get install -y --no-install-recommends \
-    packer
-
-RUN echo "Installing Vault ${versionVault}..." && \
-    curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
-    sudo unzip -d /usr/bin /tmp/vault.zip && \
-    sudo chmod +x /usr/bin/vault && \
-    sudo setcap cap_ipc_lock=-ep /usr/bin/vault && \
-    rm /tmp/vault.zip
-
-RUN apt-get install -y --no-install-recommends \
+    kubectl \
+    packer \
     docker-ce-cli \
-    golang \
     git \
     ansible \
     openssh-server \
     fonts-powerline \
     jq
 
-# RUN apt-get install -y --no-install-recommends \
-#     powershell
-#     pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
-#     pwsh -Command Install-Module -name Az.Resources -Force
-
-RUN echo "Installing shellspec..." && \
+RUN echo "Installing latest shellspec..." && \
     curl -fsSL https://git.io/shellspec | sh -s -- --yes
 
-# RUN echo "Installing caflint..." && \
-#     go install github.com/aztfmod/caflint@latest
+RUN echo "Installing Golang ${versionGolang}..." && \
+    curl -sSL -o /tmp/golang.tar.gz https://go.dev/dl/go${versionGolang}.${TARGETOS}-${TARGETARCH}.tar.gz  2>&1 && \
+    tar -C /usr/local -xzf /tmp/golang.tar.gz && \
+    export PATH=$PATH:/usr/local/go/bin && \
+    go version
 
-RUN echo "Installing Tflint Ruleset ${versionTflintazrs} for Azure..." && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTflintazrs}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
+RUN echo "Installing caflint..." && \
+    go version && \
+    go install github.com/aztfmod/caflint@latest
+
+RUN echo "Installing latest Tflint Ruleset for Azure..." && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/latest/download/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
-    sudo unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
+    unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
     rm /tmp/tflint-ruleset-azurerm.zip
 
     #
@@ -344,8 +340,6 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
     echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
-
-
 
 FROM base
 
