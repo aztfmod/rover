@@ -70,6 +70,7 @@ function build_base_rover_image {
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
+            docker buildx create --use
             versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
             ;;
     esac
