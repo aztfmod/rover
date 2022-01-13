@@ -66,20 +66,20 @@ function build_base_rover_image {
         "local")
             echo "Building rover locally"
             platform=$(uname -m)
-            sudo versionRover="${rover}" tag="${tag}" docker buildx bake --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
+            versionRover="${rover}" tag="${tag}" docker buildx bake --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
-            sudo versionRover="${rover}" tag="${tag}" docker buildx bake --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
+            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
             ;;
     esac
 
     echo "Image ${rover} created."
 
-    # echo "Building CI/CD images."
-    # if [ "$strategy" != "local" ]; then
-    #     build_rover_agents "${rover}" "${tag}" "${registry}"
-    # fi
+    if [ "$strategy" != "local" ]; then
+        echo "Building CI/CD images."
+        build_rover_agents "${rover}" "${tag}" "${registry}"
+    fi
 
 }
 
@@ -99,10 +99,10 @@ function build_rover_agents {
     cd agents
 
     if [ "$strategy" == "ci" ]; then
-        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build  \
+        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose build  \
             --build-arg versionRover="${rover}" gitlab
     else
-        sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose build \
+        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose build \
             --build-arg versionRover="${rover}"
     fi
 
@@ -111,9 +111,9 @@ function build_rover_agents {
             ;;
         *)
             if [ "$strategy" == "ci" ]; then
-                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push gitlab
+                tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose push gitlab
             else
-                sudo tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker-compose push
+                tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose push
             fi
             ;;
     esac
