@@ -11,6 +11,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install Docker
+      run: |
+        set -e
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)
+        brew install docker
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
     # - name: Docker Hub Login
