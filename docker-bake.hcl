@@ -25,6 +25,8 @@ target "rover_local" {
       versionGolang        = versionGolang
     }
     platforms = ["linux/amd64","linux/arm64" ]
+    cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
+    cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
 
 target "rover_registry" {
@@ -36,51 +38,6 @@ target "rover_registry" {
   }
 }
 
-# Todo
-# need to implement the various type of rover_registry as sent by the command_line context
-
-target "rover_gitlab" {
-  inherits = ["rover_registry"]
-  dockerfile = "./agents/gitlab/Dockerfile"
-  tags = ["docker.io/aztfmod/roveragent:${tag}-gitlab"]
-  args = {
-    image     = versionRover
-    USERNAME  = USERNAME
-  }
-}
-
-target "rover_azure_devops" {
-  inherits = ["rover_registry"]
-  dockerfile = "./agents/gitlab/azure_devops/Dockerfile"
-  tags = ["docker.io/aztfmod/roveragent:${tag}-azure_devops"]
-  args = {
-    image       = versionRover
-    USERNAME    = USERNAME
-    versionAzdo = versionAzdo
-  }
-}
-
-target "rover_github" {
-  inherits = ["rover_registry"]
-  dockerfile = "./agents/gitlab/github/Dockerfile"
-  tags = ["docker.io/aztfmod/roveragent:${tag}-github"]
-  args = {
-    image               = versionRover
-    versionGithubRunner = versionGithubRunner
-    USERNAME            = USERNAME
-  }
-}
-
-target "rover_tfc" {
-  inherits = ["rover_registry"]
-  dockerfile = "./agents/gitlab/tfc/Dockerfile"
-  tags = ["docker.io/aztfmod/roveragent:${tag}-tfc"]
-  args = {
-    image       = versionRover
-    versionTfc  = versionTfc
-    USERNAME    = USERNAME
-  }
-}
 
 variable "tag" {
     default = "latest"
