@@ -10,3 +10,7 @@ updates:
     versions:
     - 1.15.8
     - 1.16.0
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "daily"
