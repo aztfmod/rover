@@ -1,6 +1,33 @@
 #!/usr/bin/env bash
 
-set -e
+error() {
+    local parent_lineno="$1"
+    local message="$2"
+    local code="${3:-1}"
+    local line_message=""
+    if [ "$parent_lineno" != "" ]; then
+        line_message="on or near line ${parent_lineno}"
+    fi
+
+    if [[ -n "$message" ]]; then
+        echo >&2 -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
+    else
+        echo >&2 -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
+    fi
+    echo ""
+
+    cleanup
+
+    exit ${code}
+}
+
+cleanup() {
+    docker buildx rm rover
+}
+
+set -ETe
+trap 'error ${LINENO}' ERR 1 2 3 6
+
 ./scripts/pre_requisites.sh
 
 params=$@
@@ -62,19 +89,21 @@ function build_base_rover_image {
 
     echo "Creating version ${rover}"
 
+    docker buildx create --use --name rover --bootstrap
+
     case "${strategy}" in
         "local")
             echo "Building rover locally"
             platform=$(uname -m)
-            versionRover="${rover}" tag="${tag}" docker buildx bake --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
+            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake-local.hcl -f docker-bake.override.hcl --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
-            docker buildx create --use --name rover --bootstrap
             versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
-            docker buildx rm rover
             ;;
     esac
+
+    docker buildx rm rover
 
     echo "Image ${rover} created."
 
