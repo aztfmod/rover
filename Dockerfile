@@ -77,8 +77,7 @@ RUN apt-get update && \
     unzip \
     vim \
     wget \
-    zip \
-    zsh && \
+    zip && \
     #
     # Create USERNAME
     #
@@ -321,6 +320,9 @@ COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 # ssh server for Azure ACI
 #
 RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
+    sudo apt-get update && \
+    sudo apt-get install -y \
+    zsh && \
     #
     # Install Oh My Zsh
     #
