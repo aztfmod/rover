@@ -41,7 +41,8 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    DEBCONF_NONINTERACTIVE_SEEN=true
 
 WORKDIR /tf/rover
 COPY ./.pip_to_patch_latest .
@@ -50,42 +51,49 @@ COPY ./scripts/zsh-autosuggestions.zsh .
 
     # installation common tools
 RUN apt-get update && \
-    apt-get install -y \
-    curl \
-    ca-certificates \
+    apt-get install -y --no-install-recommends \
+    ansible \
     apt-transport-https \
-    git \
-    gettext \
-    software-properties-common \
-    unzip \
-    zip \
-    less \
-    make \
-    sudo \
-    locales \
-    wget \
-    vim \
-    gpg \
     apt-utils \
+    bsdmainutils \
+    ca-certificates \
+    curl \
+    fonts-powerline \
+    gcc \
+    gettext \
+    git \
+    gpg \
     gpg-agent \
-    bsdmainutils && \
+    jq \
+    less \
+    locales \
+    make \
+    openssh-server \
+    packer \
+    python3-dev \
+    python3-pip \
+    software-properties-common \
+    sudo \
+    unzip \
+    vim \
+    wget \
+    zip \
+    zsh && \
     #
     # Create USERNAME
     #
     echo "Creating ${USERNAME} user..." && \
     groupadd docker && \
-    useradd --uid $USER_UID -m -G docker ${USERNAME} && \
+    useradd --uid $USER_UID -m -G docker ${USERNAME}  && \
     #
     # Set the locale
-    locale-gen en_US.UTF-8
-
-
+    locale-gen en_US.UTF-8 && \
     #
     # ############### APT Repositories ###################
     #
     # Add Microsoft key
     #
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
     #
     # Add Microsoft repository
     #
@@ -114,27 +122,27 @@ RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
     # echo "deb [arch=${TARGETARCH}] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
     # #
     apt-get update && \
-    apt-get clean
-
+    apt-get install -y --no-install-recommends \
+    docker-ce-cli \
+    kubectl && \
     #
     # ################# Install binary clients ###################
     #
     #
-    # Install Docker-Compose - required to rebuild the rover and dynamic terminal in VSCode
+    # Install Docker Compose - required to rebuild the rover and dynamic terminal in VSCode
     #
-RUN echo "Installing docker-compose ${versionDockerCompose}..." && \
+    echo "Installing docker compose ${versionDockerCompose}..." && \
     mkdir -p /usr/libexec/docker/cli-plugins/ && \
     if [ ${TARGETARCH} == "amd64" ]; then \
         curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-x86_64 ; \
     else  \
         curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-aarch64 ; \
     fi  \
-    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose
-    
+    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose && \   
     #
     # Install Helm
     #
-RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
+    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && \
     #
     # Install tflint
     #
@@ -168,8 +176,8 @@ RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
     echo "Installing PowerShell ${versionPowershell}..." && \
     if [ ${TARGETARCH} == "amd64" ]; then curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-x64.tar.gz ; \
     else curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-${TARGETARCH}.tar.gz ; \
-    fi  && \
-    mkdir -p /opt/microsoft/powershell/7 && \
+    fi \
+    && mkdir -p /opt/microsoft/powershell/7 && \
     tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
     chmod +x /opt/microsoft/powershell/7/pwsh && \
     ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
@@ -180,20 +188,17 @@ RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |
     # kubectl node shell
     #
     curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
-    chmod +x /usr/local/bin/kubectl-node_shell
+    chmod +x /usr/local/bin/kubectl-node_shell && \
     #
     # Hashicorp Vault
     #
-RUN echo "Installing Vault ${versionVault}..." && \
+    echo "Installing Vault ${versionVault}..." && \
     curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     unzip -d /usr/bin /tmp/vault.zip && \
     chmod +x /usr/bin/vault && \
     setcap cap_ipc_lock=-ep /usr/bin/vault && \
-    rm /tmp/vault.zip
     #
     # ################# Install PIP clients ###################
-    #
-RUN apt-get install -y python3-pip && \
     #
     # Install pre-commit
     #
@@ -219,41 +224,32 @@ RUN apt-get install -y python3-pip && \
     # Install pywinrm
     #
     echo "Installing latest pywinrm ..." && \
-    pip3 install pywinrm
-
+    pip3 install pywinrm && \
+    #
     #
     # ################ Install apt packages ##################
     # For amd64 only - as no arm64 version packages available per:  https://packages.microsoft.com/ubuntu/20.04/prod/pool/main/m/mssql-tools/
-RUN if [ ${TARGETARCH} == "amd64" ]; then \
+    if [ ${TARGETARCH} == "amd64" ]; then \
         echo ACCEPT_EULA=Y apt-get install -y --no-install-recommends unixodbc mssql-tools; \
     else \
         echo "mssql-tools skipped as not running on amd64"; \
-    fi
-
-RUN apt-get install -y --no-install-recommends \
-    kubectl \
-    packer \
-    docker-ce-cli \
-    git \
-    ansible \
-    openssh-server \
-    fonts-powerline \
-    jq
-
-RUN echo "Installing latest shellspec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes
-
-RUN echo "Installing Golang ${versionGolang}..." && \
+    fi \
+    #
+    && echo "Installing latest shellspec..." && \
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes && \
+    #
+    # Golang
+    #
+    echo "Installing Golang ${versionGolang}..." && \
     curl -sSL -o /tmp/golang.tar.gz https://go.dev/dl/go${versionGolang}.${TARGETOS}-${TARGETARCH}.tar.gz  2>&1 && \
     tar -C /usr/local -xzf /tmp/golang.tar.gz && \
     export PATH=$PATH:/usr/local/go/bin && \
-    go version
-
-RUN echo "Installing caflint..." && \
     go version && \
-    go install github.com/aztfmod/caflint@latest
-
-RUN echo "Installing latest Tflint Ruleset for Azure..." && \
+    #
+    echo "Installing caflint..." && \
+    go install github.com/aztfmod/caflint@latest && \
+    #
+    echo "Installing latest Tflint Ruleset for Azure..." && \
     curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/latest/download/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
@@ -261,26 +257,10 @@ RUN echo "Installing latest Tflint Ruleset for Azure..." && \
     echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
-    rm /tmp/tflint-ruleset-azurerm.zip
-
-    #
-    # Patch
-    # to regenerate the list - pip3 list --outdated --format=columns |tail -n +3|cut -d" " -f1 > pip_to_patch_latest
-    #
-    # for i in  $(cat .pip_to_patch_latest); do pip3 install $i --upgrade; done && \
-    # apt-get upgrade -y && \
-    # Clean-up
-    #
-    # apt-get remove -y \
-    # apt-utils && \
-    # apt-get autoremove -y && \
-    # rm -f /tmp/*.zip && rm -f /tmp/*.gz && \
-    # rm -rf /var/lib/apt/lists/*
-
     #
     # Create USERNAME home folder structure
     #
-RUN mkdir -p /tf/caf \
+    mkdir -p /tf/caf \
     /tf/rover \
     /tf/logs \
     /home/${USERNAME}/.ansible \
@@ -307,13 +287,27 @@ RUN mkdir -p /tf/caf \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
     echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc" && \
-    echo "alias watch=\"watch \"" >> "/home/${USERNAME}/.bashrc"
+    echo "alias watch=\"watch \"" >> "/home/${USERNAME}/.bashrc" && \
+    #
+    # Clean-up
+    #
+    apt-get remove -y \
+        gcc \
+        python3-dev \
+        apt-utils && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /tmp/* && \
+    rm -rf /var/lib/apt/lists/* && \
+    find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
 
 
 
 COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 COPY ./scripts/lib/* ./lib/
+
+
 #
 # Switch to non-root ${USERNAME} context
 #
@@ -327,9 +321,6 @@ COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 # ssh server for Azure ACI
 #
 RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
-    sudo apt-get update && \
-    sudo apt-get install -y \
-    zsh && \
     #
     # Install Oh My Zsh
     #
@@ -357,7 +348,7 @@ ENV versionRover=${versionRover} \
 #
 # Install Terraform
 #
-# Keeping this method to support alpha build installations
+# Keeping this method to support alpha build installations 
 RUN echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/terraform.zip && \
