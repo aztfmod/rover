@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"terminal.integrated.defaultProfile.linux": "caf (zsh)",
+		"terminal.integrated.scrollback": 64000,
+		"terminal.integrated.profiles.linux": {
+			"caf (rover on dockerd)": {
+				"path": "zsh",
+				"args": [
+					"-c",
+					"docker compose -f ./.devcontainer/docker-compose.yml run -e ROVER_RUNNER=true --rm -w /tf/caf rover_ssh"
+				],
+				"overrideName": true
+			},
+			"caf (zsh)": {
+				"path": "zsh",
+				"overrideName": true
+			}
+		}
+	}
+}

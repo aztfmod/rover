@@ -95,7 +95,7 @@ function build_base_rover_image {
         "local")
             echo "Building rover locally"
             platform=$(uname -m)
-            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake-local.hcl -f docker-bake.override.hcl --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
+            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
@@ -107,10 +107,10 @@ function build_base_rover_image {
 
     echo "Image ${rover} created."
 
-    # if [ "$strategy" != "local" ]; then
-    #     echo "Building CI/CD images."
-    #     build_rover_agents "${rover}" "${tag}" "${registry}"
-    # fi
+    if [ "$strategy" != "local" ]; then
+        echo "Building CI/CD images."
+        build_rover_agents "${rover}" "${tag}" "${registry}"
+    fi
 
 }
 
