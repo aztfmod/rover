@@ -188,7 +188,7 @@ function build_rover_agents {
 
 }
 
-
+cleanup
 docker buildx create --use --name rover --bootstrap --driver-opt network=host
 
 case "${strategy}" in
