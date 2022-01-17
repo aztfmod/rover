@@ -13,6 +13,7 @@ ARG versionVault \
     versionPowershell \
     versionPacker \
     versionGolang \
+    versionTfLint \
     versionTerraformDocs \
     extensionsAzureCli \
     SSH_PASSWD \
