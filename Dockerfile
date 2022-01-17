@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM --platform=${TARGETPLATFORM} ubuntu:20.04 as base
+FROM --platform=${TARGETPLATFORM} ubuntu:21.10 as base
 
 SHELL ["/bin/bash", "-c"]
 
@@ -97,12 +97,7 @@ RUN apt-get update && \
     #
     # Add Microsoft repository
     #
-    # curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/msprod.list && \
-    sudo apt-add-repository https://packages.microsoft.com/ubuntu/20.04/prod && \
-    # sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list)" && \
-    # curl https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list > /etc/apt/sources.list.d/mssql-server-2019.list && \
-    # echo "deb [arch=${TARGETARCH}] https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2019.list focal main" > /etc/apt/sources.list.d/msprod.list && \
-    # curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list >> /etc/apt/sources.list.d/msprod.list && \
+    sudo apt-add-repository https://packages.microsoft.com/ubuntu/21.10/prod && \
     #
     # Add Docker repository
     #
@@ -116,10 +111,8 @@ RUN apt-get update && \
     #
     # Kubernetes repo
     #
-    # curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |  gpg --dearmor > /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg && \
     curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
-    # echo "deb [arch=${TARGETARCH}] https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list && \
     # #
     apt-get update && \
     apt-get install -y --no-install-recommends \

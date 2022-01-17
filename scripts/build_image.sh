@@ -149,6 +149,8 @@ function build_rover_agents {
     case "${strategy}" in
         "local")
 
+            platform=$(uname -m)
+
             registry="" \
             versionRover="${rover_base}:${tag}" \
             versionTerraform=${versionTerraform} \
@@ -156,6 +158,7 @@ function build_rover_agents {
             docker buildx bake \
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
+                --set *.platform=linux/${platform} \
                 --load rover_agents
             ;;
         *)
