@@ -31,7 +31,7 @@ target "github" {
     versionRover        = versionRover
     USERNAME            = USERNAME
   }
-  platforms = ["linux/amd64" ]
+  platforms = ["linux/amd64","linux/arm64"]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
