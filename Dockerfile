@@ -249,8 +249,8 @@ RUN apt-get update && \
     echo "Installing caflint..." && \
     go install github.com/aztfmod/caflint@latest && \
     #
-    echo "Installing latest Tflint Ruleset for Azure ${versionTfLint} for ${TARGETOS} / ${TARGETARCH}... URL: https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip" && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
+    echo "Installing latest Tflint Ruleset for Azure ${versionTfLint} for ${TARGETOS} / ${TARGETARCH}... URL: https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip" && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
