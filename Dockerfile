@@ -302,11 +302,6 @@ RUN apt-get update && \
 
 
 
-COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
-COPY ./scripts/ci_tasks/* ./ci_tasks/
-COPY ./scripts/lib/* ./lib/
-
-
 #
 # Switch to non-root ${USERNAME} context
 #
@@ -360,3 +355,7 @@ RUN echo "Installing Terraform ${versionTerraform}..." && \
     #
     echo ${versionRover} > /tf/rover/version.txt
 
+
+COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
+COPY ./scripts/ci_tasks/* ./ci_tasks/
+COPY ./scripts/lib/* ./lib/

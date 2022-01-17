@@ -8,25 +8,26 @@
 #
 
 group "default" {
-    targets = ["rover_local", "rover_registry"]
+  targets = ["rover_local", "rover_agents"]
 }
 
 target "rover_local" {
-    dockerfile = "./Dockerfile"
-    tags = ["rover-local:${tag}"]
-    args = {
-      versionPowershell    = versionPowershell
-      versionKubectl       = versionKubectl
-      versionTerraformDocs = versionTerraformDocs
-      versionVault         = versionVault
-      versionDockerCompose = versionDockerCompose
-      versionPacker        = versionPacker
-      extensionsAzureCli   = extensionsAzureCli
-      versionGolang        = versionGolang
-    }
-    platforms = ["linux/amd64","linux/arm64" ]
-    cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
-    cache-from = ["type=local,src=/tmp/.buildx-cache"]
+  dockerfile = "./Dockerfile"
+  tags = ["${registry}rover-local:${tag}"]
+  args = {
+    versionPowershell    = versionPowershell
+    versionKubectl       = versionKubectl
+    versionTerraformDocs = versionTerraformDocs
+    versionVault         = versionVault
+    versionDockerCompose = versionDockerCompose
+    versionPacker        = versionPacker
+    extensionsAzureCli   = extensionsAzureCli
+    versionGolang        = versionGolang
+    versionTerraform     = versionTerraform
+  }
+  platforms = ["linux/amd64","linux/arm64" ]
+  cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
+  cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
 
 target "rover_registry" {
@@ -38,6 +39,10 @@ target "rover_registry" {
   }
 }
 
+
+variable "registry" {
+    default = ""
+}
 
 variable "tag" {
     default = "latest"

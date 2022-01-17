@@ -31,7 +31,7 @@ RUN mkdir /home/${USERNAME}/agent
 
 WORKDIR /home/${USERNAME}/agent
 
-COPY ./gitlab/gitlab.sh .
+COPY ./agents/gitlab/gitlab.sh .
 
 RUN echo "Installing Gitlab runner ..." && \
     sudo curl -L --output /usr/local/bin/gitlab-runner "https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64" 2>&1 && \

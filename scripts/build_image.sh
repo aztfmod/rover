@@ -22,7 +22,8 @@ error() {
 }
 
 cleanup() {
-    docker buildx rm rover
+    docker buildx rm rover || true
+    docker rm --force registry_rover_tmp || true
 }
 
 set -ETe
@@ -58,59 +59,73 @@ function build_base_rover_image {
         "github")
             registry="aztfmod/"
             tag=${versionTerraform}-${tag_date_release}
-            rover="${registry}rover:${tag}"
+            rover_base="${registry}rover"
+            rover="${rover_base}:${tag}"
             export tag_strategy=""
             ;;
         "alpha")
             registry="aztfmod/"
             tag=${versionTerraform}-${tag_date_preview}
-            rover="${registry}rover-alpha:${tag}"
+            rover_base="${registry}rover-alpha"
+            rover="${rover_base}:${tag}"
             export tag_strategy="alpha-"
             ;;
         "dev")
             registry="aztfmod/"
             tag=${versionTerraform}-${tag_date_preview}
-            export rover="${registry}rover-preview:${tag}"
+            rover_base="${registry}rover-preview"
+            export rover="${rover_base}:${tag}"
             tag_strategy="preview-"
             ;;
         "ci")
             registry="symphonydev.azurecr.io/"
             tag=${versionTerraform}-${tag_date_preview}
-            export rover="${registry}rover-ci:${tag}"
+            rover_base="${registry}rover-ci"
+            export rover="${rover_base}:${tag}"
             tag_strategy="ci-"
             ;;
         "local")
-            registry=""
+            registry="localhost:5000/"
             tag=${versionTerraform}-${tag_date_preview}
-            export rover="${registry}rover-local:${tag}"
+            rover_base="${registry}rover-local"
+            export rover="${rover_base}:${tag}"
             tag_strategy="local-"
             ;;
     esac
 
     echo "Creating version ${rover}"
 
-    docker buildx create --use --name rover --bootstrap
-
     case "${strategy}" in
         "local")
             echo "Building rover locally"
             platform=$(uname -m)
-            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.platform=linux/${platform} --set *.args.versionTerraform=${versionTerraform} --set *.args.versionRover="${rover}" --load rover_local
+
+            registry="${registry}" \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake.hcl \
+                -f docker-bake.override.hcl \
+                --set *.platform=linux/${platform} \
+                --push rover_local
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
-            versionRover="${rover}" tag="${tag}" docker buildx bake -f docker-bake.hcl -f docker-bake.override.hcl --set *.args.versionTerraform=${versionTerraform} --set *.args.strategy=${strategy} --set *.args.versionRover="${rover}" --push rover_registry
+            registry="${registry}" \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake.hcl \
+                -f docker-bake.override.hcl \
+                --set *.platform=linux/${platform} \
+                --push rover_registry
             ;;
     esac
 
-    docker buildx rm rover
-
     echo "Image ${rover} created."
 
-    if [ "$strategy" != "local" ]; then
-        echo "Building CI/CD images."
-        build_rover_agents "${rover}" "${tag}" "${registry}"
-    fi
 
 }
 
@@ -120,39 +135,64 @@ function build_rover_agents {
     tag=${2}
     registry=${3}
 
+    tag=${versionTerraform}-${tag_date_preview}
+
     echo "@build_rover_agents"
     echo "Building agents with:"
     echo " - registry      - ${registry}"
-    echo " - version Rover - ${rover}"
+    echo " - version Rover - ${rover_base}:${tag}"
     echo " - tag           - ${tag}"
     echo " - strategy      - ${strategy}"
     echo " - tag_strategy  - ${tag_strategy}"
-    cd agents
-
-    if [ "$strategy" == "ci" ]; then
-        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose build  \
-            --build-arg versionRover="${rover}" gitlab
-    else
-        tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose build \
-            --build-arg versionRover="${rover}"
-    fi
 
     case "${strategy}" in
         "local")
+
+            registry="" \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake-agents.hcl \
+                -f docker-bake.override.hcl \
+                --load rover_agents
             ;;
         *)
             if [ "$strategy" == "ci" ]; then
-                tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose push gitlab
+                registry="${registry}" \
+                versionRover="${rover_base}:${tag}" \
+                versionTerraform=${versionTerraform} \
+                tag="${tag}" \
+                docker buildx bake \
+                    -f docker-bake-agents.hcl \
+                    -f docker-bake.override.hcl \
+                    --push gitlab
             else
-                tag="${tag}" registry="${registry}" tag_strategy="${tag_strategy}" docker compose push
+                registry="${registry}" \
+                versionRover="${rover_base}:${tag}" \
+                versionTerraform=${versionTerraform} \
+                tag="${tag}" \
+                docker buildx bake \
+                    -f docker-bake-agents.hcl \
+                    -f docker-bake.override.hcl \
+                    --push rover_agents
             fi
             ;;
     esac
 
-    echo "Agents created under tag ${tag} for registry '${registry}'"
-    cd ..
+    echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}github for registry '${registry}'"
 
 }
+
+
+docker buildx create --use --name rover --bootstrap --driver-opt network=host
+
+case "${strategy}" in
+    "local")
+        # In memory docker registry required to store base image in local registry. This is due to buildkit docker-container not having access to docker host cache.
+        docker run -d --name registry_rover_tmp --network=host registry:2 2>/dev/null || true
+        ;;
+esac
 
 echo "Building rover images."
 if [ "$strategy" == "ci" ]; then
@@ -161,5 +201,17 @@ else
     while read versionTerraform; do
         build_base_rover_image ${versionTerraform} ${strategy}
     done <./.env.terraform
+
+    while read versionTerraform; do
+        build_rover_agents "${rover}" "${tag}" "${registry}"
+    done <./.env.terraform
 fi
 
+
+case "${strategy}" in
+    "local")
+        docker rm --force registry_rover_tmp || true
+        ;;
+esac
+
+docker buildx rm rover

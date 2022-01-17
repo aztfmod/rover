@@ -27,7 +27,7 @@ RUN mkdir /home/${USERNAME}/agent
 
 WORKDIR /home/${USERNAME}/agent
 
-COPY ./github/github.sh .
+COPY ./agents/github/github.sh .
 
 RUN echo "Installing Github self-hosted runner ${versionGithubRunner}..." && \
     sudo curl -L -o ./github-runner.tar.gz https://github.com/actions/runner/releases/download/v${versionGithubRunner}/actions-runner-linux-x64-${versionGithubRunner}.tar.gz 2>&1 && \

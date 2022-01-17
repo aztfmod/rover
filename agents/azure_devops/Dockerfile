@@ -36,7 +36,7 @@ RUN mkdir /home/${USERNAME}/agent
 
 WORKDIR /home/${USERNAME}/agent
 
-COPY ./azure_devops/azdo.sh .
+COPY ./agents/azure_devops/azdo.sh .
 
 RUN echo "versionRover=${versionRover}" && \
     echo "CAF Rover Agent for Azure Devops" && \
