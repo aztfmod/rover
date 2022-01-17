@@ -24,6 +24,7 @@ target "rover_local" {
     versionRover         = versionRover
     versionTerraform     = versionTerraform
     versionTerraformDocs = versionTerraformDocs
+    versionTfLint        = versionTfLint
     versionVault         = versionVault
   }
   platforms = ["linux/amd64","linux/arm64" ]

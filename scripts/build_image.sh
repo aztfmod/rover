@@ -22,8 +22,8 @@ error() {
 }
 
 cleanup() {
-    docker buildx rm rover || true
-    docker rm --force registry_rover_tmp || true
+    docker buildx rm rover 2>/dev/null || true
+    docker rm --force registry_rover_tmp 2>/dev/null || true
 }
 
 set -ETe
