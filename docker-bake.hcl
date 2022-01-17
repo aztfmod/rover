@@ -13,17 +13,18 @@ group "default" {
 
 target "rover_local" {
   dockerfile = "./Dockerfile"
-  tags = ["${registry}rover-local:${tag}"]
+  tags = ["${tag}"]
   args = {
-    versionPowershell    = versionPowershell
+    extensionsAzureCli   = extensionsAzureCli
+    versionDockerCompose = versionDockerCompose
+    versionGolang        = versionGolang
     versionKubectl       = versionKubectl
+    versionPacker        = versionPacker
+    versionPowershell    = versionPowershell
+    versionRover         = versionRover
+    versionTerraform     = versionTerraform
     versionTerraformDocs = versionTerraformDocs
     versionVault         = versionVault
-    versionDockerCompose = versionDockerCompose
-    versionPacker        = versionPacker
-    extensionsAzureCli   = extensionsAzureCli
-    versionGolang        = versionGolang
-    versionTerraform     = versionTerraform
   }
   platforms = ["linux/amd64","linux/arm64" ]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
@@ -35,7 +36,6 @@ target "rover_registry" {
   tags = ["${versionRover}"]
   args = {
     image     = versionRover
-    strategy  = strategy
   }
 }
 
@@ -48,10 +48,10 @@ variable "tag" {
     default = "latest"
 }
 
-variable "strategy" {
+variable "versionRover" {
     default = ""
 }
 
-variable "versionRover" {
+variable "versionTerraform" {
     default = ""
 }

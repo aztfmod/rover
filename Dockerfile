@@ -45,7 +45,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     DEBCONF_NONINTERACTIVE_SEEN=true
 
 WORKDIR /tf/rover
-COPY ./.pip_to_patch_latest .
 COPY ./scripts/.kubectl_aliases .
 COPY ./scripts/zsh-autosuggestions.zsh .
 
@@ -346,14 +345,15 @@ ENV versionRover=${versionRover} \
 # Install Terraform
 #
 # Keeping this method to support alpha build installations 
-RUN echo "Installing Terraform ${versionTerraform}..." && \
+RUN echo  "Set rover version to ${versionRover}..." && echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/terraform.zip && \
     sudo chmod +x /usr/bin/terraform && \
     mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
     rm /tmp/terraform.zip && \
     #
-    echo ${versionRover} > /tf/rover/version.txt
+    echo  "Set rover version to ${versionRover}..." && \
+    echo "${versionRover}" > /tf/rover/version.txt
 
 
 COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./

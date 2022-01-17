@@ -103,19 +103,21 @@ function build_base_rover_image {
             registry="${registry}" \
             versionRover="${rover_base}:${tag}" \
             versionTerraform=${versionTerraform} \
-            tag="${tag}" \
+            tag="${rover}" \
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
                 --set *.platform=linux/${platform} \
                 --push rover_local
+            # Pull from in-memory local registry to local docker images
+            docker pull ${rover}
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
             registry="${registry}" \
             versionRover="${rover_base}:${tag}" \
             versionTerraform=${versionTerraform} \
-            tag="${tag}" \
+            tag="${rover}" \
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
