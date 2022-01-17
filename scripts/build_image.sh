@@ -121,7 +121,6 @@ function build_base_rover_image {
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
-                --set *.platform=linux/${platform} \
                 --push rover_registry
             ;;
     esac
