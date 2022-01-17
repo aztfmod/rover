@@ -23,6 +23,9 @@ fi
 LABELS+="runner-version-$(./run.sh --version),"
 LABELS+=$(cat /tf/rover/version.txt)
 
+# Grant access to the docker socket
+sudo chmod 666 /var/run/docker.sock
+
 ./config.sh \
   --unattended \
   --replace \
@@ -30,6 +33,5 @@ LABELS+=$(cat /tf/rover/version.txt)
   --token ${AGENT_TOKEN} \
   --labels ${LABELS} \
   --name ${AGENT_NAME} \
-
 
 ./run.sh

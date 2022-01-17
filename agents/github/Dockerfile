@@ -41,15 +41,14 @@ RUN echo "Installing Github self-hosted runner ${versionGithubRunner}..." && \
         curl -sSL -o /tmp/github-runner.tar.gz https://github.com/actions/runner/releases/download/v${versionGithubRunner}/actions-runner-linux-arm64-${versionGithubRunner}.tar.gz 2>&1 ; \
     fi \
     && sudo tar xzf /tmp/github-runner.tar.gz && \
-    sudo rm /tmp/github-runner.tar.gz && \
     sudo chmod +x ./config.sh ./run.sh ./env.sh ./github.sh && \
     sudo chown -R ${USERNAME} ./ && \
     #
     # Install dotnet core 6.0.x
     curl -sSL -o /tmp/dotnet-install.sh https://dot.net/v1/dotnet-install.sh && \
-    chmod +x /tmp/dotnet-install.sh && \
-    /tmp/dotnet-install.sh -c 6.0 --runtime dotnet -Verbose
+    sudo chmod +x /tmp/dotnet-install.sh && \
+    /tmp/dotnet-install.sh -c 6.0 --runtime dotnet -Verbose && \
     #
-    sudo apt upgrade -y
+    rm -rf /tmp/*
 
 ENTRYPOINT ["./github.sh"]
