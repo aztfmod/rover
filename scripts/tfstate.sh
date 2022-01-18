@@ -656,7 +656,7 @@ function get_storage_id {
     echo "@calling get_storage_id"
     id=$(execute_with_backoff az storage account list \
         --subscription ${TF_VAR_tfstate_subscription_id} \
-        --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'].{id:id}[0]" -o json | jq -r .id)
+        --query "[?((tags.caf_tfstate=='${TF_VAR_level}' && tags.caf_environment=='${TF_VAR_environment}') || (tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}'))].{id:id}[0]" -o json | jq -r .id)
 
     if [[ -z ${id} ]] && [ "${caf_command}" != "launchpad" ]; then
         # Check if other launchpad are installed
