@@ -13,7 +13,6 @@ ARG versionVault \
     versionPowershell \
     versionPacker \
     versionGolang \
-    versionTfLint \
     versionTerraformDocs \
     extensionsAzureCli \
     SSH_PASSWD \
@@ -29,7 +28,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionVault=${versionVault} \
     versionGolang=${versionGolang} \
     versionKubectl=${versionKubectl} \
-    versionTfLint=${versionTfLint}\
     versionDockerCompose=${versionDockerCompose} \
     versionTerraformDocs=${versionTerraformDocs} \
     versionPacker=${versionPacker} \
@@ -70,7 +68,6 @@ RUN apt-get update && \
     locales \
     make \
     openssh-server \
-    packer \
     python3-dev \
     python3-pip \
     software-properties-common \
@@ -103,11 +100,6 @@ RUN apt-get update && \
     #
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
     echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
-    #
-    # Add Terraform repository
-    #
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/hashicorp-archive-keyring.gpg && \
-    echo "deb [arch=${TARGETARCH}] https://apt.releases.hashicorp.com focal main" > /etc/apt/sources.list.d/hashicorp.list && \
     #
     # Kubernetes repo
     #
@@ -183,6 +175,13 @@ RUN apt-get update && \
     curl -L0 -o /usr/local/bin/kubectl-node_shell https://github.com/kvaps/kubectl-node-shell/raw/master/kubectl-node_shell && \
     chmod +x /usr/local/bin/kubectl-node_shell && \
     #
+    # Hashicorp Packer
+    #
+    echo "Installing Packer ${versionPacker}..." && \
+    curl -sSL -o /tmp/packer.zip https://releases.hashicorp.com/packer/${versionPacker}/packer_${versionPacker}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
+    unzip -d /usr/bin /tmp/packer.zip && \
+    chmod +x /usr/bin/packer && \
+    #
     # Hashicorp Vault
     #
     echo "Installing Vault ${versionVault}..." && \
@@ -242,8 +241,8 @@ RUN apt-get update && \
     echo "Installing caflint..." && \
     go install github.com/aztfmod/caflint@latest && \
     #
-    echo "Installing latest Tflint Ruleset for Azure ${versionTfLint} for ${TARGETOS} / ${TARGETARCH}... URL: https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip" && \
-    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/download/v${versionTfLint}/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
+    echo "Installing latest Tflint Ruleset for Azure" && \
+    curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/latest/download/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
     mkdir -p /home/${USERNAME}/.tflint.d/config  && \
     echo "plugin \"azurerm\" {" > /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \

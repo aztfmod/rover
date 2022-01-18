@@ -24,7 +24,6 @@ target "rover_local" {
     versionRover         = versionRover
     versionTerraform     = versionTerraform
     versionTerraformDocs = versionTerraformDocs
-    versionTfLint        = versionTfLint
     versionVault         = versionVault
   }
   platforms = ["linux/amd64","linux/arm64" ]
@@ -39,7 +38,6 @@ target "rover_registry" {
     image     = versionRover
   }
 }
-
 
 variable "registry" {
     default = ""
