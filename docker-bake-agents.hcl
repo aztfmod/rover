@@ -15,6 +15,10 @@ variable "tag" {
   default = ""
 }
 
+variable "tag_strategy" {
+  default = ""
+}
+
 variable "versionRover" {
   default = ""
 }
@@ -25,7 +29,7 @@ group "rover_agents" {
 
 target "github" {
   dockerfile = "./agents/github/Dockerfile"
-  tags = ["${registry}rover-agent:${tag}-github"]
+  tags = ["${registry}rover-agent:${tag}-${tag_strategy}github"]
   args = {
     versionGithubRunner = versionGithubRunner
     versionRover        = versionRover
@@ -38,20 +42,20 @@ target "github" {
 
 target "azdo" {
   dockerfile = "./agents/azure_devops/Dockerfile"
-  tags = ["${registry}rover-agent:${tag}-azdo"]
+  tags = ["${registry}rover-agent:${tag}-${tag_strategy}azdo"]
   args = {
     versionAzdo = versionAzdo
     versionRover = versionRover
     USERNAME     = USERNAME
   }
-  platforms = ["linux/amd64"]
+  platforms = ["linux/amd64","linux/arm64"]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
 
 target "tfc" {
   dockerfile = "./agents/tfc/Dockerfile"
-  tags = ["${registry}rover-agent:${tag}-tfc"]
+  tags = ["${registry}rover-agent:${tag}-${tag_strategy}tfc"]
   args = {
     versionTfc = versionTfc
     versionRover = versionRover
@@ -64,12 +68,12 @@ target "tfc" {
 
 target "gitlab" {
   dockerfile = "./agents/gitlab/Dockerfile"
-  tags = ["${registry}rover-agent:${tag}-gitlab"]
+  tags = ["${registry}rover-agent:${tag}-${tag_strategy}gitlab"]
   args = {
     versionRover = versionRover
     USERNAME     = USERNAME
   }
-  platforms = ["linux/amd64" ]
+  platforms = ["linux/amd64","linux/arm64"]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }

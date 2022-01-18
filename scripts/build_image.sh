@@ -152,6 +152,7 @@ function build_rover_agents {
             platform=$(uname -m)
 
             registry="" \
+            tag_strategy=${tag_strategy} \
             versionRover="${rover_base}:${tag}" \
             versionTerraform=${versionTerraform} \
             tag="${tag}" \
@@ -164,6 +165,7 @@ function build_rover_agents {
         *)
             if [ "$strategy" == "ci" ]; then
                 registry="${registry}" \
+                tag_strategy=${tag_strategy} \
                 versionRover="${rover_base}:${tag}" \
                 versionTerraform=${versionTerraform} \
                 tag="${tag}" \
@@ -173,6 +175,7 @@ function build_rover_agents {
                     --push gitlab
             else
                 registry="${registry}" \
+                tag_strategy=${tag_strategy} \
                 versionRover="${rover_base}:${tag}" \
                 versionTerraform=${versionTerraform} \
                 tag="${tag}" \
