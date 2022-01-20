@@ -2,16 +2,26 @@
     "files.eol": "\n",
     "terminal.integrated.defaultProfile.linux": "caf (zsh)",
     "editor.tabSize": 2,
-    "terminal.integrated.scrollback": 32000,
+    "terminal.integrated.scrollback": 64000,
     "terminal.integrated.profiles.linux": {
-        "caf (rover on docker)": {
-            "path": "docker-compose",
-            "args": ["-f", "rover_on_ssh_host.yml", "run", "-e", "ROVER_RUNNER=true", "--rm", "-w", "/tf/caf" ,"rover", "/usr/bin/zsh"],
+
+        // Do not try to run this profile from a remote:dev_container
+        "caf (rover on dockerd)": {
+            "path": "zsh",
+            "args": [
+                "-c", 
+                "docker compose -f ./.devcontainer/docker-compose.yml run -e ROVER_RUNNER=true --rm -w /tf/caf rover_ssh"],
             "overrideName": true
         },
         "caf (zsh)": {
             "path": "zsh",
             "overrideName": true
+        }
+    },
+    "markdownlint.config": {
+        "MD028": false,
+        "MD025": {
+            "front_matter_title": ""
         }
     }
 }

@@ -341,7 +341,7 @@ function login_as_launchpad {
     echo ""
     echo "Getting launchpad coordinates from subscription: ${TF_VAR_tfstate_subscription_id}"
 
-    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv)
+    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id})
     echo " - keyvault_name: ${keyvault}"
 
     stg=$(az storage account show --ids ${id} -o json)
