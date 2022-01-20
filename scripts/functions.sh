@@ -335,13 +335,17 @@ function list_deployed_landingzones {
     echo ""
 }
 
+function get_tfstate_keyvault_name {
+    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id})
+}
+
 function login_as_launchpad {
     echo "@calling login_as_launchpad"
 
     echo ""
     echo "Getting launchpad coordinates from subscription: ${TF_VAR_tfstate_subscription_id}"
 
-    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id})
+    get_tfstate_keyvault_name
     echo " - keyvault_name: ${keyvault}"
 
     stg=$(az storage account show --ids ${id} -o json)
@@ -624,7 +628,7 @@ function get_logged_user_object_id {
         unset TF_VAR_logged_user_objectId
         export clientId=$(az account show --query user.name -o tsv)
 
-        export keyvault=$(az keyvault list --subscription ${TF_VAR_tfstate_subscription_id} --query "[?tags.tfstate=='${TF_VAR_level}' && tags.environment=='${TF_VAR_environment}']" -o json | jq -r .[0].name)
+        get_tfstate_keyvault_name
 
         case "${clientId}" in
             "systemAssignedIdentity")
@@ -707,13 +711,13 @@ function deploy {
                 fi
             else
                 error ${LINENO} "You need to initialise a launchpad first with the command \n
-                rover /tf/caf/landingzones/launchpad [plan | apply | destroy] -launchpad" 1000
+                rover /tf/caf/landingzones/caf_launchpad [plan | apply | destroy] -launchpad" 1000
             fi
             ;;
         *)
 
             # Get the launchpad version
-            caf_launchpad=$(az storage account show --ids $id -o json | jq -r .tags.launchpad)
+            caf_launchpad=$(az storage account show --ids $id -o json | jq -r ".tags | .caf_launchpad,.launchpad | select( . != null )")
             echo ""
             echo "${caf_launchpad} already installed"
             echo ""
