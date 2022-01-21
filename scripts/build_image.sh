@@ -136,19 +136,19 @@ function build_rover_agents {
     tag=${2}
     registry=${3}
 
-    tag=${versionTerraform}-${tag_date_preview}
 
     echo "@build_rover_agents"
     echo "Building agents with:"
     echo " - registry      - ${registry}"
     echo " - version Rover - ${rover_base}:${tag}"
-    echo " - tag           - ${tag}"
     echo " - strategy      - ${strategy}"
     echo " - tag_strategy  - ${tag_strategy}"
 
+    tag=${versionTerraform}-${tag_date_preview}
+
     case "${strategy}" in
         "local")
-
+            echo " - tag           - ${tag}"
             platform=$(uname -m)
 
             registry="" \
@@ -162,28 +162,43 @@ function build_rover_agents {
                 --set *.platform=linux/${platform} \
                 --load rover_agents
             ;;
+        "github")
+            tag=${versionTerraform}-${tag_date_release}
+            echo " - tag           - ${tag}"
+
+            registry="${registry}" \
+            tag_strategy=${tag_strategy} \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake-agents.hcl \
+                -f docker-bake.override.hcl \
+                --load rover_agents
+            ;;
+        "ci")
+            echo " - tag           - ${tag}"
+            registry="${registry}" \
+            tag_strategy=${tag_strategy} \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake-agents.hcl \
+                -f docker-bake.override.hcl \
+                --push gitlab
+            ;;
         *)
-            if [ "$strategy" == "ci" ]; then
-                registry="${registry}" \
-                tag_strategy=${tag_strategy} \
-                versionRover="${rover_base}:${tag}" \
-                versionTerraform=${versionTerraform} \
-                tag="${tag}" \
-                docker buildx bake \
-                    -f docker-bake-agents.hcl \
-                    -f docker-bake.override.hcl \
-                    --push gitlab
-            else
-                registry="${registry}" \
-                tag_strategy=${tag_strategy} \
-                versionRover="${rover_base}:${tag}" \
-                versionTerraform=${versionTerraform} \
-                tag="${tag}" \
-                docker buildx bake \
-                    -f docker-bake-agents.hcl \
-                    -f docker-bake.override.hcl \
-                    --push rover_agents
-            fi
+            echo " - tag           - ${tag}"
+            registry="${registry}" \
+            tag_strategy=${tag_strategy} \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake-agents.hcl \
+                -f docker-bake.override.hcl \
+                --push rover_agents
             ;;
     esac
 
