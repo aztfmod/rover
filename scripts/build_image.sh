@@ -174,7 +174,7 @@ function build_rover_agents {
             docker buildx bake \
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
-                --load rover_agents
+                --push rover_agents
             ;;
         "ci")
             echo " - tag           - ${tag}"
