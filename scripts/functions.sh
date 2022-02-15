@@ -461,7 +461,7 @@ function workspace_list {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --auth-mode "login" \
         --account-name ${storage_account_name} -o json |
-        jq -r '["workspace", "last modification", "lease ststus"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
+        jq -r '["workspace", "last modification", "lease status"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
         column -t -s ','
 
     echo ""
