@@ -1,8 +1,8 @@
 # Base image tools version
 extensionsAzureCli="resource-graph"
 versionDockerCompose="2.2.3"
-versionGolang="1.17.6"
-versionKubectl="1.22.1"
+versionGolang="1.17.7"
+versionKubectl="1.23.3"
 versionPacker="1.7.10"
 versionPowershell="7.2.1"
 versionTerraformDocs="0.16.0"
