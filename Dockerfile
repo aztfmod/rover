@@ -72,6 +72,7 @@ RUN apt-get update && \
     python3-pip \
     software-properties-common \
     sudo \
+    openvpn \
     unzip \
     vim \
     wget \
@@ -105,10 +106,14 @@ RUN apt-get update && \
     #
     curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
-    # #
+    #
+    # Github shell
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
     apt-get update && \
     apt-get install -y --no-install-recommends \
     docker-ce-cli \
+    gh \
     kubectl && \
     #
     # ################# Install binary clients ###################
@@ -123,7 +128,7 @@ RUN apt-get update && \
     else  \
         curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-aarch64 ; \
     fi  \
-    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose && \   
+    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose && \
     #
     # Install Helm
     #
@@ -338,7 +343,7 @@ ENV versionRover=${versionRover} \
 #
 # Install Terraform
 #
-# Keeping this method to support alpha build installations 
+# Keeping this method to support alpha build installations
 RUN echo  "Set rover version to ${versionRover}..." && echo "Installing Terraform ${versionTerraform}..." && \
     curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     sudo unzip -d /usr/bin /tmp/terraform.zip && \

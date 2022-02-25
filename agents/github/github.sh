@@ -3,11 +3,12 @@
 set -Ee
 
 function finally {
+  echo "Trapped: $1"
   echo "Un-register the runner"
   ./config.sh remove --unattended
 }
 
-trap finally EXIT SIGTERM
+trap finally EXIT SIGTERM SIGKILL TERM
 
 AGENT_NAME=${AGENT_NAME:="agent"}
 
@@ -20,11 +21,16 @@ else
   AGENT_TOKEN=$(az keyvault secret show -n ${KEYVAULT_SECRET} --vault-name ${KEYVAULT_NAME} -o json | jq -r .value)
 fi
 
-LABELS+="runner-version-$(./run.sh --version),"
+LABELS+=",runner-version-$(./run.sh --version),"
 LABELS+=$(cat /tf/rover/version.txt)
 
 # Grant access to the docker socket
-sudo chmod 666 /var/run/docker.sock
+sudo chmod 666 /var/run/docker.sock || true
+
+echo "Configuring the agent with:"
+echo " - url: ${URL}"
+echo " - labels: ${LABELS}"
+echo " - name: ${AGENT_NAME}"
 
 ./config.sh \
   --unattended \
