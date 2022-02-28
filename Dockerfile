@@ -174,6 +174,7 @@ RUN apt-get update && \
     echo "Installing PowerShell modules..." && \
     pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
     pwsh -Command Install-Module -name Az.Resources -Force && \
+    pwsh -Command Install-Module -name Az.Accounts -Force && \
     #
     # kubectl node shell
     #
