@@ -38,6 +38,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
     TF_REGISTRY_DISCOVERY_RETRY=5 \
     TF_REGISTRY_CLIENT_TIMEOUT=15 \
+    ARM_USE_MSGRAPH=true \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
