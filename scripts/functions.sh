@@ -640,18 +640,18 @@ function get_logged_user_object_id {
                     export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
                 else
                     echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv)
-                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv)
+                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv 2>/dev/null)
+                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv 2>/dev/null)
                 fi
                 ;;
             "userAssignedIdentity")
                 msi=$(az account show | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource | jq -r .principalId)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource | jq -r .principalId) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids $msiResource | jq -r .clientId)
-                export ARM_TENANT_ID=$(az identity show --ids $msiResource | jq -r .tenantId)
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv 2>/dev/null)
+                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv 2>/dev/null)
                 ;;
             *)
                 # Service Principal
