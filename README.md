@@ -31,10 +31,8 @@ The rover is available from the Docker Hub in form of:
 
 ### Getting starter with CAF Terraform landing zones
 
-Get your Cloud Adoption Framework Terraform landing zones project starter here:  [caf-terraform-landingzones-starter](https://github.com/azure/caf-terraform-landingzones-starter)
-
-
-[![asciicast](https://asciinema.org/a/413478.svg)](https://asciinema.org/a/413478)
+If you are reading this, you are probably interested also in reading the doc as below:
+:books: Read our [centralized documentation page](https://aka.ms/caf/terraform)
 
 ## Community
 
