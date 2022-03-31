@@ -401,6 +401,10 @@ function deploy_landingzone {
         echo "calling validate"
         validate
         ;;
+    "show")
+        echo "calling show"
+        show
+        ;;
     "destroy")
         echo "calling destroy"
         destroy
@@ -731,7 +735,7 @@ function deploy {
                 "destroy")
                     destroy_from_remote_state
                     ;;
-                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
+                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show"|"show")
                     deploy_from_remote_state
                     ;;
                 *)
