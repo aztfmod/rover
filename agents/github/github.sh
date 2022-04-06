@@ -34,6 +34,7 @@ echo " - name: ${AGENT_NAME}"
 
 ./config.sh \
   --unattended \
+  --disableupdate \
   --replace \
   --url ${URL} \
   --token ${AGENT_TOKEN} \
