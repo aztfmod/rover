@@ -682,7 +682,7 @@ function get_storage_id {
                 --subscription ${TF_VAR_tfstate_subscription_id} \
                 --query "[?tags.tfstate=='${TF_VAR_level}'].{name:name,environment:tags.environment, launchpad:tags.launchpad}" -o table
 
-            exit 0
+            exit 1
         fi
     fi
 }
