@@ -6,11 +6,11 @@ versionKubectl="1.23.3"
 versionPacker="1.8.0"
 versionPowershell="7.2.2"
 versionTerraformDocs="0.16.0"
-versionVault="1.9.4"
+versionVault="1.10.0"
 
 # Agents versions
 USERNAME="vscode"
 versionAzdo="2.200.2"
-versionGithubRunner="2.289.1"
+versionGithubRunner="2.289.2"
 versionGitlab="14.7.5"
 versionTfc="1.1.2"
