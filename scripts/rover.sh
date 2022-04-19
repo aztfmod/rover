@@ -8,6 +8,7 @@ source /tf/rover/lib/logger.sh
 source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate.sh
+source /tf/rover/tfc.sh
 source /tf/rover/functions.sh
 source /tf/rover/parse_command.sh
 source /tf/rover/banner.sh

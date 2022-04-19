@@ -96,7 +96,7 @@ function process_actions {
             ;;
         tfc)
             verify_parameters
-            deploy_tfc ${TF_VAR_workspace}
+            deploy ${TF_VAR_workspace}
             ;;
         ci)
             register_ci_tasks
@@ -733,6 +733,9 @@ function deploy {
                     ;;
                 "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
                     deploy_from_remote_state
+                    ;;
+                "migrate")
+                    migrate
                     ;;
                 *)
                     display_instructions

@@ -2,36 +2,6 @@ function deploy_tfc {
 
     echo "@calling_deploy_tfc"
     initialize_state_tfc
-}
-
-function initialize_state_tfc {
-    echo "@calling initialize_state for tfc/tfe"
-
-    echo "Installing launchpad from ${landingzone_name}"
-    cd ${landingzone_name}
-
-    sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
-    sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-    rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
-
-    cp -f /tf/rover/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
-
-    get_logged_user_object_id
-
-    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
-    export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
-    export STDERR_FILE="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
-
-    mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-    terraform init \
-        -get-plugins=true \
-        -upgrade=true \
-        -reconfigure \
-        -backend-config=${landingzone_name}/backend.hcl \
-        ${landingzone_name}
-
-    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
 
     case "${tf_action}" in
         "plan")
@@ -58,6 +28,48 @@ function initialize_state_tfc {
     rm -rf backend.azurerm.tf
 
     cd "${current_path}"
+}
+
+function initialize_state_tfc {
+    echo "@calling initialize_state for tfc/tfe"
+
+    echo "Installing launchpad from ${landingzone_name}"
+    cd ${landingzone_name}
+
+    sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
+
+    cp -f /tf/rover/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
+
+    get_logged_user_object_id
+
+    export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename $(pwd)).tfstate"}
+    export TF_VAR_tf_plan=${TF_VAR_tf_plan:="$(basename $(pwd)).tfplan"}
+    export STDERR_FILE="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/$(basename $(pwd))_stderr.txt"
+
+    mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+
+
+    case "${tf_action}" in
+        "migrate")
+            terraform -chdir=${landingzone_name} \
+                init \
+                -upgrade \
+                -migrate-state \
+                -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+            ;;
+        *)
+            rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
+            terraform -chdir=${landingzone_name} \
+                init \
+                -upgrade \
+                -reconfigure \
+                -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+            ;;
+    esac
+
+    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+
+
 }
 
 function plan_tfc {
@@ -146,4 +158,26 @@ function destroy_tfc {
         error ${LINENO} "Error running terraform apply" $RETURN_CODE
     fi
 
+}
+
+function migrate {
+    case "${TF_backend_type}" in
+        tfc)
+            login_as_launchpad
+            migrate_to_tfc
+            ;;
+        *)
+            error ${LINENO} "Only migration from azurerm to Terraform Cloud or Enterprise is supported." 1
+    esac
+
+}
+
+function migrate_to_tfc {
+    tfstate_configure 'azurerm'
+    terraform_init_remote_azurerm
+
+    tfstate_configure 'tfc'
+    initialize_state_tfc
+
+    echo "Migration complete to TFC/TFE."
 }
