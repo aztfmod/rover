@@ -1,24 +1,24 @@
-function deploy_tfc {
+function deploy_remote {
+    echo "@calling deploy_remote"
 
-    echo "@calling_deploy_tfc"
-    initialize_state_tfc
+    initialize_state_remote
 
     case "${tf_action}" in
         "plan")
             echo "calling plan"
-            plan_tfc
+            plan_remote
             ;;
         "apply")
             echo "calling plan and apply"
-            plan_tfc
-            apply_tfc
+            plan_remote
+            apply_remote
             ;;
         "validate")
             echo "calling validate"
             validate
             ;;
         "destroy")
-            destroy_tfc
+            destroy_remote
             ;;
         *)
             other
@@ -30,8 +30,53 @@ function deploy_tfc {
     cd "${current_path}"
 }
 
-function initialize_state_tfc {
-    echo "@calling initialize_state for tfc/tfe"
+function get_remote_token {
+    echo "@calling get_remote_token"
+
+    if [ -z "${REMOTE_credential_path_json}" -o -z "${REMOTE_hostname}" ]
+    then
+        error ${LINENO} "You must provide REMOTE_credential_path_json and REMOTE_hostname'." 1
+    fi
+
+    echo "Getting token from ${REMOTE_credential_path_json} for ${REMOTE_hostname}"
+
+    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${REMOTE_hostname}\".token)}
+
+    if [ -z "${REMOTE_ORG_TOKEN}" ]; then
+        error ${LINENO} "You must provide either a REMOTE_ORG_TOKEN token or run 'terraform login'." 1
+    fi
+}
+
+function create_workspace {
+    echo "@calling create_workspace"
+
+    get_remote_token
+    CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
+
+    cat <<EOF > ${CONFIG_PATH}/payload.json
+{
+  "data": {
+    "attributes": {
+      "name": "${TF_VAR_workspace}",
+      "execution-mode": "local"
+    },
+    "type": "workspaces"
+  }
+}
+EOF
+
+    echo "Trigger workspace creation."
+    
+    curl -s \
+        --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
+        --header "Content-Type: application/vnd.api+json" \
+        --request POST \
+        --data @${CONFIG_PATH}/payload.json \
+        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
+}
+
+function initialize_state_remote {
+    echo "@calling initialize_state_remote"
 
     echo "Installing launchpad from ${landingzone_name}"
     cd ${landingzone_name}
@@ -51,11 +96,13 @@ function initialize_state_tfc {
 
     case "${tf_action}" in
         "migrate")
+            migrate_command=$(purge_command migrate ${tf_command} $1)
+            create_workspace
             terraform -chdir=${landingzone_name} \
-                init \
+                init ${migrate_command} \
                 -upgrade \
                 -migrate-state \
-                -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+                -backend-config=${landingzone_name}/backend.hcl  | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
             rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
@@ -72,8 +119,8 @@ function initialize_state_tfc {
 
 }
 
-function plan_tfc {
-    echo "@calling plan for tfc/tfe"
+function plan_remote {
+    echo "@calling plan_remote"
 
     echo "running terraform plan with ${tf_command}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
@@ -110,8 +157,8 @@ function plan_tfc {
     fi
 }
 
-function apply_tfc {
-    echo "@calling apply tfc/tfe"
+function apply_remote {
+    echo "@calling apply_remote"
 
     echo 'running terraform apply'
     rm -f $STDERR_FILE
@@ -135,8 +182,8 @@ function apply_tfc {
 
 }
 
-function destroy_tfc {
-    echo "@calling destroy tfc/tfe"
+function destroy_remote {
+    echo "@calling destroy_remote"
 
     echo 'running terraform destroy'
     rm -f $STDERR_FILE
@@ -161,10 +208,10 @@ function destroy_tfc {
 }
 
 function migrate {
-    case "${TF_backend_type}" in
-        tfc)
+    case "${REMOTE_backend_type}" in
+        remote)
             login_as_launchpad
-            migrate_to_tfc
+            migrate_to_remote
             ;;
         *)
             error ${LINENO} "Only migration from azurerm to Terraform Cloud or Enterprise is supported." 1
@@ -172,12 +219,12 @@ function migrate {
 
 }
 
-function migrate_to_tfc {
+function migrate_to_remote {
     tfstate_configure 'azurerm'
     terraform_init_remote_azurerm
 
-    tfstate_configure 'tfc'
-    initialize_state_tfc
+    tfstate_configure 'remote'
+    initialize_state_remote
 
-    echo "Migration complete to TFC/TFE."
+    echo "Migration complete to remote."
 }

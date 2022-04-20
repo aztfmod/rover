@@ -40,9 +40,27 @@ function purge_command {
       shift 1
       purge_command_plan $@
       ;;
+    migrate)
+      shift 1
+      purge_command_migrate $@
+      ;;
   esac
 
   echo $PARAMS
+}
+
+function purge_command_migrate {
+  while (( "$#" )); do
+    case "${1}" in
+      -var-file)
+        shift 2
+        ;;
+      *)
+        PARAMS+="${1} "
+        shift 1
+        ;;
+    esac
+  done
 }
 
 function purge_command_graph {

@@ -94,7 +94,7 @@ function process_actions {
             verify_parameters
             deploy ${TF_VAR_workspace}
             ;;
-        tfc)
+        tfc|remote)
             verify_parameters
             deploy ${TF_VAR_workspace}
             ;;

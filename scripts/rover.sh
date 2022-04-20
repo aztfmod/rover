@@ -8,7 +8,7 @@ source /tf/rover/lib/logger.sh
 source /tf/rover/clone.sh
 source /tf/rover/walkthrough.sh
 source /tf/rover/tfstate.sh
-source /tf/rover/tfc.sh
+source /tf/rover/remote.sh
 source /tf/rover/functions.sh
 source /tf/rover/parse_command.sh
 source /tf/rover/banner.sh
@@ -37,8 +37,9 @@ export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
 export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
-export TF_backend_type=${TF_backend_type:="azurerm"}
-export TFC_hostname=${TFC_hostname:="app.terraform.io"}
+export REMOTE_backend_type=${REMOTE_backend_type:="azurerm"}
+export REMOTE_hostname=${REMOTE_hostname:="app.terraform.io"}
+export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
 
 unset PARAMS
 
@@ -161,18 +162,18 @@ while (( "$#" )); do
             export base_directory=$(parameter_value --base-dir ${2})
             shift 2
             ;;
-        -tfc|--tfc)
+        -tfc|--tfc|-remote|--remote)
             shift 1
-            export TF_backend_type="tfc"
+            export REMOTE_backend_type="remote"
             ;;
-        -tfc_organization|--tfc_organization)
-            export TFC_organization="${2}"
-            export TF_backend_type="tfc"
+        -REMOTE_organization|--REMOTE_organization|-remote_organization|--remote_organization)
+            export REMOTE_organization="${2}"
+            export REMOTE_backend_type="remote"
             shift 2
             ;;
-        -tfc_hostname|--tfc_hostname)
-            export TFC_hostname="${2}"
-            export TF_backend_type="tfc"
+        -REMOTE_hostname|--REMOTE_hostname|-remote_hostname|--remote_hostname)
+            export REMOTE_hostname="${2}"
+            export REMOTE_backend_type="remote"
             shift 2
             ;;
         -t|--tenant)
@@ -202,7 +203,7 @@ while (( "$#" )); do
                 ;;
         -launchpad)
                 export caf_command="launchpad"
-                export TF_DATA_DIR="$(echo ~)/.terraform.cache/launchpad"
+                export TF_DATA_DIR=${TF_DATA_DIR:="$(echo ~)/.terraform.cache/launchpad"}
                 shift 1
                 ;;
         -o|--output)
@@ -299,7 +300,7 @@ if [ "${caf_command}" != "walkthrough" ]; then
   echo "level (current)               : '$(echo ${TF_VAR_level})'"
   echo "environment                   : '$(echo ${TF_VAR_environment})'"
   echo "workspace                     : '$(echo ${TF_VAR_workspace})'"
-  echo "terraform backend type        : '$(echo ${TF_backend_type})'"
+  echo "terraform backend type        : '$(echo ${REMOTE_backend_type})'"
   echo "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
   echo "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
   echo "target subscription           : '$(echo ${target_subscription_name})'"
