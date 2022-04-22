@@ -51,6 +51,15 @@ function create_workspace {
     echo "@calling create_workspace"
 
     get_remote_token
+
+    workspace=$(curl -s \
+        --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
+        --header "Content-Type: application/vnd.api+json" \
+        --request GET \
+        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace}" | jq -r .data)
+
+    if [ "${workspace}" == "[]" ]; then
+
     CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
     cat <<EOF > ${CONFIG_PATH}/payload.json
@@ -66,13 +75,15 @@ function create_workspace {
 EOF
 
     echo "Trigger workspace creation."
-    
+
     curl -s \
         --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
         --header "Content-Type: application/vnd.api+json" \
         --request POST \
         --data @${CONFIG_PATH}/payload.json \
         https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
+
+    fi
 }
 
 function initialize_state_remote {

@@ -69,6 +69,9 @@ function purge_command_graph {
       -var-file)
         shift 2
         ;;
+      -parallelism=*)
+        shift 1
+        ;;
       *)
         PARAMS+="${1} "
         shift 1
