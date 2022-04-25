@@ -56,7 +56,7 @@ function create_workspace {
         --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
         --header "Content-Type: application/vnd.api+json" \
         --request GET \
-        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace}" | jq -r .data)
+        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
 
     if [ "${workspace}" == "[]" ]; then
 
