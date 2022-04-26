@@ -276,21 +276,21 @@ function login_as_sp_from_keyvault_secrets {
     information "Getting secrets from keyvault ${keyvault_url} ..."
 
     # Test permissions
-    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv | read CLIENT_ID
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv  --only-show-errors | read CLIENT_ID
 
     if [ ! -z "${tenant}" ]; then
         export ARM_TENANT_ID=${tenant}
     else
-        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv --only-show-errors)
     fi
 
     information "Login to azure with tenant ${ARM_TENANT_ID}"
 
-    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
-    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
+    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv --only-show-errors)
+    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv --only-show-errors)
 
     information "Loging with service principal"
-    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID} 1> /dev/null
+    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
 
     set +e
     trap - ERR
@@ -315,7 +315,7 @@ function check_subscription_required_role {
 function list_deployed_landingzones {
     echo "@calling list_deployed_landingzones"
 
-    stg=$(az storage account show --ids ${id} -o json)
+    stg=$(az storage account show --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
 
@@ -336,7 +336,7 @@ function list_deployed_landingzones {
 }
 
 function get_tfstate_keyvault_name {
-    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id})
+    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id} 2>/dev/null)
 }
 
 function login_as_launchpad {
@@ -348,9 +348,9 @@ function login_as_launchpad {
     get_tfstate_keyvault_name
     echo " - keyvault_name: ${keyvault}"
 
-    stg=$(az storage account show --ids ${id} -o json)
+    stg=$(az storage account show --ids ${id} -o json --only-show-errors)
 
-    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${TF_VAR_tenant_id}"
+    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value --only-show-errors) && echo " - tenant_id : ${TF_VAR_tenant_id}"
 
     # If the logged in user does not have access to the launchpad
     if [ "${TF_VAR_tenant_id}" == "" ]; then
@@ -451,7 +451,7 @@ function workspace_list {
     echo " Calling workspace_list function"
     stg=$(az storage account show \
         --ids ${id} \
-        -o json)
+        -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -460,7 +460,7 @@ function workspace_list {
     az storage container list \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --auth-mode "login" \
-        --account-name ${storage_account_name} -o json |
+        --account-name ${storage_account_name} -o json  --only-show-errors |
         jq -r '["workspace", "last modification", "lease status"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
         column -t -s ','
 
@@ -472,7 +472,7 @@ function workspace_create {
 
     echo " Calling workspace_create function"
     stg=$(az storage account show \
-        --ids ${id} -o json)
+        --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -482,7 +482,7 @@ function workspace_create {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
         --auth-mode login \
-        --account-name ${storage_account_name}
+        --account-name ${storage_account_name} --only-show-errors
 
     mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
@@ -493,7 +493,7 @@ function workspace_delete {
     echo "@calling workspace_delete"
 
     stg=$(az storage account show \
-        --ids ${id} -o json)
+        --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -503,7 +503,7 @@ function workspace_delete {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
         --auth-mode login \
-        --account-name ${storage_account_name}
+        --account-name ${storage_account_name} --only-show-errors
 
     mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
@@ -550,7 +550,7 @@ function get_resource_from_assignedIdentityInfo {
         msiResource=${msi//MSIResource-/}
         ;;
     *"MSIClient"*)
-        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv)
+        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv --only-show-errors)
         ;;
     *)
         echo "Warning: MSI identifier unknown."
@@ -567,7 +567,7 @@ function export_azure_cloud_env {
     # Set cloud variables for terraform
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
-    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
+    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv --only-show-errors)
 
     if [ -z "$cloud_name" ]; then
 
@@ -599,14 +599,14 @@ function export_azure_cloud_env {
     while IFS="=" read key value; do
         log_debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
-    done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
+    done < <(az cloud show --only-show-errors | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
 
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
     export TF_VAR_user_type=$(az account show \
-        --query user.type -o tsv)
+        --query user.type -o tsv --only-show-errors)
 
     export_azure_cloud_env
 
@@ -618,15 +618,15 @@ function get_logged_user_object_id {
         unset ARM_CLIENT_SECRET
         unset TF_VAR_logged_aad_app_objectId
 
-        export ARM_TENANT_ID=$(az account show -o json | jq -r .tenantId)
-        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
-        export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+        export ARM_TENANT_ID=$(az account show -o json --only-show-errors | jq -r .tenantId)
+        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv --only-show-errors)
+        export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors)
         echo " - logged in user objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
 
-        echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv)"
+        echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors)"
     else
         unset TF_VAR_logged_user_objectId
-        export clientId=$(az account show --query user.name -o tsv)
+        export clientId=$(az account show --query user.name -o tsv --only-show-errors)
 
         get_tfstate_keyvault_name
 
@@ -637,28 +637,28 @@ function get_logged_user_object_id {
                     principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
                     echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
                     export TF_VAR_logged_user_objectId=${principalId}
-                    export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
+                    export ARM_TENANT_ID=$(az account show --only-show-errors | jq -r .tenantId)
                 else
                     echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv 2>/dev/null)
-                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv 2>/dev/null)
+                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv --only-show-errors 2>/dev/null)
+                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 fi
                 ;;
             "userAssignedIdentity")
-                msi=$(az account show | jq -r .user.assignedIdentityInfo)
+                msi=$(az account show --only-show-errors | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv 2>/dev/null)
-                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv 2>/dev/null)
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv --only-show-errors 2>/dev/null)
+                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 ;;
             *)
                 # Service Principal
                 # When connected with a service account the name contains the objectId
-                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
-                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv 2>/dev/null)"
+                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
                 ;;
         esac
 
@@ -821,7 +821,7 @@ function process_target_subscription {
         az account set -s "${target_subscription}"
     fi
 
-    account=$(az account show -o json)
+    account=$(az account show -o json --only-show-errors)
 
     target_subscription_name=$(echo ${account} | jq -r .name)
     target_subscription_id=$(echo ${account} | jq -r .id)
@@ -850,7 +850,7 @@ function process_target_subscription {
     echo ${account} | jq -r
 
     echo "debug: ${TF_VAR_tfstate_subscription_id}"
-    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json | jq -r .name)
+    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json --only-show-errors | jq -r .name)
     echo "Tfstates subscription set to ${TF_VAR_tfstate_subscription_id} (${tfstate_subscription_name})"
     echo ""
 
