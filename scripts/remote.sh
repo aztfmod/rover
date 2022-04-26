@@ -2,6 +2,8 @@ function deploy_remote {
     echo "@calling deploy_remote"
 
     initialize_state_remote
+    get_logged_user_object_id
+    
 
     case "${tf_action}" in
         "plan")
