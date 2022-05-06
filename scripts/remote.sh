@@ -3,7 +3,7 @@ function deploy_remote {
 
     initialize_state_remote
     get_logged_user_object_id
-    
+
 
     case "${tf_action}" in
         "plan")
@@ -35,14 +35,14 @@ function deploy_remote {
 function get_remote_token {
     echo "@calling get_remote_token"
 
-    if [ -z "${REMOTE_credential_path_json}" -o -z "${REMOTE_hostname}" ]
+    if [ -z "${REMOTE_credential_path_json}" -o -z "${TF_CLOUD_HOSTNAME}" ]
     then
-        error ${LINENO} "You must provide REMOTE_credential_path_json and REMOTE_hostname'." 1
+        error ${LINENO} "You must provide REMOTE_credential_path_json and TF_CLOUD_HOSTNAME'." 1
     fi
 
-    echo "Getting token from ${REMOTE_credential_path_json} for ${REMOTE_hostname}"
+    echo "Getting token from ${REMOTE_credential_path_json} for ${TF_CLOUD_HOSTNAME}"
 
-    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${REMOTE_hostname}\".token)}
+    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${TF_CLOUD_HOSTNAME}\".token)}
 
     if [ -z "${REMOTE_ORG_TOKEN}" ]; then
         error ${LINENO} "You must provide either a REMOTE_ORG_TOKEN token or run 'terraform login'." 1
@@ -58,7 +58,7 @@ function create_workspace {
         --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
         --header "Content-Type: application/vnd.api+json" \
         --request GET \
-        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
+        https://${TF_CLOUD_HOSTNAME}/api/v2/organizations/${TF_CLOUD_ORGANIZATION}/workspaces?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
 
     if [ "${workspace}" == "[]" ]; then
 
@@ -83,7 +83,7 @@ EOF
         --header "Content-Type: application/vnd.api+json" \
         --request POST \
         --data @${CONFIG_PATH}/payload.json \
-        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
+        https://${TF_CLOUD_HOSTNAME}/api/v2/organizations/${TF_CLOUD_ORGANIZATION}/workspaces
 
     fi
 }

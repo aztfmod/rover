@@ -38,8 +38,9 @@ export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
 export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
 export REMOTE_backend_type=${REMOTE_backend_type:="azurerm"}
-export REMOTE_hostname=${REMOTE_hostname:="app.terraform.io"}
+export REMOTE_hostname=${TF_CLOUD_ORGANIZATION:="app.terraform.io"}
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
+
 
 unset PARAMS
 
@@ -167,7 +168,7 @@ while (( "$#" )); do
             export REMOTE_backend_type="remote"
             ;;
         -REMOTE_organization|--REMOTE_organization|-remote_organization|--remote_organization)
-            export REMOTE_organization="${2}"
+            export TF_CLOUD_HOSTNAME="${2}"
             export REMOTE_backend_type="remote"
             shift 2
             ;;
