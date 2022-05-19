@@ -651,7 +651,7 @@ function get_logged_user_object_id {
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv --only-show-errors 2>/dev/null)
-                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv --only-show-errors 2>/dev/null)
+                #export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 ;;
             *)
                 # Service Principal
