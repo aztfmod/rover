@@ -289,8 +289,9 @@ function login_as_sp_from_keyvault_secrets {
     export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv --only-show-errors)
     export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv --only-show-errors)
 
-    information "Loging with service principal"
+    information "Login with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
+    az account set -s ${target_subscription}
 
     set +e
     trap - ERR
