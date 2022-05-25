@@ -5,7 +5,6 @@ function deploy_remote {
 
     terraform_init_remote
     get_logged_user_object_id
-    
     case "${tf_action}" in
         "plan")
             echo "calling plan"
@@ -123,7 +122,7 @@ function apply_remote {
 
         local tf_plan_file="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
     fi
-    
+
     terraform -chdir=${landingzone_name} \
         apply \
         -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \

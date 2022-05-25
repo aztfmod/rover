@@ -41,7 +41,8 @@ export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
 export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
-export REMOTE_hostname=${REMOTE_hostname:="app.terraform.io"}
+export REMOTE_backend_type=${REMOTE_backend_type:="azurerm"}
+export REMOTE_hostname=${TF_CLOUD_ORGANIZATION:="app.terraform.io"}
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
 export gitops_pipelines="github"
 export gitops_terraform_backend_type=${REMOTE_backend_type:="azurerm"}
@@ -50,6 +51,7 @@ export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
 export gitops_tfcloud_workspace_execution_mode="local"
 export gitops_number_runners=1
 export backend_type_hybrid=${BACKEND_type_hybrid:=true}
+
 
 unset PARAMS
 
