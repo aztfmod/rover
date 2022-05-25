@@ -70,6 +70,10 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
+        bootstrap)
+            bootstrap
+            exit 0
+            ;;
         ignite)
             ignite ${tf_command}
             exit 0
@@ -303,7 +307,7 @@ function login_as_sp_from_keyvault_secrets {
 
 function check_subscription_required_role {
     echo "@checking if current user (object_id: ${TF_VAR_logged_user_objectId}) is ${1} of the subscription - only for launchpad"
-    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups)
+    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups --only-show-errors)
 
     if [ "${role}" == "[]" ]; then
         error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
@@ -336,7 +340,7 @@ function list_deployed_landingzones {
 }
 
 function get_tfstate_keyvault_name {
-    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id} 2>/dev/null)
+    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id} --only-show-errors)
 }
 
 function login_as_launchpad {
@@ -350,7 +354,7 @@ function login_as_launchpad {
 
     stg=$(az storage account show --ids ${id} -o json --only-show-errors)
 
-    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value --only-show-errors) && echo " - tenant_id : ${TF_VAR_tenant_id}"
+    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json --only-show-errors | jq -r .value ) && echo " - tenant_id : ${TF_VAR_tenant_id}"
 
     # If the logged in user does not have access to the launchpad
     if [ "${TF_VAR_tenant_id}" == "" ]; then
@@ -384,7 +388,7 @@ function deploy_landingzone {
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-    terraform_init_remote
+    terraform_init
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
@@ -532,7 +536,7 @@ function clean_up_variables {
     unset TF_DATA_DIR
 
     echo "clean_up backend_files"
-    find /tf/caf -name backend.azurerm.tf -delete || true
+    tfstate_cleanup
 
 }
 
@@ -668,8 +672,19 @@ function get_logged_user_object_id {
 }
 
 function deploy {
+    echo "@deploy"
+    
+    if [ "${backend_type_hybrid}" = true ] || [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
+        deploy_azurerm
+    else
+        deploy_remote
+    fi
 
-    echo "@calling_deploy"
+}
+
+function deploy_azurerm {
+
+    echo "@calling deploy_azurerm"
 
     get_storage_id
     get_logged_user_object_id
@@ -732,7 +747,7 @@ function deploy {
                     destroy_from_remote_state
                     ;;
                 "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
-                    deploy_from_remote_state
+                    deploy_from_azurerm_state
                     ;;
                 "migrate")
                     migrate

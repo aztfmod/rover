@@ -1,18 +1,18 @@
+source ${script_path}/lib/tfcloud.sh
+
 function deploy_remote {
     echo "@calling deploy_remote"
 
-    initialize_state_remote
+    terraform_init_remote
     get_logged_user_object_id
     
-
     case "${tf_action}" in
         "plan")
             echo "calling plan"
             plan_remote
             ;;
         "apply")
-            echo "calling plan and apply"
-            plan_remote
+            echo "calling apply"
             apply_remote
             ;;
         "validate")
@@ -27,76 +27,17 @@ function deploy_remote {
             ;;
     esac
 
-    rm -rf backend.azurerm.tf
-
     cd "${current_path}"
 }
 
-function get_remote_token {
-    echo "@calling get_remote_token"
+function terraform_init_remote {
+    echo "@calling terraform_init_remote"
 
-    if [ -z "${REMOTE_credential_path_json}" -o -z "${REMOTE_hostname}" ]
-    then
-        error ${LINENO} "You must provide REMOTE_credential_path_json and REMOTE_hostname'." 1
-    fi
-
-    echo "Getting token from ${REMOTE_credential_path_json} for ${REMOTE_hostname}"
-
-    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${REMOTE_hostname}\".token)}
-
-    if [ -z "${REMOTE_ORG_TOKEN}" ]; then
-        error ${LINENO} "You must provide either a REMOTE_ORG_TOKEN token or run 'terraform login'." 1
-    fi
-}
-
-function create_workspace {
-    echo "@calling create_workspace"
-
-    get_remote_token
-
-    workspace=$(curl -s \
-        --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
-        --header "Content-Type: application/vnd.api+json" \
-        --request GET \
-        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
-
-    if [ "${workspace}" == "[]" ]; then
-
-    CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-    cat <<EOF > ${CONFIG_PATH}/payload.json
-{
-  "data": {
-    "attributes": {
-      "name": "${TF_VAR_workspace}",
-      "execution-mode": "local"
-    },
-    "type": "workspaces"
-  }
-}
-EOF
-
-    echo "Trigger workspace creation."
-
-    curl -s \
-        --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
-        --header "Content-Type: application/vnd.api+json" \
-        --request POST \
-        --data @${CONFIG_PATH}/payload.json \
-        https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
-
-    fi
-}
-
-function initialize_state_remote {
-    echo "@calling initialize_state_remote"
-
-    echo "Installing launchpad from ${landingzone_name}"
+    echo "Terraform base code: ${landingzone_name}"
     cd ${landingzone_name}
 
-    sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
-
-    cp -f /tf/rover/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
+    tfstate_configure remote
+    tf_command=$(purge_command remote ${tf_command})
 
     get_logged_user_object_id
 
@@ -110,19 +51,19 @@ function initialize_state_remote {
     case "${tf_action}" in
         "migrate")
             migrate_command=$(purge_command migrate ${tf_command} $1)
-            create_workspace
+            create_workspace ${gitops_tfcloud_workspace_mode}
             terraform -chdir=${landingzone_name} \
                 init ${migrate_command} \
                 -upgrade \
                 -migrate-state \
-                -backend-config=${landingzone_name}/backend.hcl  | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+                -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
             rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
             terraform -chdir=${landingzone_name} \
                 init \
                 -upgrade \
-                -reconfigure \
+                -reconfigure  \
                 -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
     esac
@@ -135,26 +76,21 @@ function initialize_state_remote {
 function plan_remote {
     echo "@calling plan_remote"
 
-    echo "running terraform plan with ${tf_command}"
+    echo "running terraform plan remote with ${tf_command} ${1}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
-    echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-    echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+    echo " -state: ${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    echo " -plan:  ${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
 
     pwd
     mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
-
-
     rm -f $STDERR_FILE
 
-    terraform plan ${tf_command} \
+    terraform -chdir=${landingzone_name} \
+        plan ${tf_command} ${1} \
         -refresh=true \
+        -lock=false \
         -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        -out="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" $PWD 2>$STDERR_FILE | tee ${tf_output_file}
-
-    if [ ! -z ${tf_plan_file} ]; then
-        echo "Copying plan file to ${tf_plan_file}"
-        cp "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_plan_file}"
-    fi
+        -out="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
 
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
 
@@ -168,6 +104,11 @@ function plan_remote {
     if [ $RETURN_CODE != 0 ]; then
         error ${LINENO} "Error running terraform plan" $RETURN_CODE
     fi
+
+    if [ ! -z ${tf_plan_file} ]; then
+        echo "Copying plan file to ${tf_plan_file}"
+        cp "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" "${tf_plan_file}"
+    fi
 }
 
 function apply_remote {
@@ -176,9 +117,17 @@ function apply_remote {
     echo 'running terraform apply'
     rm -f $STDERR_FILE
 
-    terraform apply \
+    if [ -z ${tf_plan_file} ]; then
+        echo "Plan not provided with -p or --plan so calling terraform plan"
+        plan_remote
+
+        local tf_plan_file="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+    fi
+    
+    terraform -chdir=${landingzone_name} \
+        apply \
         -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+        "${tf_plan_file}" | tee ${tf_output_file}
 
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
 
@@ -198,12 +147,21 @@ function apply_remote {
 function destroy_remote {
     echo "@calling destroy_remote"
 
-    echo 'running terraform destroy'
+    echo 'running terraform destroy remote'
     rm -f $STDERR_FILE
 
-    terraform destroy \
+    if [ -z ${tf_plan_file} ]; then
+        echo "Plan not provided with -p or --plan so calling terraform plan"
+        plan_remote "-destroy"
+
+        local tf_plan_file="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+    fi
+
+    terraform -chdir=${landingzone_name} \
+      apply \
       -refresh=false \
-      -auto-approve 2>$STDERR_FILE | tee ${tf_output_file}
+      $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} \
+      "${tf_plan_file}"
 
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
 
@@ -221,7 +179,7 @@ function destroy_remote {
 }
 
 function migrate {
-    case "${REMOTE_backend_type}" in
+    case "${gitops_terraform_backend_type}" in
         remote)
             login_as_launchpad
             migrate_to_remote
@@ -233,11 +191,25 @@ function migrate {
 }
 
 function migrate_to_remote {
+    information "@calling migrate_to_remote"
+
+    azurerm_workspace=${TF_VAR_workspace}
     tfstate_configure 'azurerm'
-    terraform_init_remote_azurerm
+    terraform_init_azurerm
 
     tfstate_configure 'remote'
-    initialize_state_remote
+    terraform_init_remote
 
-    echo "Migration complete to remote."
+    # az storage blob lease acquire \
+    #     -b ${TF_VAR_tf_name} \
+    #     -c ${azurerm_workspace} \
+    #     --account-name ${TF_VAR_tfstate_storage_account_name} \
+    #     --auth-mode login
+
+    success "A lock has been set on the source tfstate to prevent future migration:"
+    information " - tfstate name: ${TF_VAR_tf_name}"
+    information " - storage account: ${TF_VAR_tfstate_storage_account_name}"
+    information " - container: ${azurerm_workspace}"
+
+    success "Migration complete to remote."
 }

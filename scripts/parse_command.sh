@@ -40,16 +40,16 @@ function purge_command {
       shift 1
       purge_command_plan $@
       ;;
-    migrate)
+    migrate|remote)
       shift 1
-      purge_command_migrate $@
+      purge_command_remote $@
       ;;
   esac
 
   echo $PARAMS
 }
 
-function purge_command_migrate {
+function purge_command_remote {
   while (( "$#" )); do
     case "${1}" in
       -var-file)

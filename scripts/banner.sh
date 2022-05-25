@@ -13,5 +13,5 @@ cat << "EOF"
 
 
 EOF
-echo "              version: $(cat /tf/rover/version.txt)"
+echo "              version: $(cat /tf/rover/version.txt 2>/dev/null || echo 'local build')"
 echo ""
