@@ -624,7 +624,7 @@ function get_logged_user_object_id {
         unset TF_VAR_logged_aad_app_objectId
 
         export ARM_TENANT_ID=$(az account show -o json --only-show-errors | jq -r .tenantId)
-        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv --only-show-errors)
+        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query id -o tsv --only-show-errors)
         export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors)
         echo " - logged in user objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
 
