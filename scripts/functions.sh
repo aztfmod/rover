@@ -639,12 +639,14 @@ function get_logged_user_object_id {
             "systemAssignedIdentity")
                 if [ -z ${MSI_ID} ]; then
                     computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
+                    az resource list -n ${computerName}
                     principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
                     echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
                     export TF_VAR_logged_user_objectId=${principalId}
                     export ARM_TENANT_ID=$(az account show --only-show-errors | jq -r .tenantId)
                 else
                     echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
+                    az identity show --ids ${MSI_ID}
                     export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv --only-show-errors 2>/dev/null)
                     export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 fi
@@ -653,6 +655,7 @@ function get_logged_user_object_id {
                 msi=$(az account show --only-show-errors | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
+                az identity show --ids $msiResource
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv --only-show-errors 2>/dev/null)
@@ -661,6 +664,7 @@ function get_logged_user_object_id {
             *)
                 # Service Principal
                 # When connected with a service account the name contains the objectId
+                az ad sp show --id ${clientId}
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
