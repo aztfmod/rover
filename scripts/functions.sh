@@ -655,7 +655,6 @@ function get_logged_user_object_id {
                 msi=$(az account show --only-show-errors | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                az identity show --ids $msiResource
                 export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null)
                 export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
                 export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv --only-show-errors 2>/dev/null)
@@ -664,8 +663,7 @@ function get_logged_user_object_id {
             *)
                 # Service Principal
                 # When connected with a service account the name contains the objectId
-                az ad sp show --id ${clientId}
-                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query id -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
                 echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
                 ;;
