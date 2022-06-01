@@ -695,6 +695,7 @@ function deploy_azurerm {
 
     echo "@calling deploy_azurerm"
     get_storage_id
+    get_logged_user_object_id
 
     case ${id} in
         "")
