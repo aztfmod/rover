@@ -5,12 +5,22 @@ ARG versionTfc
 ARG TFC_AGENT_TOKEN
 ARG TFC_AGENT_NAME
 ARG USERNAME
+ARG TFC_ADDRESS
+ARG TFC_AGENT_AUTO_UPDATE
+ARG TFC_AGENT_DATA_DIR
 
 ENV DEBIAN_FRONTEND=noninteractive \
     ROVER_RUNNER=true \
     versionTerraformCloudAgent=${versionTfc} \
     TFC_AGENT_TOKEN=${TFC_AGENT_TOKEN} \
     TFC_AGENT_NAME=${TFC_AGENT_NAME} \
+    TFC_ADDRESS=${TFC_ADDRESS:=https://app.terraform.io}
+    TFC_AGENT_AUTO_UPDATE=${TFC_AGENT_AUTO_UPDATE:=disabled}
+    TFC_AGENT_SINGLE=${TFC_AGENT_SINGLE:false}
+    TFC_AGENT_DATA_DIR=${TFC_AGENT_DATA_DIR:~/.tfc-agent}
+    TFC_AGENT_LOG_JSON=false
+    TFC_AGENT_LOG_LEVEL=info
+
     USERNAME=${USERNAME}
 
 CMD ["/bin/bash"]
@@ -25,5 +35,4 @@ RUN echo "Installing Terraform Cloud Agents ${versionTfc}..." && \
     sudo chmod +x /usr/bin/tfc-agent && \
     sudo chmod +x /usr/bin/tfc-agent-core
 
-
-ENTRYPOINT ["/usr/bin/tfc-agent -single"]
+ENTRYPOINT ["/usr/bin/tfc-agent"]

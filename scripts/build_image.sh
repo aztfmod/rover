@@ -224,9 +224,9 @@ else
         build_base_rover_image ${versionTerraform} ${strategy}
     done <./.env.terraform
 
-    # while read versionTerraform; do
-    #     build_rover_agents "${rover}" "${tag}" "${registry}"
-    # done <./.env.terraform
+    while read versionTerraform; do
+        build_rover_agents "${rover}" "${tag}" "${registry}"
+    done <./.env.terraform
 fi
 
 
