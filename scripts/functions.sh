@@ -207,6 +207,7 @@ function purge {
     echo "@calling purge"
     echo "purging ${TF_CACHE_FOLDER}"
     rm -rf ${TF_CACHE_FOLDER}
+    rm -rf -- $HOME/*.tmp || true
     echo "Purged cache folder ${TF_CACHE_FOLDER}"
     exit 0
 }

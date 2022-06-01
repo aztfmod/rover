@@ -6,7 +6,7 @@ function tfstate_cleanup {
     sudo rm -rf -- "${landingzone_name}/backend.hcl*" || true
     rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
     rm -rf -- "${TF_DATA_DIR}/terraform.tfstate" || true
-
+    
 }
 
 function tfstate_configure {
