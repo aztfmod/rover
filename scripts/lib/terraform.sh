@@ -67,7 +67,7 @@ function terraform_plan {
 function terraform_apply {
     debug "@calling terraform_apply"
 
-    information 'running terraform apply - ${gitops_terraform_backend_type}'
+    information "running terraform apply - ${gitops_terraform_backend_type}"
     rm -f $STDERR_FILE
 
     if [[ -z ${tf_plan_file} ]] && [ "${gitops_terraform_backend_type}" == "azurerm" ]; then

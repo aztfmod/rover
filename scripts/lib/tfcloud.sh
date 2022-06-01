@@ -37,7 +37,7 @@ create_workspace() {
   echo "@calling create_workspace for ${TF_VAR_workspace}"
 
   get_remote_token
-  agent_pool=$(generate_agent_pool_name ${gitops_agent_pool_name}) && information "Agent pool: ${agent_pool}"
+  agent_pool=$(generate_agent_pool_name ${gitops_agent_pool_name})
 
   workspace=$(curl -s \
     --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
@@ -79,6 +79,8 @@ EOF
       https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
 
   fi
+
+  information "Agent pool: ${agent_pool} with execution mode set to ${gitops_tfcloud_workspace_execution_mode} for workspace ${TF_VAR_workspace}"
 }
 
 check_terraform_cloud_agent_exist() {

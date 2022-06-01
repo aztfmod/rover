@@ -5,7 +5,7 @@
 # rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
 
 
-script_path=$(dirname "$BASH_SOURCE")
+export script_path=$(dirname "$BASH_SOURCE")
 
 source ${script_path}/lib/logger.sh
 source ${script_path}/clone.sh
@@ -51,6 +51,7 @@ export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
 export gitops_tfcloud_workspace_execution_mode="local"
 export gitops_number_runners=1
 export backend_type_hybrid=${BACKEND_type_hybrid:=true}
+export gitops_agent_pool_execution_mode=local
 
 
 unset PARAMS
@@ -294,6 +295,10 @@ while (( "$#" )); do
                 if [ ${gitops_agent_pool_type} = "tfcloud" ]; then
                     export gitops_tfcloud_workspace_execution_mode="agent"
                 fi
+                shift 2
+                ;;
+        -gitops-agent-pool-execution-mode)
+                export gitops_agent_pool_execution_mode=${2}
                 shift 2
                 ;;
         -gitops-agent-pool-name)

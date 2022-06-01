@@ -3,7 +3,7 @@ get_logged_in_user_object_id() {
   debug "@calling get_logged_in_user_object_id"
 
   # Return objectId of the current Azure session
-  az ad signed-in-user show --query objectId -o tsv --only-show-errors
+  az ad signed-in-user show --query id -o tsv --only-show-errors
 
 }
 
@@ -36,9 +36,9 @@ create_federated_identity() {
       create_federated_identity ${appName}
     fi
 
-    app_object_id=$(echo ${app} | jq -r ".objectId")
+    app_object_id=$(echo ${app} | jq -r ".id")
     client_id=$(echo ${sp} | jq -r ".appId")
-    object_id=$(echo ${sp} | jq -r ".objectId")
+    object_id=$(echo ${sp} | jq -r ".id")
 
     register_gitops_secret ${gitops_pipelines} "AZURE_CLIENT_ID" ${client_id}
     register_gitops_secret ${gitops_pipelines} "AZURE_OBJECT_ID" ${object_id}
@@ -52,12 +52,12 @@ create_federated_identity() {
 
   app=$(az ad app list --filter "displayname eq '${appName}'" -o json --only-show-errors)
   sp=$(az ad sp list --filter "DisplayName eq '${appName}'" --only-show-errors)
-  export app_object_id=$(echo ${app} | jq -r ".[0].objectId")
+  export app_object_id=$(echo ${app} | jq -r ".[0].id")
   create_gitops_federated_credentials ${gitops_pipelines} ${appName}
 
   az role assignment create \
     --role "Owner" \
-    --assignee-object-id $(echo ${sp} | jq -r ".[0].objectId") \
+    --assignee-object-id $(echo ${sp} | jq -r ".[0].id") \
     --assignee-principal-type ServicePrincipal \
     --scope /subscriptions/${TF_VAR_tfstate_subscription_id} \
     --only-show-errors

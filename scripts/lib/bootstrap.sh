@@ -4,7 +4,7 @@ source ${script_path}/lib/github.com.sh
 source ${script_path}/lib/azure_ad.sh
 
 bootstrap() {
-  debug "@calling bootstrap"
+  information "@calling bootstrap"
 
   principalId=$(get_logged_in_user_object_id)
 

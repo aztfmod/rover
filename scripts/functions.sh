@@ -677,6 +677,12 @@ function get_logged_user_object_id {
 function deploy {
     echo "@deploy"
 
+    # Update submodule branch based ont .gitmodules
+    git submodule init
+    git submodule update --remote --checkout || true
+    version=$(cd $(git rev-parse --show-toplevel)/aztfmod && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
+    information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
+
     if [ "${backend_type_hybrid}" = true ] || [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
         deploy_azurerm
     else
@@ -688,9 +694,7 @@ function deploy {
 function deploy_azurerm {
 
     echo "@calling deploy_azurerm"
-
     get_storage_id
-    get_logged_user_object_id
 
     case ${id} in
         "")

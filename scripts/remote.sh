@@ -3,30 +3,15 @@ source ${script_path}/lib/tfcloud.sh
 function deploy_remote {
     echo "@calling deploy_remote"
 
-    terraform_init_remote
-    get_logged_user_object_id
+
     case "${tf_action}" in
-        "plan")
-            echo "calling plan"
-            plan_remote
-            ;;
-        "apply")
-            echo "calling apply"
-            apply_remote
-            ;;
-        "validate")
-            echo "calling validate"
-            validate
-            ;;
-        "destroy")
-            destroy_remote
+        migrate)
+            migrate_to_remote
             ;;
         *)
-            other
+            terraform_init_remote
             ;;
     esac
-
-    cd "${current_path}"
 }
 
 function terraform_init_remote {
@@ -51,6 +36,8 @@ function terraform_init_remote {
         "migrate")
             migrate_command=$(purge_command migrate ${tf_command} $1)
             create_workspace ${gitops_tfcloud_workspace_mode}
+            cat ${landingzone_name}/backend.hcl
+            echo "migrate command ${migrate_command}"
             terraform -chdir=${landingzone_name} \
                 init ${migrate_command} \
                 -upgrade \
@@ -58,12 +45,45 @@ function terraform_init_remote {
                 -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
-            rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
-            terraform -chdir=${landingzone_name} \
-                init \
-                -upgrade \
-                -reconfigure  \
-                -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+            case "${gitops_agent_pool_execution_mode}" in
+                local)
+                    rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
+                    terraform -chdir=${landingzone_name} \
+                        init \
+                        -upgrade \
+                        -reconfigure  \
+                        -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
+                    
+                    get_logged_user_object_id
+                    case "${tf_action}" in
+                        "plan")
+                            echo "calling plan"
+                            plan_remote
+                            ;;
+                        "apply")
+                            echo "calling apply"
+                            apply_remote
+                            ;;
+                        "validate")
+                            echo "calling validate"
+                            validate
+                            ;;
+                        "destroy")
+                            destroy_remote
+                            ;;
+                        *)
+                            other
+                            ;;
+                    esac
+
+                    ;;
+                agent)
+                    ${script_path}/terraform-enterprise-push.sh
+                    ;;
+                *)
+                    error ${LINENO} "-gitops-agent-pool-execution-mode only local or agent supported. Got ${gitops_agent_pool_execution_mode}"
+                    ;;
+            esac
             ;;
     esac
 
@@ -192,23 +212,27 @@ function migrate {
 function migrate_to_remote {
     information "@calling migrate_to_remote"
 
+    get_storage_id
+    get_logged_user_object_id
+
     azurerm_workspace=${TF_VAR_workspace}
     tfstate_configure 'azurerm'
     terraform_init_azurerm
 
+    information "Checking lease on blob file..."
+    az storage blob lease acquire \
+        -b ${TF_VAR_tf_name} \
+        -c ${azurerm_workspace} \
+        --account-name ${TF_VAR_tfstate_storage_account_name} \
+        --auth-mode login
+
     tfstate_configure 'remote'
     terraform_init_remote
-
-    # az storage blob lease acquire \
-    #     -b ${TF_VAR_tf_name} \
-    #     -c ${azurerm_workspace} \
-    #     --account-name ${TF_VAR_tfstate_storage_account_name} \
-    #     --auth-mode login
 
     success "A lock has been set on the source tfstate to prevent future migration:"
     information " - tfstate name: ${TF_VAR_tf_name}"
     information " - storage account: ${TF_VAR_tfstate_storage_account_name}"
     information " - container: ${azurerm_workspace}"
 
-    success "Migration complete to remote."
+    success "Migration complete to remote ${REMOTE_hostname}/${REMOTE_organization}/${TF_VAR_workspace}"
 }
