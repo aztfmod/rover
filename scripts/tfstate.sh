@@ -10,6 +10,7 @@ function tfstate_cleanup {
 }
 
 function tfstate_configure {
+    echo "@tfstate_configure"
 
     case "${1}" in
         azurerm)

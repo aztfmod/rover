@@ -48,7 +48,7 @@ export gitops_pipelines="github"
 export gitops_terraform_backend_type=${REMOTE_backend_type:="azurerm"}
 export gitops_agent_pool_type=${GITOPS_AGENT_POOL_TYPE:="github"}
 export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
-export gitops_tfcloud_workspace_execution_mode="local"
+export gitops_execution_mode="local"
 export gitops_number_runners=1
 export backend_type_hybrid=${BACKEND_type_hybrid:=true}
 export gitops_agent_pool_execution_mode=local
@@ -180,7 +180,7 @@ while (( "$#" )); do
             export gitops_terraform_backend_type="remote"
             ;;
         -backend-type-hybrid)
-            export backend_type_hybrid ${2}
+            export backend_type_hybrid=${2}
             shift 2
             ;;
         -REMOTE_organization|--REMOTE_organization|-remote_organization|--remote_organization)
@@ -293,7 +293,7 @@ while (( "$#" )); do
         -gitops-agent-pool-type)
                 export gitops_agent_pool_type=${2}
                 if [ ${gitops_agent_pool_type} = "tfcloud" ]; then
-                    export gitops_tfcloud_workspace_execution_mode="agent"
+                    export gitops_execution_mode="agent"
                 fi
                 shift 2
                 ;;
@@ -364,8 +364,10 @@ if [ "${caf_command}" != "walkthrough" ]; then
   information "terraform backend type        : '$(echo ${gitops_terraform_backend_type})'"
   information "backend_type_hybrid           : '$(echo ${backend_type_hybrid})'"
   information "tfstate                       : '$(echo ${TF_VAR_tf_name})'"
+    if ${backend_type_hybrid} ; then
   information "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
   information "target subscription           : '$(echo ${target_subscription_name})'"
+    fi
   information "CI/CD enabled                 : '$(echo ${devops})'"
   information "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
   information "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"

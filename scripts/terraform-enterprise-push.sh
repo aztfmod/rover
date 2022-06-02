@@ -7,7 +7,7 @@
 source ${script_path}/lib/tfcloud.sh
 source ${script_path}/lib/logger.sh
 
-information "@calling terraform api trigger"
+information "@calling terraform api trigger for action ${tf_action}"
 # 1. Define Variables
 
 AZTFMOD_DIRECTORY=$(git rev-parse --show-toplevel)/aztfmod

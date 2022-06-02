@@ -394,34 +394,38 @@ function deploy_landingzone {
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
-    case "${tf_action}" in
-    "plan")
-        echo "calling plan"
-        plan
-        ;;
-    "apply")
-        echo "calling apply"
-        apply
-        ;;
-    "validate")
-        echo "calling validate"
-        validate
-        ;;
-    "destroy")
-        echo "calling destroy"
-        destroy
-        ;;
-    "graph")
-        echo "calling graph"
-        graph
-        ;;
-    "init")
-        echo "init no-op"
-        ;;
-    *)
-        other
-        ;;
-    esac
+    if [ "${gitops_execution_mode}" = "local" ]; then
+
+        case "${tf_action}" in
+        "plan")
+            echo "calling plan"
+            plan
+            ;;
+        "apply")
+            echo "calling apply"
+            apply
+            ;;
+        "validate")
+            echo "calling validate"
+            validate
+            ;;
+        "destroy")
+            echo "calling destroy"
+            destroy
+            ;;
+        "graph")
+            echo "calling graph"
+            graph
+            ;;
+        "init")
+            echo "init no-op"
+            ;;
+        *)
+            other
+            ;;
+        esac
+
+    fi
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
@@ -676,7 +680,7 @@ function get_logged_user_object_id {
 }
 
 function deploy {
-    echo "@deploy"
+    echo "@deploy for gitops_terraform_backend_type set to '${gitops_terraform_backend_type}'"
 
     # Update submodule branch based ont .gitmodules
     git submodule init
@@ -684,7 +688,14 @@ function deploy {
     version=$(cd $(git rev-parse --show-toplevel)/aztfmod && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
     information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
 
-    if [ "${backend_type_hybrid}" = true ] || [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
+    tfstate_configure ${gitops_terraform_backend_type}
+
+    if ${backend_type_hybrid} ; then
+        get_storage_id
+        login_as_launchpad
+    fi
+
+    if [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
         deploy_azurerm
     else
         deploy_remote

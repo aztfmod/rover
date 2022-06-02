@@ -57,7 +57,7 @@ create_workspace() {
       $(if check_terraform_cloud_agent_exist ${agent_pool}; then
         echo "\"agent-pool-id\": \"${TF_CLOUD_AGENT_POOL_ID}\","
       fi)
-      "execution-mode": "${gitops_tfcloud_workspace_execution_mode}",
+      "execution-mode": "${gitops_execution_mode}",
       "source-name": "CAF Terraform rover client"
     },
     "type": "workspaces"
@@ -80,7 +80,7 @@ EOF
 
   fi
 
-  information "Agent pool: ${agent_pool} with execution mode set to ${gitops_tfcloud_workspace_execution_mode} for workspace ${TF_VAR_workspace}"
+  information "Agent pool: ${agent_pool} with execution mode set to ${gitops_execution_mode} for workspace ${TF_VAR_workspace}"
 }
 
 check_terraform_cloud_agent_exist() {

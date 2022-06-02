@@ -17,10 +17,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TFC_ADDRESS=${TFC_ADDRESS:-https://app.terraform.io} \
     TFC_AGENT_AUTO_UPDATE=${TFC_AGENT_AUTO_UPDATE:-disabled} \
     TFC_AGENT_SINGLE=${TFC_AGENT_SINGLE:-false} \
-    TFC_AGENT_DATA_DIR=${TFC_AGENT_DATA_DIR:-~/.tfc-agent} \
+    TFC_AGENT_DATA_DIR=${TFC_AGENT_DATA_DIR:-/home/vscode/agent/.tfc-agent} \
     TFC_AGENT_LOG_JSON=false \
     TFC_AGENT_LOG_LEVEL=info \
-    USERNAME=${USERNAME}
+    USERNAME=${USERNAME:-vscode}
 
 CMD ["/bin/bash"]
 

@@ -31,6 +31,9 @@ function terraform_init_remote {
 
     mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
+    if [ ! -f ${landingzone_name}/backend.hcl ]; then
+        error ${LINENO} "Could not find ${landingzone_name}/backend.hcl"
+    fi
 
     case "${tf_action}" in
         "migrate")
@@ -45,6 +48,7 @@ function terraform_init_remote {
                 -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
             ;;
         *)
+            echo "gitops_agent_pool_execution_mode set to ${gitops_agent_pool_execution_mode}"
             case "${gitops_agent_pool_execution_mode}" in
                 local)
                     rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
@@ -219,15 +223,15 @@ function migrate_to_remote {
     tfstate_configure 'azurerm'
     terraform_init_azurerm
 
+    tfstate_configure 'remote'
+    terraform_init_remote
+
     information "Checking lease on blob file..."
     az storage blob lease acquire \
         -b ${TF_VAR_tf_name} \
         -c ${azurerm_workspace} \
         --account-name ${TF_VAR_tfstate_storage_account_name} \
         --auth-mode login
-
-    tfstate_configure 'remote'
-    terraform_init_remote
 
     success "A lock has been set on the source tfstate to prevent future migration:"
     information " - tfstate name: ${TF_VAR_tf_name}"
