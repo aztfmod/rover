@@ -38,17 +38,16 @@ create_workspace() {
 
   get_remote_token
   agent_pool=$(generate_agent_pool_name ${gitops_agent_pool_name})
+  URL=https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
 
   workspace=$(curl -s \
     --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
     --header "Content-Type: application/vnd.api+json" \
     --request GET \
-    https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
+    ${URL}?search%5Bname%5D=${TF_VAR_workspace} | jq -r .data)
 
-  if [ "${workspace}" == "[]" ]; then
-
-    jq_command=$(cat <<-EOF
-    jq -n \
+  jq_command=$(cat <<-EOF
+  jq -n \
       '
 {
   "data": {
@@ -66,19 +65,25 @@ create_workspace() {
       ' 
 EOF
 )
-    eval ${jq_command}
-    BODY=$(eval ${jq_command})
+  eval ${jq_command}
+  BODY=$(eval ${jq_command})
 
-    echo "Trigger workspace creation."
-
-    curl -s \
-      --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
-      --header "Content-Type: application/vnd.api+json" \
-      --request POST \
-      --data "${BODY}" \
-      https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
-
+  if [ "${workspace}" == "[]" ]; then
+    METHOD="POST"
+  else
+    workspace_id=$(echo ${workspace} | jq -r .[0].id)
+    METHOD="PATCH"
+    URL="${URL}/${workspace_id}"
   fi
+
+  echo "Trigger workspace creation."
+
+  curl -s \
+    --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
+    --header "Content-Type: application/vnd.api+json" \
+    --request ${METHOD} \
+    --data "${BODY}" \
+    $URL
 
   information "Agent pool: ${agent_pool} with execution mode set to ${gitops_execution_mode} for workspace ${TF_VAR_workspace}"
 }
@@ -103,7 +108,6 @@ check_terraform_cloud_agent_exist() {
 
   if [ "${result}" = "" ]; then
     # false
-    echo "Agent pool not found: ${1}"
     return 1
   else
     export TF_CLOUD_AGENT_POOL_ID=$(echo ${result} | jq -r .id)

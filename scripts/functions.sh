@@ -685,7 +685,7 @@ function deploy {
     # Update submodule branch based ont .gitmodules
     git submodule init
     git submodule update --remote --checkout || true
-    version=$(cd $(git rev-parse --show-toplevel)/aztfmod && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
+    version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
     information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
 
     tfstate_configure ${gitops_terraform_backend_type}

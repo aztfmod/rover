@@ -52,6 +52,7 @@ function terraform_init_remote {
             case "${gitops_agent_pool_execution_mode}" in
                 local)
                     rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
+                    create_workspace ${gitops_tfcloud_workspace_mode}
                     terraform -chdir=${landingzone_name} \
                         init \
                         -upgrade \
@@ -99,21 +100,24 @@ function terraform_init_remote {
 function plan_remote {
     echo "@calling plan_remote"
 
-    echo "running terraform plan remote with ${tf_command} ${1}"
+    echo "running terraform plan remote (execution mode: ${gitops_agent_pool_execution_mode}) with ${tf_command} ${1}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
-    echo " -state: ${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
-    echo " -plan:  ${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
-
-    pwd
     mkdir -p "${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
     rm -f $STDERR_FILE
 
-    terraform -chdir=${landingzone_name} \
+    information "running plan..."
+    command="terraform -chdir=${landingzone_name} \
         plan ${tf_command} ${1} \
         -refresh=true \
         -lock=false \
-        -state="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-        -out="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}" 2>$STDERR_FILE | tee ${tf_output_file}
+      $(if [ "${gitops_agent_pool_execution_mode}" = "local" ]; then
+        echo " -state=\"${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}\" "
+        echo "-out=\"${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}\" 2>$STDERR_FILE | tee ${tf_output_file}"
+      else
+        echo " -state=\"${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}\" 2>$STDERR_FILE | tee ${tf_output_file}"
+      fi)"
+
+    eval $command
 
     RETURN_CODE=$? && echo "Terraform plan return code: ${RETURN_CODE}"
 
