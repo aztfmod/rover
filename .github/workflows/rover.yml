@@ -13,7 +13,7 @@ jobs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Docker Hub Login
-      uses: docker/login-action@v1
+      uses: docker/login-action@v2
       with:
           username: aztfmod
           password: ${{ secrets.docker_registry_password }}
