@@ -25,6 +25,7 @@ source ${script_path}/test_runner.sh
 
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
+checkout_module
 verify_rover_version
 
 export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
@@ -41,7 +42,8 @@ export debug_mode=${debug_mode:="false"}
 export devops=${devops:="false"}
 export log_folder_path=${log_folderpath:=~/.terraform.logs}
 export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
-export REMOTE_hostname=${TF_CLOUD_ORGANIZATION:="app.terraform.io"}
+export TF_VAR_tf_cloud_organization=${TF_CLOUD_ORGANIZATION}
+export TF_VAR_tf_cloud_hostname=${TF_CLOUD_HOSTNAME:="app.terraform.io"}
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
 export gitops_pipelines="github"
 export gitops_terraform_backend_type=${TF_VAR_backend_type:="azurerm"}
@@ -182,13 +184,13 @@ while (( "$#" )); do
             export backend_type_hybrid=${2}
             shift 2
             ;;
-        -REMOTE_organization|--REMOTE_organization|-remote_organization|--remote_organization)
-            export REMOTE_organization="${2}"
+        -remote_organization|-tf_cloud_organization|--remote_organization|--tf_cloud_organization)
+            export TF_VAR_tf_cloud_organization="${2}"
             export gitops_terraform_backend_type="remote"
             shift 2
             ;;
-        -REMOTE_hostname|--REMOTE_hostname|-remote_hostname|--remote_hostname)
-            export REMOTE_hostname="${2}"
+        -tf_cloud_hostname|--tf_cloud_hostname|-remote_hotname)
+            export TF_VAR_tf_cloud_hostname="${2}"
             export gitops_terraform_backend_type="remote"
             shift 2
             ;;

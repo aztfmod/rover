@@ -70,7 +70,7 @@ function terraform_apply {
     information "running terraform apply - ${gitops_terraform_backend_type}"
     rm -f $STDERR_FILE
 
-    if [[ -z ${tf_plan_file} ]] && [ "${gitops_terraform_backend_type}" == "azurerm" ]; then
+    if [[ -z ${tf_plan_file} ]] && [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
         echo "Plan not provided with -p or --plan so calling terraform plan"
         terraform_plan
 

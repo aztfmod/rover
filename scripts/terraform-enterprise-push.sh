@@ -11,7 +11,7 @@ information "@calling terraform api trigger for action ${tf_action}"
 # 1. Define Variables
 
 AZTFMOD_DIRECTORY=$(git rev-parse --show-toplevel)/aztfmod
-ORG_NAME=${REMOTE_organization}
+ORG_NAME=${TF_VAR_tf_cloud_organization}
 WORKSPACE_NAME=${TF_VAR_workspace}
 CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
@@ -31,7 +31,7 @@ get_remote_token
 WORKSPACE_ID=($(curl -s \
   --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
   --header "Content-Type: application/vnd.api+json" \
-  https://${REMOTE_hostname}/api/v2/organizations/$ORG_NAME/workspaces/$WORKSPACE_NAME \
+  https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/$ORG_NAME/workspaces/$WORKSPACE_NAME \
   | jq -r '.data.id'))
 
 # 4. Create a New Configuration Version
@@ -43,7 +43,7 @@ UPLOAD_URL=($(curl -s \
   --header "Content-Type: application/vnd.api+json" \
   --request POST \
   --data @${CONFIG_PATH}/create_config_version.json \
-  https://${REMOTE_hostname}/api/v2/workspaces/$WORKSPACE_ID/configuration-versions \
+  https://${TF_VAR_tf_cloud_hostname}/api/v2/workspaces/$WORKSPACE_ID/configuration-versions \
   | jq -r '.data.attributes."upload-url"'))
 
 # 5. Upload the Configuration Content File

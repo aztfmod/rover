@@ -2,31 +2,31 @@ check_terraform_session() {
   debug "tfcloud"
 
   if [ -e "${REMOTE_credential_path_json}" ]; then
-    if [ -z ${REMOTE_hostname} ]; then
+    if [ -z ${TF_VAR_tf_cloud_hostname} ]; then
       token=$(cat ${REMOTE_credential_path_json})
-      export REMOTE_hostname=$(echo ${token} | jq -r '.credentials | keys_unsorted[] as $k | {$k} | .k ')
+      export TF_VAR_tf_cloud_hostname=$(echo ${token} | jq -r '.credentials | keys_unsorted[] as $k | {$k} | .k ')
     fi
   else
     error ${LINENO} "You need to login Terraform Cloud or Enterprise using 'terraform login'"
   fi
 
-  if [ -z ${REMOTE_organization} ]; then
-    error ${LINENO} " When you connect to Terraform Cloud or Enterprise you must set the organization name with the attribute (-REMOTE_organization"
+  if [ -z ${TF_VAR_tf_cloud_organization} ]; then
+    error ${LINENO} " When you connect to Terraform Cloud or Enterprise you must set the organization name with the attribute (-TF_VAR_tf_cloud_organization"
   fi
-  success "Connected to Terraform: ${REMOTE_hostname}/${REMOTE_organization}"
+  success "Connected to Terraform: ${TF_VAR_tf_cloud_hostname}/${TF_VAR_tf_cloud_organization}"
 }
 
 get_remote_token() {
     debug "@calling get_remote_token"
 
-    if [ -z "${REMOTE_credential_path_json}" -o -z "${REMOTE_hostname}" ]
+    if [ -z "${REMOTE_credential_path_json}" -o -z "${TF_VAR_tf_cloud_hostname}" ]
     then
-        error ${LINENO} "You must provide REMOTE_credential_path_json and REMOTE_hostname'." 1
+        error ${LINENO} "You must provide REMOTE_credential_path_json and TF_VAR_tf_cloud_hostname'." 1
     fi
 
-    information "Getting token from ${REMOTE_credential_path_json} for ${REMOTE_hostname}"
+    information "Getting token from ${REMOTE_credential_path_json} for ${TF_VAR_tf_cloud_hostname}"
 
-    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${REMOTE_hostname}\".token)}
+    export REMOTE_ORG_TOKEN=${REMOTE_ORG_TOKEN:=$(cat ${REMOTE_credential_path_json} | jq -r .credentials.\"${TF_VAR_tf_cloud_hostname}\".token)}
 
     if [ -z "${REMOTE_ORG_TOKEN}" ]; then
         error ${LINENO} "You must provide either a REMOTE_ORG_TOKEN token or run 'terraform login'." 1
@@ -38,7 +38,7 @@ create_workspace() {
 
   get_remote_token
   agent_pool=$(generate_agent_pool_name ${gitops_agent_pool_name})
-  URL=https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/workspaces
+  URL=https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/workspaces
 
   workspace=$(curl -s \
     --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
@@ -53,11 +53,12 @@ create_workspace() {
   "data": {
     "attributes": {
       "name": "${TF_VAR_workspace}",
-      $(if check_terraform_cloud_agent_exist ${agent_pool}; then
-        echo "\"agent-pool-id\": \"${TF_CLOUD_AGENT_POOL_ID}\","
+      $(if [ "${gitops_execution_mode}" = "agent" ]; then 
+          if [ check_terraform_cloud_agent_exist ${agent_pool} ]; then
+            echo "\"agent-pool-id\": \"${TF_CLOUD_AGENT_POOL_ID}\","
+          fi
       fi)
-      "execution-mode": "${gitops_execution_mode}",
-      "source-name": "CAF Terraform rover client"
+      "execution-mode": "${gitops_execution_mode}"
     },
     "type": "workspaces"
   }
@@ -76,7 +77,10 @@ EOF
     URL="${URL}/${workspace_id}"
   fi
 
-  echo "Trigger workspace creation."
+  echo ${BODY}
+  echo ${URL}
+
+  echo "Trigger api call."
 
   curl -s \
     --header "Authorization: Bearer $REMOTE_ORG_TOKEN" \
@@ -85,7 +89,12 @@ EOF
     --data "${BODY}" \
     $URL
 
-  information "Agent pool: ${agent_pool} with execution mode set to ${gitops_execution_mode} for workspace ${TF_VAR_workspace}"
+  echo ""
+  if [ "${gitops_execution_mode}" == "remote" ]; then
+    information "Agent pool: ${agent_pool} for workspace ${TF_VAR_workspace} set to execution mode: ${gitops_execution_mode}"
+  else
+    information "workspace ${TF_VAR_workspace} set to execution mode: ${gitops_execution_mode}"
+  fi
 }
 
 check_terraform_cloud_agent_exist() {
@@ -96,15 +105,15 @@ check_terraform_cloud_agent_exist() {
 # return false (1) if the agent-pool does not exist
 # return true (0) if the agent-pool exist. Also export the agent_pool_id
 
-  debug ${REMOTE_hostname}
-  debug ${REMOTE_organization}
+  debug ${TF_VAR_tf_cloud_hostname}
+  debug ${TF_VAR_tf_cloud_organization}
   debug ${1}
 
   result=$(curl -s \
     --header "Authorization: Bearer ${REMOTE_ORG_TOKEN}" \
     --header "Content-Type: application/vnd.api+json" \
     --request GET \
-    "https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/agent-pools" | jq -r ".data[] | select (.attributes.name==\"${1}\")")
+    "https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools" | jq -r ".data[] | select (.attributes.name==\"${1}\")")
 
   if [ "${result}" = "" ]; then
     # false
@@ -162,7 +171,7 @@ process_terraform_cloud_agent_pool() {
           --header "Content-Type: application/vnd.api+json" \
           --request POST \
           --data "${BODY}" \
-          https://${REMOTE_hostname}/api/v2/organizations/${REMOTE_organization}/agent-pools | jq -r)
+          https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools | jq -r)
 
       debug "Response: ${response}"
 
@@ -205,7 +214,7 @@ create_agent_token() {
     --header "Content-Type: application/vnd.api+json" \
     --request POST \
     --data "${JSON}" \
-    https://${REMOTE_hostname}/api/v2/agent-pools/${1}/authentication-tokens | jq -r .data.attributes.token)
+    https://${TF_VAR_tf_cloud_hostname}/api/v2/agent-pools/${1}/authentication-tokens | jq -r .data.attributes.token)
   
     register_gitops_secret ${gitops_pipelines} "${TF_VAR_level}_TF_CLOUD_AGENT_POOL_AUTH_TOKEN" ${tfc_agent_pool_token}
 

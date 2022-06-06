@@ -682,25 +682,34 @@ function get_logged_user_object_id {
 function deploy {
     echo "@deploy for gitops_terraform_backend_type set to '${gitops_terraform_backend_type}'"
 
-    # Update submodule branch based ont .gitmodules
-    git submodule init
-    git submodule update --remote --checkout || true
     version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
     information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
 
-    tfstate_configure ${gitops_terraform_backend_type}
 
-    if ${backend_type_hybrid} ; then
-        get_storage_id
-        login_as_launchpad
-    fi
+    case "${tf_action}" in
+        "migrate")
+            migrate
+            ;;
+        *)
+            tfstate_configure ${gitops_terraform_backend_type}
 
-    if [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
-        deploy_azurerm
-    else
-        deploy_remote
-    fi
+            if [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
+                deploy_azurerm
+            else
+                if ${backend_type_hybrid} ; then
+                    get_storage_id
+                    login_as_launchpad
+                fi
+                deploy_remote
+            fi
+            ;;
+    esac
+}
 
+function checkout_module {
+    # Update submodule branch based ont .gitmodules
+    git submodule init
+    git submodule update --remote --checkout || true
 }
 
 function deploy_azurerm {

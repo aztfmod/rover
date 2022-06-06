@@ -35,13 +35,13 @@ function tfstate_configure {
             fi
 
             export TF_VAR_workspace="${TF_VAR_environment}_${TF_VAR_level}_$(echo ${TF_VAR_tf_name} | cut -f 1 -d '.')"
-            export TF_VAR_tfstate_organization=${REMOTE_organization}
-            export TF_VAR_tfstate_hostname=${REMOTE_hostname}
+            export TF_VAR_tfstate_organization=${TF_VAR_tf_cloud_organization}
+            export TF_VAR_tfstate_hostname=${TF_VAR_tf_cloud_hostname}
 
             sudo cat << EOF > ${landingzone_name}/backend.hcl
 workspaces { name = "${TF_VAR_workspace}" }
-hostname     = "${REMOTE_hostname}"
-organization = "${REMOTE_organization}"
+hostname     = "${TF_VAR_tf_cloud_hostname}"
+organization = "${TF_VAR_tf_cloud_organization}"
 EOF
 
             ;;
@@ -118,7 +118,6 @@ function initialize_state {
     "apply")
         echo "calling apply"
         apply
-        get_storage_id
         upload_tfstate
         ;;
     "validate")
@@ -149,6 +148,7 @@ function upload_tfstate {
 
     echo "Moving launchpad to the cloud"
 
+    get_storage_id
     stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
