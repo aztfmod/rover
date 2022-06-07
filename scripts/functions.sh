@@ -713,7 +713,7 @@ function deploy {
 function checkout_module {
     # Update submodule branch based ont .gitmodules
     cd ${landingzone_name}
-    if [ -f "$(git rev-parse --show-toplevel)/.gitmodules" ]; then
+    if [ -f "$(git rev-parse --show-toplevel 2>/dev/null)/.gitmodules" ]; then
         cd $(git rev-parse --show-toplevel)
         git submodule init
         git submodule update --remote --checkout
