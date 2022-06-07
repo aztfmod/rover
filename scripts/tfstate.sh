@@ -3,7 +3,8 @@ source ${script_path}/lib/terraform.sh
 function tfstate_cleanup {
 
     find /tf/caf -name "backend.*.tf" -not -path '*/rover/scripts/*' -delete || true
-    sudo rm -rf -- "${landingzone_name}/backend.hcl*" || true
+    sudo rm -rf -- "${landingzone_name}/backend.hcl.tf" || true
+    sudo rm -rf -- "${landingzone_name}/backend.hcl" || true
     rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
     rm -rf -- "${TF_DATA_DIR}/terraform.tfstate" || true
     

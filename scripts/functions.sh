@@ -682,9 +682,11 @@ function get_logged_user_object_id {
 function deploy {
     echo "@deploy for gitops_terraform_backend_type set to '${gitops_terraform_backend_type}'"
 
-    version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
-    information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
-
+    cd ${landingzone_name}
+    if [ -f "$(git rev-parse --show-toplevel)/.gitmodules" ]; then
+        version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
+        information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
+    fi
     # for migration and hybrid support from azurerm to tfe
     azurerm_workspace=${TF_VAR_workspace}
 
@@ -711,8 +713,11 @@ function deploy {
 function checkout_module {
     # Update submodule branch based ont .gitmodules
     cd ${landingzone_name}
-    git submodule init || true
-    git submodule update --remote --checkout || true
+    if [ -f "$(git rev-parse --show-toplevel)/.gitmodules" ]; then
+        cd $(git rev-parse --show-toplevel)
+        git submodule init
+        git submodule update --remote --checkout
+    fi
 }
 
 function deploy_azurerm {
