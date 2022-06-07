@@ -369,8 +369,8 @@ function login_as_launchpad {
     export TF_VAR_tfstate_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group (current): ${TF_VAR_tfstate_resource_group_name}"
     export TF_VAR_lower_resource_group_name=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n lower-resource-group-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - resource_group (lower): ${TF_VAR_lower_resource_group_name}"
 
-    export TF_VAR_tfstate_container_name=${TF_VAR_workspace}
-    export TF_VAR_lower_container_name=${TF_VAR_workspace}
+    export TF_VAR_tfstate_container_name=${azurerm_workspace}
+    export TF_VAR_lower_container_name=${azurerm_workspace}
 
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
 
@@ -685,6 +685,8 @@ function deploy {
     version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
     information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
 
+    # for migration and hybrid support from azurerm to tfe
+    azurerm_workspace=${TF_VAR_workspace}
 
     case "${tf_action}" in
         "migrate")
@@ -708,7 +710,8 @@ function deploy {
 
 function checkout_module {
     # Update submodule branch based ont .gitmodules
-    git submodule init
+    cd ${landingzone_name}
+    git submodule init || true
     git submodule update --remote --checkout || true
 }
 
@@ -838,6 +841,16 @@ function expand_tfvars_folder {
     fi
 }
 
+function get_rover_version {
+
+    if [ -f ${script_path}/version.txt ]; then
+        echo $(cat ${script_path}/version.txt)
+    else
+        echo "local build"
+    fi
+
+} 
+
 #
 # This function verifies the vscode container is running the version specified in the docker-compose
 # of the .devcontainer sub-folder
@@ -847,11 +860,12 @@ function verify_rover_version {
 
     if [ "${ROVER_RUNNER}" = false ]; then
         required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
-        running_version=$(cat /tf/rover/version.txt |  egrep -o '[^\/]+$')
+        running_version=$(cat ${script_path}/version.txt |  egrep -o '[^\/]+$')
 
-        if [ "${required_version}" != "${running_version}" ]; then
-            echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
+        if [ "${required_version}" != "${TF_VAR_rover_version}" ]; then
+            information "The running version \"${TF_VAR_rover_version}\" does not match the required version ${required_version} of your local devcontainer (/tf/caf/.devcontainer/docker-compose.yml)."
             echo "Click on the Dev Container buttom on the left bottom corner and select rebuild container from the options."
+            echo "or set the environment variable to skip the verification \"export ROVER_RUNNER=true\""
             exit
         fi
     fi

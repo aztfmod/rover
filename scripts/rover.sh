@@ -14,8 +14,10 @@ source ${script_path}/tfstate.sh
 source ${script_path}/remote.sh
 source ${script_path}/functions.sh
 source ${script_path}/parse_command.sh
-source ${script_path}/banner.sh
 source ${script_path}/lib/bootstrap.sh
+
+export TF_VAR_rover_version=$(get_rover_version)
+source ${script_path}/banner.sh
 
 # symphony
 source ${script_path}/ci.sh
@@ -25,12 +27,8 @@ source ${script_path}/test_runner.sh
 
 export ROVER_RUNNER=${ROVER_RUNNER:=false}
 
-checkout_module
-verify_rover_version
-
 export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
 export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
-export TF_VAR_rover_version=$(echo $(cat ${script_path}/version.txt))
 export TF_VAR_level=${TF_VAR_level:="level0"}
 export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
 export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
@@ -316,6 +314,9 @@ while (( "$#" )); do
                 ;;
         esac
 done
+
+checkout_module
+verify_rover_version
 
 set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6

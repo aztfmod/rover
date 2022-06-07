@@ -232,9 +232,6 @@ function migrate_to_remote {
     tfstate_configure 'azurerm'
     terraform_init_azurerm
 
-    # for migration support from azurerm to tfe
-    azurerm_workspace=${TF_VAR_workspace}
-
     tfstate_configure 'remote'
     terraform_init_remote
 
