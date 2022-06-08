@@ -52,7 +52,7 @@ ZSH_THEME="agnoster"
 # Uncomment the following line if you want to disable marking untracked files
 # under VCS as dirty. This makes repository status check for large repositories
 # much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
+DISABLE_UNTRACKED_FILES_DIRTY="true"
 
 # Uncomment the following line if you want to change the command execution time
 # stamp shown in the history command output.
@@ -102,3 +102,4 @@ export LANG=en_US.UTF-8
 alias rover=/tf/rover/rover.sh
 alias t=/usr/bin/terraform
 alias k=/usr/bin/kubectl
+cd /tf/caf || true

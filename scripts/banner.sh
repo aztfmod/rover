@@ -13,5 +13,5 @@ cat << "EOF"
 
 
 EOF
-echo "              version: $(cat /tf/rover/version.txt)"
+echo "              version: ${TF_VAR_rover_version}"
 echo ""

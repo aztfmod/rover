@@ -70,6 +70,10 @@ function process_actions {
     echo "@calling process_actions"
 
     case "${caf_command}" in
+        bootstrap)
+            bootstrap
+            exit 0
+            ;;
         ignite)
             ignite ${tf_command}
             exit 0
@@ -94,9 +98,9 @@ function process_actions {
             verify_parameters
             deploy ${TF_VAR_workspace}
             ;;
-        tfc)
+        tfc|remote)
             verify_parameters
-            deploy_tfc ${TF_VAR_workspace}
+            deploy ${TF_VAR_workspace}
             ;;
         ci)
             register_ci_tasks
@@ -203,6 +207,7 @@ function purge {
     echo "@calling purge"
     echo "purging ${TF_CACHE_FOLDER}"
     rm -rf ${TF_CACHE_FOLDER}
+    rm -rf -- $HOME/*.tmp || true
     echo "Purged cache folder ${TF_CACHE_FOLDER}"
     exit 0
 }
@@ -276,21 +281,22 @@ function login_as_sp_from_keyvault_secrets {
     information "Getting secrets from keyvault ${keyvault_url} ..."
 
     # Test permissions
-    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv | read CLIENT_ID
+    az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv  --only-show-errors | read CLIENT_ID
 
     if [ ! -z "${tenant}" ]; then
         export ARM_TENANT_ID=${tenant}
     else
-        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv)
+        export ARM_TENANT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-tenant-id --query 'value' -o tsv --only-show-errors)
     fi
 
     information "Login to azure with tenant ${ARM_TENANT_ID}"
 
-    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv)
-    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv)
+    export ARM_CLIENT_ID=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-id --query 'value' -o tsv --only-show-errors)
+    export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv --only-show-errors)
 
-    information "Loging with service principal"
-    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID} 1> /dev/null
+    information "Login with service principal"
+    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
+    az account set -s ${target_subscription}
 
     set +e
     trap - ERR
@@ -303,7 +309,7 @@ function login_as_sp_from_keyvault_secrets {
 
 function check_subscription_required_role {
     echo "@checking if current user (object_id: ${TF_VAR_logged_user_objectId}) is ${1} of the subscription - only for launchpad"
-    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups)
+    role=$(az role assignment list --role "${1}" --assignee ${TF_VAR_logged_user_objectId} --include-inherited --include-groups --only-show-errors)
 
     if [ "${role}" == "[]" ]; then
         error ${LINENO} "the current account must have ${1} privilege on the subscription to deploy launchpad." 2
@@ -315,7 +321,7 @@ function check_subscription_required_role {
 function list_deployed_landingzones {
     echo "@calling list_deployed_landingzones"
 
-    stg=$(az storage account show --ids ${id} -o json)
+    stg=$(az storage account show --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
 
@@ -336,7 +342,7 @@ function list_deployed_landingzones {
 }
 
 function get_tfstate_keyvault_name {
-    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id})
+    keyvault=$(az graph query -q "Resources | where type == 'microsoft.keyvault/vaults' and ((tags.environment == '${TF_VAR_environment}' and tags.tfstate == '${TF_VAR_level}') or (tags.caf_environment == '${TF_VAR_environment}' and tags.caf_tfstate == '${TF_VAR_level}'))  | project name"  --query "data[0].name" -o tsv  --subscriptions ${TF_VAR_tfstate_subscription_id} --only-show-errors)
 }
 
 function login_as_launchpad {
@@ -348,9 +354,9 @@ function login_as_launchpad {
     get_tfstate_keyvault_name
     echo " - keyvault_name: ${keyvault}"
 
-    stg=$(az storage account show --ids ${id} -o json)
+    stg=$(az storage account show --ids ${id} -o json --only-show-errors)
 
-    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json | jq -r .value) && echo " - tenant_id : ${TF_VAR_tenant_id}"
+    export TF_VAR_tenant_id=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n tenant-id --vault-name ${keyvault} -o json --only-show-errors | jq -r .value ) && echo " - tenant_id : ${TF_VAR_tenant_id}"
 
     # If the logged in user does not have access to the launchpad
     if [ "${TF_VAR_tenant_id}" == "" ]; then
@@ -363,8 +369,8 @@ function login_as_launchpad {
     export TF_VAR_tfstate_resource_group_name=$(echo ${stg} | jq -r .resourceGroup) && echo " - resource_group (current): ${TF_VAR_tfstate_resource_group_name}"
     export TF_VAR_lower_resource_group_name=$(az keyvault secret show --subscription ${TF_VAR_tfstate_subscription_id} -n lower-resource-group-name --vault-name ${keyvault} -o json 2>/dev/null | jq -r .value || true) && echo " - resource_group (lower): ${TF_VAR_lower_resource_group_name}"
 
-    export TF_VAR_tfstate_container_name=${TF_VAR_workspace}
-    export TF_VAR_lower_container_name=${TF_VAR_workspace}
+    export TF_VAR_tfstate_container_name=${azurerm_workspace}
+    export TF_VAR_lower_container_name=${azurerm_workspace}
 
     export TF_VAR_tfstate_key=${TF_VAR_tf_name}
 
@@ -384,38 +390,42 @@ function deploy_landingzone {
 
     mkdir -p "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
-    terraform_init_remote
+    terraform_init
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
-    case "${tf_action}" in
-    "plan")
-        echo "calling plan"
-        plan
-        ;;
-    "apply")
-        echo "calling apply"
-        apply
-        ;;
-    "validate")
-        echo "calling validate"
-        validate
-        ;;
-    "destroy")
-        echo "calling destroy"
-        destroy
-        ;;
-    "graph")
-        echo "calling graph"
-        graph
-        ;;
-    "init")
-        echo "init no-op"
-        ;;
-    *)
-        other
-        ;;
-    esac
+    if [ "${gitops_execution_mode}" = "local" ]; then
+
+        case "${tf_action}" in
+        "plan")
+            echo "calling plan"
+            plan
+            ;;
+        "apply")
+            echo "calling apply"
+            apply
+            ;;
+        "validate")
+            echo "calling validate"
+            validate
+            ;;
+        "destroy")
+            echo "calling destroy"
+            destroy
+            ;;
+        "graph")
+            echo "calling graph"
+            graph
+            ;;
+        "init")
+            echo "init no-op"
+            ;;
+        *)
+            other
+            ;;
+        esac
+
+    fi
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
@@ -451,7 +461,7 @@ function workspace_list {
     echo " Calling workspace_list function"
     stg=$(az storage account show \
         --ids ${id} \
-        -o json)
+        -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -460,7 +470,7 @@ function workspace_list {
     az storage container list \
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --auth-mode "login" \
-        --account-name ${storage_account_name} -o json |
+        --account-name ${storage_account_name} -o json  --only-show-errors |
         jq -r '["workspace", "last modification", "lease status"], (.[] | [.name, .properties.lastModified, .properties.leaseStatus]) | @csv' |
         column -t -s ','
 
@@ -472,7 +482,7 @@ function workspace_create {
 
     echo " Calling workspace_create function"
     stg=$(az storage account show \
-        --ids ${id} -o json)
+        --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -482,7 +492,7 @@ function workspace_create {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
         --auth-mode login \
-        --account-name ${storage_account_name}
+        --account-name ${storage_account_name} --only-show-errors
 
     mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
@@ -493,7 +503,7 @@ function workspace_delete {
     echo "@calling workspace_delete"
 
     stg=$(az storage account show \
-        --ids ${id} -o json)
+        --ids ${id} -o json --only-show-errors)
 
     export storage_account_name=$(echo ${stg} | jq -r .name)
 
@@ -503,7 +513,7 @@ function workspace_delete {
         --subscription ${TF_VAR_tfstate_subscription_id} \
         --name $1 \
         --auth-mode login \
-        --account-name ${storage_account_name}
+        --account-name ${storage_account_name} --only-show-errors
 
     mkdir -p ${TF_VAR_environment}/${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}
 
@@ -532,7 +542,7 @@ function clean_up_variables {
     unset TF_DATA_DIR
 
     echo "clean_up backend_files"
-    find /tf/caf -name backend.azurerm.tf -delete || true
+    tfstate_cleanup
 
 }
 
@@ -550,7 +560,7 @@ function get_resource_from_assignedIdentityInfo {
         msiResource=${msi//MSIResource-/}
         ;;
     *"MSIClient"*)
-        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv)
+        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv --only-show-errors)
         ;;
     *)
         echo "Warning: MSI identifier unknown."
@@ -567,7 +577,7 @@ function export_azure_cloud_env {
     # Set cloud variables for terraform
     unset AZURE_ENVIRONMENT
     unset ARM_ENVIRONMENT
-    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv)
+    export AZURE_ENVIRONMENT=$(az cloud show --query name -o tsv --only-show-errors)
 
     if [ -z "$cloud_name" ]; then
 
@@ -599,14 +609,14 @@ function export_azure_cloud_env {
     while IFS="=" read key value; do
         log_debug " - TF_VAR_$key = $value"
         export "TF_VAR_$key=$value"
-    done < <(az cloud show | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
+    done < <(az cloud show --only-show-errors | jq -r ".suffixes * .endpoints|to_entries|map(\"\(.key)=\(.value)\")|.[]")
 }
 
 function get_logged_user_object_id {
     echo "@calling_get_logged_user_object_id"
 
     export TF_VAR_user_type=$(az account show \
-        --query user.type -o tsv)
+        --query user.type -o tsv --only-show-errors)
 
     export_azure_cloud_env
 
@@ -618,15 +628,15 @@ function get_logged_user_object_id {
         unset ARM_CLIENT_SECRET
         unset TF_VAR_logged_aad_app_objectId
 
-        export ARM_TENANT_ID=$(az account show -o json | jq -r .tenantId)
-        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query objectId -o tsv)
-        export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+        export ARM_TENANT_ID=$(az account show -o json --only-show-errors | jq -r .tenantId)
+        export TF_VAR_logged_user_objectId=$(az ad signed-in-user show --query id -o tsv --only-show-errors)
+        export logged_user_upn=$(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors)
         echo " - logged in user objectId: ${TF_VAR_logged_user_objectId} (${logged_user_upn})"
 
-        echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv)"
+        echo "Initializing state with user: $(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors)"
     else
         unset TF_VAR_logged_user_objectId
-        export clientId=$(az account show --query user.name -o tsv)
+        export clientId=$(az account show --query user.name -o tsv --only-show-errors)
 
         get_tfstate_keyvault_name
 
@@ -634,31 +644,33 @@ function get_logged_user_object_id {
             "systemAssignedIdentity")
                 if [ -z ${MSI_ID} ]; then
                     computerName=$(az rest --method get --headers Metadata=true --url http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r .compute.name)
+                    az resource list -n ${computerName}
                     principalId=$(az resource list -n ${computerName} --query [*].identity.principalId --out tsv)
                     echo " - logged in Azure with System Assigned Identity - computer name - ${computerName}"
                     export TF_VAR_logged_user_objectId=${principalId}
-                    export ARM_TENANT_ID=$(az account show | jq -r .tenantId)
+                    export ARM_TENANT_ID=$(az account show --only-show-errors | jq -r .tenantId)
                 else
                     echo " - logged in Azure with System Assigned Identity - ${MSI_ID}"
-                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv 2>/dev/null)
-                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv 2>/dev/null)
+                    az identity show --ids ${MSI_ID}
+                    export TF_VAR_logged_user_objectId=$(az identity show --ids ${MSI_ID} --query principalId -o tsv --only-show-errors 2>/dev/null)
+                    export ARM_TENANT_ID=$(az identity show --ids ${MSI_ID} --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 fi
                 ;;
             "userAssignedIdentity")
-                msi=$(az account show | jq -r .user.assignedIdentityInfo)
+                msi=$(az account show --only-show-errors | jq -r .user.assignedIdentityInfo)
                 echo " - logged in Azure with User Assigned Identity: ($msi)"
                 msiResource=$(get_resource_from_assignedIdentityInfo "$msi")
-                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null)
-                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
-                export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv 2>/dev/null)
-                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv 2>/dev/null)
+                export TF_VAR_logged_aad_app_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null)
+                export TF_VAR_logged_user_objectId=$(az identity show --ids $msiResource --query principalId -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover msi object_id: ${TF_VAR_logged_user_objectId}"
+                export ARM_CLIENT_ID=$(az identity show --ids $msiResource --query clientId -o tsv --only-show-errors 2>/dev/null)
+                export ARM_TENANT_ID=$(az identity show --ids $msiResource --query tenantId -o tsv --only-show-errors 2>/dev/null)
                 ;;
             *)
                 # Service Principal
                 # When connected with a service account the name contains the objectId
-                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query objectId -o tsv 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
+                export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query id -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
-                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv 2>/dev/null)"
+                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
                 ;;
         esac
 
@@ -668,9 +680,62 @@ function get_logged_user_object_id {
 }
 
 function deploy {
+    echo "@deploy for gitops_terraform_backend_type set to '${gitops_terraform_backend_type}'"
 
-    echo "@calling_deploy"
+    cd ${landingzone_name}
+    if [ -f "$(git rev-parse --show-toplevel)/.gitmodules" ]; then
+        version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
+        information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
+    fi
+    # for migration and hybrid support from azurerm to tfe
+    azurerm_workspace=${TF_VAR_workspace}
 
+    case "${tf_action}" in
+        "migrate")
+            migrate
+            ;;
+        *)
+            tfstate_configure ${gitops_terraform_backend_type}
+
+            if [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
+                deploy_azurerm
+            else
+                if ${backend_type_hybrid} ; then
+                    get_storage_id
+                    login_as_launchpad
+                fi
+                deploy_remote
+            fi
+            ;;
+    esac
+}
+
+function checkout_module {
+    # Update submodule branch based on .gitmodules
+    cd ${landingzone_name}
+    base_folder=$(git rev-parse --show-toplevel)
+
+    if [ $? != 0 ]; then
+      error ${LINEO} "landingzone folder not setup properly. Fix and restart."
+    fi
+
+    if [ ! $(git config --global --get safe.directory | grep "${base_folder}" 2>&1) ]; then
+        git config --global --add safe.directory "${base_folder}"
+    fi
+
+    if [ -f "${base_folder}/.gitmodules" ]; then
+        cd ${base_folder}
+        if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" 2>&1) ]; then
+            git config --global --add safe.directory "${base_folder}/aztfmod"
+        fi
+        git submodule init 2>&1
+        git submodule update --remote --checkout 2>&1
+    fi
+}
+
+function deploy_azurerm {
+
+    echo "@calling deploy_azurerm"
     get_storage_id
     get_logged_user_object_id
 
@@ -732,7 +797,10 @@ function deploy {
                     destroy_from_remote_state
                     ;;
                 "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
-                    deploy_from_remote_state
+                    deploy_from_azurerm_state
+                    ;;
+                "migrate")
+                    migrate
                     ;;
                 *)
                     display_instructions
@@ -791,6 +859,16 @@ function expand_tfvars_folder {
     fi
 }
 
+function get_rover_version {
+
+    if [ -f ${script_path}/version.txt ]; then
+        echo $(cat ${script_path}/version.txt)
+    else
+        echo "local build"
+    fi
+
+} 
+
 #
 # This function verifies the vscode container is running the version specified in the docker-compose
 # of the .devcontainer sub-folder
@@ -799,12 +877,13 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' | awk -F'/' '{print $NF}')
-        running_version=$(cat /tf/rover/version.txt |  egrep -o '[^\/]+$')
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image')
+        running_version=$(cat ${script_path}/version.txt |  egrep -o '[^\/]+$')
 
-        if [ "${required_version}" != "${running_version}" ]; then
-            echo "The version of your local devcontainer ${running_version} does not match the required version ${required_version}."
+        if [ "${required_version}" != "${TF_VAR_rover_version}" ]; then
+            information "The running version \"${TF_VAR_rover_version}\" does not match the required version ${required_version} of your local devcontainer (/tf/caf/.devcontainer/docker-compose.yml)."
             echo "Click on the Dev Container buttom on the left bottom corner and select rebuild container from the options."
+            echo "or set the environment variable to skip the verification \"export ROVER_RUNNER=true\""
             exit
         fi
     fi
@@ -818,7 +897,7 @@ function process_target_subscription {
         az account set -s "${target_subscription}"
     fi
 
-    account=$(az account show -o json)
+    account=$(az account show -o json --only-show-errors)
 
     target_subscription_name=$(echo ${account} | jq -r .name)
     target_subscription_id=$(echo ${account} | jq -r .id)
@@ -847,7 +926,7 @@ function process_target_subscription {
     echo ${account} | jq -r
 
     echo "debug: ${TF_VAR_tfstate_subscription_id}"
-    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json | jq -r .name)
+    tfstate_subscription_name=$(az account show -s ${TF_VAR_tfstate_subscription_id} --output json --only-show-errors | jq -r .name)
     echo "Tfstates subscription set to ${TF_VAR_tfstate_subscription_id} (${tfstate_subscription_name})"
     echo ""
 

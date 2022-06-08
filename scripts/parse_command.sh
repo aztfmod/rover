@@ -40,9 +40,27 @@ function purge_command {
       shift 1
       purge_command_plan $@
       ;;
+    migrate|remote)
+      shift 1
+      purge_command_remote $@
+      ;;
   esac
 
   echo $PARAMS
+}
+
+function purge_command_remote {
+  while (( "$#" )); do
+    case "${1}" in
+      -var-file)
+        shift 2
+        ;;
+      *)
+        PARAMS+="${1} "
+        shift 1
+        ;;
+    esac
+  done
 }
 
 function purge_command_graph {
@@ -50,6 +68,9 @@ function purge_command_graph {
     case "${1}" in
       -var-file)
         shift 2
+        ;;
+      -parallelism=*)
+        shift 1
         ;;
       *)
         PARAMS+="${1} "

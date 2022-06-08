@@ -1,62 +1,73 @@
+source ${script_path}/lib/terraform.sh
+
 function tfstate_cleanup {
 
-    sudo rm -f -- ${landingzone_name}/backend.*.tf || true
+    find /tf/caf -name "backend.*.tf" -not -path '*/rover/scripts/*' -delete || true
+    sudo rm -rf -- "${landingzone_name}/backend.hcl.tf" || true
     sudo rm -rf -- "${landingzone_name}/backend.hcl" || true
     rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
     rm -rf -- "${TF_DATA_DIR}/terraform.tfstate" || true
-
+    
 }
 
 function tfstate_configure {
+    echo "@tfstate_configure"
 
-    case "${TF_backend_type}" in
+    case "${1}" in
         azurerm)
             echo "@calling tfstate_configure -- azurerm"
-            cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
+            sudo rm -f -- ${landingzone_name}/backend.hcl.tf
+            cp -f ${script_path}/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
             ;;
-        tfc)
-            echo "@calling tfstate_configure -- tfc"
-            sudo cp -f /tf/rover/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
+        remote)
+            echo "@calling tfstate_configure -- remote"
+            sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
+            sudo cp -f ${script_path}/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
 
-            sudo rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
-            for filename in ${TF_var_folder}/*.tfvars; do
-                command="cat ${filename} >> ${landingzone_name}/caf.auto.tfvars && printf '\n' >> ${landingzone_name}/caf.auto.tfvars"
-                echo ${command}
-                sudo bash -c "${command}"
-            done
+            if [ ! -z ${TF_var_folder} ]; then
+                sudo rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
+                for filename in ${TF_var_folder}/*.tfvars; do
+                    command="cat ${filename} >> ${landingzone_name}/caf.auto.tfvars && printf '\n' >> ${landingzone_name}/caf.auto.tfvars"
+                    debug ${command}
+                    sudo bash -c "${command}"
+                done
 
-            terraform fmt ${landingzone_name}/caf.auto.tfvars
+                sudo terraform fmt ${landingzone_name}/caf.auto.tfvars
+            fi
 
-            cat << EOF > ${landingzone_name}/backend.hcl
+            export TF_VAR_workspace="${TF_VAR_environment}_${TF_VAR_level}_$(echo ${TF_VAR_tf_name} | cut -f 1 -d '.')"
+            export TF_VAR_tfstate_organization=${TF_VAR_tf_cloud_organization}
+            export TF_VAR_tfstate_hostname=${TF_VAR_tf_cloud_hostname}
+
+            sudo cat << EOF > ${landingzone_name}/backend.hcl
 workspaces { name = "${TF_VAR_workspace}" }
-hostname     = "${TFC_hostname}"
-organization = "${TFC_organization}"
+hostname     = "${TF_VAR_tf_cloud_hostname}"
+organization = "${TF_VAR_tf_cloud_organization}"
 EOF
-
 
             ;;
         *)
             tfstate_cleanup
-            error ${LINENO} "Error backend type not yet supported: ${TF_backend_type}" 3001
+            error ${LINENO} "Error backend type not yet supported: ${gitops_terraform_backend_type}" 3001
             ;;
     esac
 
 }
 
-function terraform_init_remote {
-    echo "@calling terraform_init_remote"
+function terraform_init {
+    echo "@calling terraform_init"
 
-    case "${TF_backend_type}" in
+    case "${gitops_terraform_backend_type}" in
         azurerm)
-            echo "@calling terraform_init_remote -- azurerm"
-            terraform_init_remote_azurerm
+            echo "@calling terraform_init -- azurerm"
+            terraform_init_azurerm
             ;;
-        tfc)
-            echo "@calling terraform_init_remote -- tfc"
-            terraform_init_remote_tfc
+        remote)
+            echo "@calling terraform_init -- remote"
+            terraform_init_remote
             ;;
         *)
-            error ${LINENO} "Error backend type not yet supported: ${TF_backend_type}" 3002
+            error ${LINENO} "Error backend type not yet supported: ${gitops_terraform_backend_type}" 3002
             ;;
     esac
 
@@ -108,7 +119,6 @@ function initialize_state {
     "apply")
         echo "calling apply"
         apply
-        get_storage_id
         upload_tfstate
         ;;
     "validate")
@@ -139,6 +149,7 @@ function upload_tfstate {
 
     echo "Moving launchpad to the cloud"
 
+    get_storage_id
     stg=$(az storage account show --ids ${id} -o json)
 
     export storage_account_name=$(echo ${stg} | jq -r .name) && echo " - storage_account_name: ${storage_account_name}"
@@ -191,13 +202,13 @@ function download_tfstate {
     fi
 }
 
-function deploy_from_remote_state {
-    echo "@calling deploy_from_remote_state"
+function deploy_from_azurerm_state {
+    echo "@calling deploy_from_azurerm_state"
 
     echo 'Connecting to the launchpad'
     cd ${landingzone_name}
 
-    tfstate_configure
+    tfstate_configure ${gitops_terraform_backend_type}
 
     login_as_launchpad
 
@@ -263,7 +274,10 @@ function destroy_from_remote_state {
     cd "${current_path}"
 }
 
-function terraform_init_remote_azurerm {
+function terraform_init_azurerm {
+
+    sudo rm -f -- ${landingzone_name}/backend.hcl.tf
+    cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
 
     case ${terraform_version} in
         *"15"* | *"1."*)
@@ -273,7 +287,7 @@ function terraform_init_remote_azurerm {
                 init \
                 -reconfigure \
                 -backend=true \
-                -upgrade=true \
+                -upgrade \
                 -backend-config storage_account_name=${TF_VAR_tfstate_storage_account_name} \
                 -backend-config resource_group_name=${TF_VAR_tfstate_resource_group_name} \
                 -backend-config container_name=${TF_VAR_workspace} \
@@ -301,23 +315,6 @@ function terraform_init_remote_azurerm {
     fi
 }
 
-function terraform_init_remote_tfc {
-
-    echo "@calling terraform_init_remote_tfc"
-
-    terraform -chdir=${landingzone_name} \
-        init \
-        -backend=true \
-        -upgrade \
-        -reconfigure \
-        -backend-config=${landingzone_name}/backend.hcl
-
-    RETURN_CODE=$?
-    if [ $RETURN_CODE != 0 ]; then
-        error ${LINENO} "Error running terraform init (tfc) " $RETURN_CODE
-    fi
-}
-
 function plan {
     echo "@calling plan"
 
@@ -339,7 +336,7 @@ function plan {
 
     echo "Running Terraforn plan..."
 
-    case "${TF_backend_type}" in
+    case "${gitops_terraform_backend_type}" in
         azurerm)
             echo "@calling terraform_plan -- azurerm"
             case ${terraform_version} in
@@ -347,7 +344,6 @@ function plan {
                     terraform -chdir=${landingzone_name} \
                         plan ${plan_command} \
                         -refresh=true \
-                        -detailed-exitcode \
                         -lock=false \
                         -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
                         -out="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"  | tee ${tf_output_file}
@@ -360,17 +356,16 @@ function plan {
                     ;;
             esac
             ;;
-        tfc)
-            echo "@calling terraform_plan -- tfc"
+        remote)
+            echo "@calling terraform_plan -- remote"
             terraform -chdir=${landingzone_name} \
                 plan \
                 -refresh=true \
-                -detailed-exitcode \
                 -lock=false \
                 -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" | tee ${tf_output_file}
             ;;
         *)
-            error ${LINENO} "Error backend type not yet supported: ${TF_backend_type}" 3003
+            error ${LINENO} "Error backend type not yet supported: ${gitops_terraform_backend_type}" 3003
             ;;
     esac
 
@@ -401,40 +396,7 @@ function plan {
 function apply {
     echo "@calling apply"
 
-    echo 'running terraform apply'
-    rm -f $STDERR_FILE
-
-    if [[ -z ${tf_plan_file} ]] && [ "${TF_backend_type}" == "azurerm" ]; then
-        echo "Plan not provided with -p or --plan so calling terraform plan"
-        plan
-
-        local tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
-    fi
-
-    echo "Running Terraform apply with plan ${tf_plan_file}"
-
-    case ${terraform_version} in
-        *"15"* | *"1."*)
-            echo "Terraform version 0.15 or greater"
-            terraform -chdir=${landingzone_name} \
-                apply \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${tf_plan_file}" | tee ${tf_output_file}
-            ;;
-        *)
-            terraform apply \
-                -state="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" \
-                "${tf_plan_file}" | tee ${tf_output_file}
-            ;;
-    esac
-
-    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform apply return code: ${RETURN_CODE}"
-
-    if [ $RETURN_CODE != 0 ]; then
-      error ${LINENO} "Error running terraform apply" $RETURN_CODE
-    else
-      export text_log_status="terraform apply succeeded"
-    fi
+    terraform_apply
 
 }
 
@@ -491,10 +453,10 @@ function destroy {
 
     if [ "$1" == "remote" ]; then
 
-        tfstate_configure
+        tfstate_configure ${gitops_terraform_backend_type}
 
         echo 'running terraform destroy remote'
-        terraform_init_remote_azurerm
+        terraform_init_azurerm
 
         if [ -z ${tf_plan_file} ]; then
             echo "Plan not provided with -p or --plan so calling terraform plan"

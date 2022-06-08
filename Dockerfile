@@ -320,15 +320,17 @@ RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa
     #
     # Install Oh My Zsh
     #
-    # chsh -s /bin/zsh ${USERNAME} && \
     sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
     chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
+    echo "DISABLE_UNTRACKED_FILES_DIRTY=\"true\"" >> /home/${USERNAME}/.zshrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
     echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
+    echo "cd /tf/caf || true" >> /home/${USERNAME}/.bashrc && \
+    echo "cd /tf/caf || true" >> /home/${USERNAME}/.zshrc && \
     echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
     echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
@@ -356,6 +358,6 @@ RUN echo  "Set rover version to ${versionRover}..." && echo "Installing Terrafor
     echo "${versionRover}" > /tf/rover/version.txt
 
 
-COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
+COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/terraform-enterprise-push.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 COPY ./scripts/lib/* ./lib/
