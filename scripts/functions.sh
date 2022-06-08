@@ -719,17 +719,17 @@ function checkout_module {
       error ${LINEO} "landingzone folder not setup properly. Fix and restart."
     fi
 
-    if [ ! $(git config --global --get safe.directory | grep "${base_folder}" &>/dev/null) ]; then
+    if [ ! $(git config --global --get safe.directory | grep "${base_folder}" 2>&1) ]; then
         git config --global --add safe.directory "${base_folder}"
     fi
 
     if [ -f "${base_folder}/.gitmodules" ]; then
         cd ${base_folder}
-        if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" &>/dev/null) ]; then
+        if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" 2>&1) ]; then
             git config --global --add safe.directory "${base_folder}/aztfmod"
         fi
-        git submodule init
-        git submodule update --remote --checkout
+        git submodule init 2>&1
+        git submodule update --remote --checkout 2>&1
     fi
 }
 
