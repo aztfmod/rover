@@ -711,10 +711,23 @@ function deploy {
 }
 
 function checkout_module {
-    # Update submodule branch based ont .gitmodules
+    # Update submodule branch based on .gitmodules
     cd ${landingzone_name}
-    if [ -f "$(git rev-parse --show-toplevel 2>/dev/null)/.gitmodules" ]; then
-        cd $(git rev-parse --show-toplevel)
+    base_folder=$(git rev-parse --show-toplevel)
+
+    if [ $? != 0 ]; then
+      error ${LINEO} "landingzone folder not setup properly. Fix and restart."
+    fi
+
+    if [ ! $(git config --global --get safe.directory | grep "${base_folder}" &>/dev/null) ]; then
+        git config --global --add safe.directory "${base_folder}"
+    fi
+
+    if [ -f "${base_folder}/.gitmodules" ]; then
+        cd ${base_folder}
+        if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" &>/dev/null) ]; then
+            git config --global --add safe.directory "${base_folder}/aztfmod"
+        fi
         git submodule init
         git submodule update --remote --checkout
     fi
