@@ -695,7 +695,9 @@ function deploy {
             migrate
             ;;
         *)
-            tfstate_configure ${gitops_terraform_backend_type}
+            if [ "${caf_command}" != "launchpad" ]; then
+                tfstate_configure ${gitops_terraform_backend_type}
+            fi
 
             if [ "${gitops_terraform_backend_type}" = "azurerm" ]; then
                 deploy_azurerm
