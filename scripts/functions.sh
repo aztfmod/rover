@@ -296,7 +296,6 @@ function login_as_sp_from_keyvault_secrets {
 
     information "Login with service principal"
     az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
-    az account set -s ${target_subscription}
 
     set +e
     trap - ERR
