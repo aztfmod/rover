@@ -25,7 +25,7 @@ bootstrap() {
 
   if [ ! -z ${bootstrap_scenario_file} ]; then
     register_rover_context
-    ${bootstrap_scenario_file} "GITOPS_SERVER_URL=https://${TF_VAR_tf_cloud_hostname}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}"
+    ${bootstrap_scenario_file} "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}"
   fi
 
 }
@@ -52,9 +52,11 @@ assert_gitops_session() {
 
   case "${1}" in
     "github")
+      GITOPS_SERVER_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
       check_github_session
       ;;
     "tfcloud")
+      GITOPS_SERVER_URL="https://${TF_VAR_tf_cloud_hostname}"
       check_terraform_session
       ;;
     "*")

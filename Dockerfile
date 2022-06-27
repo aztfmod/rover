@@ -69,6 +69,7 @@ RUN apt-get update && \
     locales \
     make \
     openssh-server \
+    dnsutils \
     python3-dev \
     python3-pip \
     software-properties-common \
