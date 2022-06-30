@@ -70,11 +70,13 @@ function create_federated_credentials {
   cred=$(az rest --uri "https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials" --query "value[?name=='${1}'].{name:name}[0]" -o tsv)
 
   if [ -z "${cred}" ]; then
-    echo "Adding federated credential to ${app_object_id} with 'name':'${1}','subject':'${2}','description':'${3}'"
+    info "Adding federated credential to ${app_object_id} with 'name':'${1}','subject':'${2}','description':'${3}'"
 
     az rest --method POST \
       --uri "https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials" \
       --body "{'name':'${1}','issuer':'https://token.actions.githubusercontent.com','subject':'${2}','description':'${3}','audiences':['api://AzureADTokenExchange']}"
+  else
+    information "Federated tokens up-to-date for '${2}'."
   fi
 
 }

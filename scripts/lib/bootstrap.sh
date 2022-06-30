@@ -23,9 +23,9 @@ bootstrap() {
 
   process_gitops_agent_pool ${gitops_agent_pool_type}
 
-  if [ ! -z ${bootstrap_scenario_file} ]; then
+  if [ ! -z ${bootstrap_script} ]; then
     register_rover_context
-    ${bootstrap_scenario_file} "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}"
+    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "AZURE_OBJECT_ID=${app_object_id}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}"
   fi
 
 }
@@ -53,6 +53,7 @@ assert_gitops_session() {
   case "${1}" in
     "github")
       GITOPS_SERVER_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+      AGENT_TOKEN=$(gh api --method POST -H "Accept: application/vnd.github.v3+json" /repos/${GITHUB_REPOSITORY}/actions/runners/registration-token | jq -r .token)
       check_github_session
       ;;
     "tfcloud")
@@ -111,8 +112,19 @@ register_rover_context() {
   register_gitops_secret ${gitops_pipelines} "CAF_TERRAFORM_LZ_URL" ${GIT_URL}
   register_gitops_secret ${gitops_pipelines} "CAF_GITOPS_TERRAFORM_BACKEND_TYPE" ${gitops_terraform_backend_type}
   register_gitops_secret ${gitops_pipelines} "CAF_BACKEND_TYPE_HYBRID" ${backend_type_hybrid}
-  register_gitops_secret ${gitops_pipelines} "AZURE_MANAGEMENT_SUBSCRIPTION_ID" ${TF_VAR_tfstate_subscription_id}
-  register_gitops_secret ${gitops_pipelines} "ARM_USE_OIDC" true
+  register_gitops_secret ${gitops_pipelines} "RUNNER_REGISTRATION_TOKEN" ${AGENT_TOKEN}
+  register_gitops_secret ${gitops_pipelines} "RUNNER_NUMBERS" ${gitops_number_runners}
+
+  if [ ! -z ${ARM_USE_OIDC} ]; then
+    register_gitops_secret ${gitops_pipelines} "ARM_USE_OIDC" ${ARM_USE_OIDC}
+  fi
+
+  if [ "${subscription_deployment_mode}" = "multi_subscriptions" ]; then
+    register_gitops_secret ${gitops_pipelines} "AZURE_MANAGEMENT_SUBSCRIPTION_ID" ${sub_management}
+    register_gitops_secret ${gitops_pipelines} "AZURE_CONNECTIVITY_SUBSCRIPTION_ID" ${sub_connectivity}
+    register_gitops_secret ${gitops_pipelines} "AZURE_IDENTITY_SUBSCRIPTION_ID" ${sub_identity}
+    register_gitops_secret ${gitops_pipelines} "AZURE_SECURITY_SUBSCRIPTION_ID" ${sub_security}
+  fi
 
 }
 
@@ -152,6 +164,7 @@ create_gitops_federated_credentials() {
     "github")
       debug "github"
       create_federated_credentials "github-${git_project}-pull_request" "repo:${git_org_project}:pull_request" "${2}"
+      create_federated_credentials "github-${git_project}-refs-heads-bootstrap" "repo:${git_org_project}:ref:refs/heads/bootstrap" "${2}"
       ;;
     *)
       echo "Create a federated secret not supported yet for ${1}. You can submit a pull request"
