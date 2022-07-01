@@ -31,46 +31,63 @@ create_federated_identity() {
     success " - service principal created."
 
     if [ "${sp}" = '' ]; then
-      information "Failed to create the app and sp. retrying"
-      sleep 5
-      create_federated_identity ${appName}
+      information "Failed to create the app and sp. Check your permissions."
+      exit 1
     fi
 
-    app_object_id=$(echo ${app} | jq -r ".id")
-    client_id=$(echo ${sp} | jq -r ".appId")
-    object_id=$(echo ${sp} | jq -r ".id")
+    export app_object_id=$(echo ${app} | jq -r ".id")
+    sp_client_id=$(echo ${sp} | jq -r ".appId")
+    sp_object_id=$(echo ${sp} | jq -r ".id")
 
-    register_gitops_secret ${gitops_pipelines} "AZURE_CLIENT_ID" ${client_id}
-    register_gitops_secret ${gitops_pipelines} "AZURE_OBJECT_ID" ${object_id}
-    register_gitops_secret ${gitops_pipelines} "AZURE_TENANT_ID" ${tenant_id}
+    if [ ! -z  ${gitops_pipelines} ]; then
+      register_gitops_secret ${gitops_pipelines} "AZURE_CLIENT_ID" ${sp_client_id}
+      register_gitops_secret ${gitops_pipelines} "AZURE_OBJECT_ID" ${app_object_id}
+      register_gitops_secret ${gitops_pipelines} "AZURE_TENANT_ID" ${tenant_id}
+    fi
   
   else
     success " - application already created."
     success " - service principal already created."
+
+    app=$(az ad app list --filter "displayname eq '${appName}'" -o json --only-show-errors) && debug "app: ${app}"
+    sp=$(az ad sp list --filter "DisplayName eq '${appName}'" --only-show-errors) && debug "sp: ${sp}"
+    export app_object_id=$(echo ${app} | jq -r ".[0].id")
+    sp_client_id=$(echo ${app} | jq -r ".[0].appId")
+    sp_object_id=$(echo ${sp} | jq -r ".[0].id")
+
+
+    if [ ! -z  ${gitops_pipelines} ]; then
+      register_gitops_secret ${gitops_pipelines} "AZURE_CLIENT_ID" ${sp_client_id}
+      register_gitops_secret ${gitops_pipelines} "AZURE_OBJECT_ID" ${app_object_id}
+      register_gitops_secret ${gitops_pipelines} "AZURE_TENANT_ID" ${tenant_id}
+    fi
+
+    fi
+
+  if [ ! -z  ${gitops_pipelines} ]; then
+    create_gitops_federated_credentials ${gitops_pipelines} ${appName}
+
+    scope="/subscriptions/${sub_management:=$(az account show --query id -o tsv)}"
+    information "Granting Reader role to ${appName} on ${scope}"
+    az role assignment create \
+      --role "Reader" \
+      --assignee-object-id ${sp_object_id} \
+      --assignee-principal-type ServicePrincipal \
+      --scope ${scope} \
+      --only-show-errors
   fi
-
-
-  app=$(az ad app list --filter "displayname eq '${appName}'" -o json --only-show-errors)
-  sp=$(az ad sp list --filter "DisplayName eq '${appName}'" --only-show-errors)
-  export app_object_id=$(echo ${app} | jq -r ".[0].id")
-  create_gitops_federated_credentials ${gitops_pipelines} ${appName}
-
-  az role assignment create \
-    --role "Owner" \
-    --assignee-object-id $(echo ${sp} | jq -r ".[0].id") \
-    --assignee-principal-type ServicePrincipal \
-    --scope /subscriptions/${TF_VAR_tfstate_subscription_id} \
-    --only-show-errors
-
 }
 
 
 function create_federated_credentials {
 
-  cred=$(az rest --uri "https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials" --query "value[?name=='${1}'].{name:name}[0]" -o tsv)
+  debug "az rest --uri \"https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials\" --query \"value[?name==\'${1}\'].{name:name}[0]\" -o json"
 
-  if [ -z "${cred}" ]; then
-    info "Adding federated credential to ${app_object_id} with 'name':'${1}','subject':'${2}','description':'${3}'"
+  cred=$(az rest --uri "https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials" --query "value[?name=='${1}'].{name:name}[0]" -o json | jq -r .name)
+  debug "value is '${cred}'"
+
+  if [ "${cred}" = '' ]; then
+    information "Adding federated credential to ${app_object_id} with 'name':'${1}','subject':'${2}','description':'${3}'"
 
     az rest --method POST \
       --uri "https://graph.microsoft.com/beta/applications/${app_object_id}/federatedIdentityCredentials" \
