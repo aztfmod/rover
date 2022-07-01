@@ -21,13 +21,16 @@ bootstrap() {
     create_federated_identity ${aad_app_name}
   fi
 
-  process_gitops_agent_pool ${gitops_agent_pool_type}
+  if [ ! -z ${gitops_pipelines} ]; then
+    process_gitops_agent_pool ${gitops_agent_pool_type}
+  fi
 
   if [ ! -z ${bootstrap_script} ]; then
     register_rover_context
-    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "AZURE_OBJECT_ID=${app_object_id}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}"
+    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "AZURE_OBJECT_ID=${app_object_id}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}"
   fi
 
+  information "Done."
 }
 
 assert_sessions() {
@@ -69,7 +72,7 @@ assert_gitops_session() {
 
 
 process_gitops_agent_pool() {
-  information "@call process_gitops_agent_pool"
+  information "@call process_gitops_agent_pool for ${1}"
 
   case "${1}" in
     "github")
