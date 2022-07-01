@@ -133,7 +133,7 @@ while (( "$#" )); do
             shift 1
             export caf_command="ignite"
             ;;
-        --playbook)
+        --playbook | -playbook)
             export caf_ignite_playbook=${2}
             shift 2
             ;;
@@ -266,8 +266,8 @@ while (( "$#" )); do
                 export caf_command="bootstrap"
                 shift 1
                 ;;
-        -bootstrap-scenario-file)
-                export bootstrap_scenario_file=${2}
+        -bootstrap-scenario-file | -bootstrap-script)
+                export bootstrap_script=${2}
                 shift 2
                 ;;
         -aad-app-name)
@@ -308,6 +308,30 @@ while (( "$#" )); do
         -gitops-agent-pool-id)
                 export gitops_agent_pool_id=${2}
                 shift 2
+                ;;
+        -subscription-deployment-mode)
+                export subscription_deployment_mode=${2}
+                shift 2
+                ;;
+        -sub-management)
+                export sub_management=${2}
+                shift 2
+                ;;
+        -sub-connectivity)
+                export sub_connectivity=${2}
+                shift 2
+                ;;
+        -sub-identity)
+                export sub_identity=${2}
+                shift 2
+                ;;
+        -sub-security)
+                export sub_security=${2}
+                shift 2
+                ;;
+        -arm_use_oidc)
+                export ARM_USE_OIDC=true
+                shift 1
                 ;;
         *) # preserve positional arguments
                 PARAMS+="${1} "
