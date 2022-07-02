@@ -27,7 +27,7 @@ bootstrap() {
 
   if [ ! -z ${bootstrap_script} ]; then
     register_rover_context
-    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "AZURE_OBJECT_ID=${app_object_id}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}"
+    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}" "TF_VAR_environment=${TF_VAR_environment}" "bootstrap_sp_object_id=${sp_object_id}"
   fi
 
   information "Done."
@@ -110,9 +110,6 @@ register_rover_context() {
   GIT_URL=$(git remote get-url origin)
 
   register_gitops_secret ${gitops_pipelines} "ROVER_AGENT_DOCKER_IMAGE" ${ROVER_AGENT_DOCKER_IMAGE}
-  register_gitops_secret ${gitops_pipelines} "CAF_ENVIRONMENT" ${TF_VAR_environment}
-  register_gitops_secret ${gitops_pipelines} "CAF_TERRAFORM_LZ_REF" ${GIT_REFS##*/}
-  register_gitops_secret ${gitops_pipelines} "CAF_TERRAFORM_LZ_URL" ${GIT_URL}
   register_gitops_secret ${gitops_pipelines} "CAF_GITOPS_TERRAFORM_BACKEND_TYPE" ${gitops_terraform_backend_type}
   register_gitops_secret ${gitops_pipelines} "CAF_BACKEND_TYPE_HYBRID" ${backend_type_hybrid}
   register_gitops_secret ${gitops_pipelines} "RUNNER_REGISTRATION_TOKEN" ${AGENT_TOKEN}
@@ -167,7 +164,9 @@ create_gitops_federated_credentials() {
     "github")
       debug "github"
       create_federated_credentials "github-${git_project}-pull_request" "repo:${git_org_project}:pull_request" "${2}"
+      create_federated_credentials "github-${git_project}-refs-heads-main" "repo:${git_org_project}:ref:refs/heads/main" "${2}"
       create_federated_credentials "github-${git_project}-refs-heads-bootstrap" "repo:${git_org_project}:ref:refs/heads/bootstrap" "${2}"
+      create_federated_credentials "github-${git_project}-refs-heads-bootstrap" "repo:${git_org_project}:ref:refs/heads/end2end" "${2}"
       ;;
     *)
       echo "Create a federated secret not supported yet for ${1}. You can submit a pull request"
