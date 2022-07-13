@@ -132,7 +132,7 @@ function display_login_instructions {
 function display_instructions {
     echo ""
     echo "You can deploy a landingzone with the rover by running:"
-    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show']"
+    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show'|'show']"
     echo ""
 
 }

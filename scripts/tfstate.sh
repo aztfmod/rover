@@ -466,24 +466,16 @@ function validate {
 function show {
     echo "@calling show"
 
-    echo "running terraform show with ${tf_command}"
+    echo "running terraform ${tf_action} with ${tf_command}"
     echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
     echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
     echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
     rm -f $STDERR_FILE
 
-    terraform ${tf_action} \
-        -json | jq >> ${tf_show_file}
-        #"${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    
+    terraform ${tf_action} -json  | jq '.terraform_version'  
 
     RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
-
-    if [ -s $STDERR_FILE ]; then
-        if [ ${tf_output_file+x} ]; then cat $STDERR_FILE >>${tf_output_file}; fi
-        echo "Terraform returned errors:"
-        cat $STDERR_FILE
-        RETURN_CODE=2003
-    fi
 
     if [ $RETURN_CODE != 0 ]; then
         error ${LINENO} "Error running terraform ${tf_action}" $RETURN_CODE
