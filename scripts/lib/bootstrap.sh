@@ -103,7 +103,7 @@ process_gitops_agent_pool() {
 register_rover_context() {
   information "@call register_rover_context"
 
-  ROVER_AGENT_DOCKER_IMAGE=$(curl -s https://hub.docker.com/v2/repositories/aztfmod/rover-agent/tags | jq -r ".results | map(select(.name | contains(\"${docker_hub_suffix}\") and contains(\"preview\")) | select(.name | contains(\"1.2.0\") | not ) ) | .[0].name")
+  ROVER_AGENT_DOCKER_IMAGE=$(curl -s https://hub.docker.com/v2/repositories/aztfmod/rover-agent/tags | jq -r ".results | map(select(.name | contains(\"${docker_hub_suffix}\") ) | select(.name | contains(\"1.2\") ) ) | .[0].name")
 
   cd /tf/caf/landingzones
   GIT_REFS=$(git show-ref | grep $(git rev-parse HEAD) | awk '{print $2}' | head -n 1)
@@ -166,7 +166,7 @@ create_gitops_federated_credentials() {
       create_federated_credentials "github-${git_project}-pull_request" "repo:${git_org_project}:pull_request" "${2}"
       create_federated_credentials "github-${git_project}-refs-heads-main" "repo:${git_org_project}:ref:refs/heads/main" "${2}"
       create_federated_credentials "github-${git_project}-refs-heads-bootstrap" "repo:${git_org_project}:ref:refs/heads/bootstrap" "${2}"
-      create_federated_credentials "github-${git_project}-refs-heads-bootstrap" "repo:${git_org_project}:ref:refs/heads/end2end" "${2}"
+      create_federated_credentials "github-${git_project}-refs-heads-end2end" "repo:${git_org_project}:ref:refs/heads/end2end" "${2}"
       ;;
     *)
       echo "Create a federated secret not supported yet for ${1}. You can submit a pull request"
