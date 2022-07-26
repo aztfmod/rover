@@ -17,7 +17,7 @@ function tfstate_configure {
         azurerm)
             echo "@calling tfstate_configure -- azurerm"
             sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-            cp -f ${script_path}/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
+            sudo cp -f ${script_path}/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
             ;;
         remote)
             echo "@calling tfstate_configure -- remote"
@@ -277,7 +277,7 @@ function destroy_from_remote_state {
 function terraform_init_azurerm {
 
     sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-    cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
+    sudo cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
 
     case ${terraform_version} in
         *"15"* | *"1."*)
