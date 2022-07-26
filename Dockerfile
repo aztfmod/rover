@@ -1,7 +1,7 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM --platform=${TARGETPLATFORM} ubuntu:21.10 as base
+FROM --platform=${TARGETPLATFORM} ubuntu:22.04 as base
 
 SHELL ["/bin/bash", "-c"]
 
@@ -97,7 +97,7 @@ RUN apt-get update && \
     #
     # Add Microsoft repository
     #
-    sudo apt-add-repository https://packages.microsoft.com/ubuntu/21.10/prod && \
+    sudo apt-add-repository https://packages.microsoft.com/ubuntu/22.04/prod && \
     #
     # Add Docker repository
     #
