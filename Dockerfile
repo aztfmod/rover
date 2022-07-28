@@ -213,6 +213,7 @@ RUN apt-get update && \
     #
     echo "Installing latest Azure CLI ..." && \
     pip3 install azure-cli  && \
+    az extension add --name ${extensionsAzureCli} --system && \
     az config set extension.use_dynamic_install=yes_without_prompt && \
     #
     # Install checkov
