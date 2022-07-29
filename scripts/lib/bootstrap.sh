@@ -55,9 +55,8 @@ assert_gitops_session() {
 
   case "${1}" in
     "github")
-      GITOPS_SERVER_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
-      AGENT_TOKEN=$(gh api --method POST -H "Accept: application/vnd.github.v3+json" /repos/${GITHUB_REPOSITORY}/actions/runners/registration-token | jq -r .token)
       check_github_session
+      AGENT_TOKEN=$(gh api --method POST -H "Accept: application/vnd.github.v3+json" /repos/${git_org_project}/actions/runners/registration-token | jq -r .token)
       ;;
     "tfcloud")
       GITOPS_SERVER_URL="https://${TF_VAR_tf_cloud_hostname}"
