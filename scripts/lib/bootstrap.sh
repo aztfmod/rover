@@ -124,6 +124,11 @@ register_rover_context() {
     register_gitops_secret ${gitops_pipelines} "AZURE_CONNECTIVITY_SUBSCRIPTION_ID" ${sub_connectivity}
     register_gitops_secret ${gitops_pipelines} "AZURE_IDENTITY_SUBSCRIPTION_ID" ${sub_identity}
     register_gitops_secret ${gitops_pipelines} "AZURE_SECURITY_SUBSCRIPTION_ID" ${sub_security}
+  else
+    register_gitops_secret ${gitops_pipelines} "AZURE_MANAGEMENT_SUBSCRIPTION_ID" ${sub_management}
+    register_gitops_secret ${gitops_pipelines} "AZURE_CONNECTIVITY_SUBSCRIPTION_ID" ${sub_management}
+    register_gitops_secret ${gitops_pipelines} "AZURE_IDENTITY_SUBSCRIPTION_ID" ${sub_management}
+    register_gitops_secret ${gitops_pipelines} "AZURE_SECURITY_SUBSCRIPTION_ID" ${sub_management}
   fi
 
 }
