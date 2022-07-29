@@ -24,7 +24,7 @@ variable "versionRover" {
 }
 
 group "rover_agents" {
-  targets = ["github","azdo", "tfc", "gitlab"]
+  targets = ["github", "tfc", "gitlab"]
 }
 
 target "github" {
