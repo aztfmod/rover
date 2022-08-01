@@ -1,6 +1,5 @@
 check_github_session() {
-  debug "github"
-  set -e
+  information "@call check_github_session"
   url=$(git config --get remote.origin.url)
   export git_org_project=$(echo "$url" | sed -e 's#^https://github.com/##; s#^git@github.com:##; s#.git$##')
   export git_project=$(basename -s .git $(git config --get remote.origin.url))
@@ -22,7 +21,7 @@ check_github_session() {
 }
 
 verify_git_settings(){
-  debug "@call verify_git_settings for ${1}"
+  information "@call verify_git_settings for ${1}"
 
   command=${1}
   eval ${command}
@@ -34,7 +33,7 @@ verify_git_settings(){
 }
 
 verify_github_secret() {
-  debug "@call register_github_secret for ${1}/${2}"
+  information "@call verify_github_secret for ${1}/${2}"
 
   application=${1}
   secret_name=${2}
@@ -42,6 +41,10 @@ verify_github_secret() {
   /usr/bin/gh secret list -a ${application} | grep "${secret_name}"
 
   RETURN_CODE=$?
+
+  echo "return code ${RETURN_CODE}"
+
+  set -e
   if [ $RETURN_CODE != 0 ]; then
       error ${LINENO} "You need to set the ${application}/${secret_name} in your project as per instructions in the documentation." $RETURN_CODE
   fi
