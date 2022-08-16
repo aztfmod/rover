@@ -1,0 +1,10 @@
+---
+version: '3.8'
+
+services:
+  rover-agent:
+    image: rover-agent:1.2.7-2208.170552-local-github
+    build:
+      context: .
+    env_file:
+      - ./variables.env

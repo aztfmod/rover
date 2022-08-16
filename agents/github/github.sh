@@ -8,7 +8,7 @@ function finally {
   ./config.sh remove --token ${AGENT_TOKEN}
 }
 
-trap finally EXIT SIGTERM SIGKILL TERM
+trap finally EXIT SIGTERM SIGQUIT TERM INT SIGINT SIGABRT SIGHUP
 
 AGENT_SUFFIX=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 5 | head -n 1)
 AGENT_NAME=${AGENT_NAME:="agent-${AGENT_SUFFIX}"}
@@ -53,6 +53,13 @@ command="./config.sh \
     echo "--name ${AGENT_NAME}"
   fi)"
 
+echo "running command:" && echo $command
+
+
 eval $command
 
 ./run.sh
+
+if [ "${EPHEMERAL}" = "true" ]; then
+  finally
+fi
