@@ -2,7 +2,8 @@
 
 set -Ee
 
-function finally {
+function finally() 
+{
   echo "Trapped: $1"
   echo "Un-register the runner"
   ./config.sh remove --token ${AGENT_TOKEN}
@@ -59,7 +60,3 @@ echo "running command:" && echo $command
 eval $command
 
 ./run.sh
-
-if [ "${EPHEMERAL}" = "true" ]; then
-  finally
-fi
