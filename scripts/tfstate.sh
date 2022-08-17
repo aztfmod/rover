@@ -3,8 +3,8 @@ source ${script_path}/lib/terraform.sh
 function tfstate_cleanup {
 
     find /tf/caf -name "backend.*.tf" -not -path '*/rover/scripts/*' -delete || true
-    sudo rm -rf -- "${landingzone_name}/backend.hcl.tf" || true
-    sudo rm -rf -- "${landingzone_name}/backend.hcl" || true
+    rm -rf -- "${landingzone_name}/backend.hcl.tf" || true
+    rm -rf -- "${landingzone_name}/backend.hcl" || true
     rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
     rm -rf -- "${TF_DATA_DIR}/terraform.tfstate" || true
     
@@ -16,30 +16,30 @@ function tfstate_configure {
     case "${1}" in
         azurerm)
             echo "@calling tfstate_configure -- azurerm"
-            sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-            sudo cp -f ${script_path}/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
+            rm -f -- ${landingzone_name}/backend.hcl.tf
+            cp -f ${script_path}/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
             ;;
         remote)
             echo "@calling tfstate_configure -- remote"
-            sudo rm -f -- ${landingzone_name}/backend.azurerm.tf
-            sudo cp -f ${script_path}/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
+            rm -f -- ${landingzone_name}/backend.azurerm.tf
+            cp -f ${script_path}/backend.hcl.tf ${landingzone_name}/backend.hcl.tf
 
             if [ ! -z ${TF_var_folder} ]; then
-                sudo rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
+                rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
                 for filename in ${TF_var_folder}/*.tfvars; do
                     command="cat ${filename} >> ${landingzone_name}/caf.auto.tfvars && printf '\n' >> ${landingzone_name}/caf.auto.tfvars"
                     debug ${command}
-                    sudo bash -c "${command}"
+                    eval ${command}
                 done
 
-                sudo terraform fmt ${landingzone_name}/caf.auto.tfvars
+                terraform fmt ${landingzone_name}/caf.auto.tfvars
             fi
 
             export TF_VAR_workspace="${TF_VAR_environment}_${TF_VAR_level}_$(echo ${TF_VAR_tf_name} | cut -f 1 -d '.')"
             export TF_VAR_tfstate_organization=${TF_VAR_tf_cloud_organization}
             export TF_VAR_tfstate_hostname=${TF_VAR_tf_cloud_hostname}
 
-            sudo cat << EOF > ${landingzone_name}/backend.hcl
+            cat << EOF > ${landingzone_name}/backend.hcl
 workspaces { name = "${TF_VAR_workspace}" }
 hostname     = "${TF_VAR_tf_cloud_hostname}"
 organization = "${TF_VAR_tf_cloud_organization}"
@@ -276,8 +276,8 @@ function destroy_from_remote_state {
 
 function terraform_init_azurerm {
 
-    sudo rm -f -- ${landingzone_name}/backend.hcl.tf
-    sudo cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
+    rm -f -- ${landingzone_name}/backend.hcl.tf
+    cp -f /tf/rover/backend.azurerm.tf ${landingzone_name}/backend.azurerm.tf
 
     case ${terraform_version} in
         *"15"* | *"1."*)
