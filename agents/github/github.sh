@@ -29,8 +29,7 @@ else
   exit 1
 fi
 
-LABELS+=",runner-version-$(./run.sh --version),"
-LABELS+=$(cat /tf/rover/version.txt)
+LABELS+=",$(cat /tf/rover/version.txt),"
 
 if [ -d "/var/run/docker.sock" ]; then
   # Grant access to the docker socket
@@ -44,6 +43,7 @@ echo " - name: ${AGENT_NAME}"
 
 command="./config.sh \
   --unattended \
+  --disableupdate \
   --replace \
   --url ${URL} \
   --token ${AGENT_TOKEN} \

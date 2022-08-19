@@ -27,7 +27,7 @@ bootstrap() {
 
   if [ ! -z ${bootstrap_script} ]; then
     register_rover_context
-    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "AGENT_TOKEN=${AGENT_TOKEN}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}" "TF_VAR_environment=${TF_VAR_environment}" "bootstrap_sp_object_id=${sp_object_id}"
+    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}" "TF_VAR_environment=${TF_VAR_environment}" "bootstrap_sp_object_id=${sp_object_id}"
   fi
 
   information "Done."
@@ -56,7 +56,6 @@ assert_gitops_session() {
   case "${1}" in
     "github")
       check_github_session
-      AGENT_TOKEN=$(gh api --method POST -H "Accept: application/vnd.github.v3+json" /repos/${git_org_project}/actions/runners/registration-token | jq -r .token)
       ;;
     "tfcloud")
       GITOPS_SERVER_URL="https://${TF_VAR_tf_cloud_hostname}"
@@ -111,8 +110,6 @@ register_rover_context() {
   register_gitops_secret ${gitops_pipelines} "ROVER_AGENT_DOCKER_IMAGE" ${ROVER_AGENT_DOCKER_IMAGE}
   register_gitops_secret ${gitops_pipelines} "CAF_GITOPS_TERRAFORM_BACKEND_TYPE" ${gitops_terraform_backend_type}
   register_gitops_secret ${gitops_pipelines} "CAF_BACKEND_TYPE_HYBRID" ${backend_type_hybrid}
-  register_gitops_secret ${gitops_pipelines} "RUNNER_REGISTRATION_TOKEN" ${AGENT_TOKEN}
-  register_gitops_secret ${gitops_pipelines} "RUNNER_NUMBERS" ${gitops_number_runners}
 
   if [ ! -z ${ARM_USE_OIDC} ]; then
     register_gitops_secret ${gitops_pipelines} "ARM_USE_OIDC" ${ARM_USE_OIDC}
