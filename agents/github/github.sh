@@ -15,7 +15,7 @@ function finally()
   ./config.sh remove --token ${AGENT_TOKEN}
 }
 
-trap_with_arg finally 0 1 2 3 4 5 6 7 8 9
+trap_with_arg finally 0 1 2 3 4 5 6 7 8 9 SIGTERM
 
 AGENT_SUFFIX=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 5 | head -n 1)
 AGENT_NAME=${AGENT_NAME:="agent-${AGENT_SUFFIX}"}
