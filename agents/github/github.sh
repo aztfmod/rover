@@ -24,7 +24,7 @@ if [ -n "${AGENT_TOKEN}" ]; then
   echo "Connect to GitHub using AGENT_TOKEN environment variable."
 elif [ -n "${GH_TOKEN}" ]; then
   echo "Connect to GitHub using GH_TOKEN environment variable to retrieve registration token."
-  AGENT_TOKEN=$(curl -sX POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/${GH_OWNER}/${REPOSITORY}/actions/runners/registration-token | jq -r .token)
+  AGENT_TOKEN=$(curl -sX POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${GH_TOKEN}" https://api.github.com/repos/${GH_OWNER}/${GH_REPOSITORY}/actions/runners/registration-token | jq -r .token)
 elif [ -n "${KEYVAULT_NAME}" ]; then
   echo "Connect to Azure AD using MSI ${MSI_ID}"
   az login --identity -u ${MSI_ID} --allow-no-subscriptions
@@ -51,7 +51,7 @@ command="./config.sh \
   --unattended \
   --disableupdate \
   --replace \
-  --url ${URL}/${GH_OWNER}/${REPOSITORY} \
+  --url ${URL}/${GH_OWNER}/${GH_REPOSITORY} \
   --token ${AGENT_TOKEN} \
   --labels ${LABELS} \
   $(if [ "${EPHEMERAL}" = "true" ]; then
