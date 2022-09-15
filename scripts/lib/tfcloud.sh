@@ -184,7 +184,6 @@ process_terraform_cloud_agent_pool() {
     fi
 
     create_agent_token ${TF_CLOUD_AGENT_POOL_ID} ${agent_pool} "Cloud Adoption Framework - Rover"
-    register_gitops_secret ${gitops_pipelines} "${TF_VAR_level}_RUNNER_NUMBERS" ${gitops_number_runners}
 }
 
 create_agent_token() {

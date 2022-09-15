@@ -65,5 +65,11 @@ RUN echo "versionRover=${versionRover}" && \
     rm -rf /home/vscode/agent/externals/node && \
     rm -rf /home/vscode/agent/externals/node10 && \
     rm -rf /tmp/*
+    #
+    # install node 16
+    #
+    curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    node --version
 
 CMD /bin/bash -c ./azdo.sh

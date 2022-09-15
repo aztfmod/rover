@@ -14,9 +14,6 @@ check_github_session() {
     verify_github_secret "codespaces" "GH_TOKEN"
   fi
 
-  verify_git_settings "git config --global user.name"
-  verify_git_settings "git config --global user.email"
-
   /usr/bin/gh auth status
 }
 

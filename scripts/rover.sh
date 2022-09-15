@@ -45,10 +45,10 @@ export TF_VAR_tf_cloud_organization=${TF_CLOUD_ORGANIZATION}
 export TF_VAR_tf_cloud_hostname=${TF_CLOUD_HOSTNAME:="app.terraform.io"}
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
 export gitops_terraform_backend_type=${TF_VAR_backend_type:="azurerm"}
-export gitops_agent_pool_type=${GITOPS_AGENT_POOL_TYPE:="github"}
+export gitops_agent_pool_type=${GITOPS_AGENT_POOL_TYPE:="local"}
 export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
 export gitops_execution_mode="local"
-export gitops_number_runners=1
+export gitops_number_runners=0  # 0 - auto-scale , or set the number of minimum runners
 export backend_type_hybrid=${BACKEND_type_hybrid:=true}
 export gitops_agent_pool_execution_mode=local
 
