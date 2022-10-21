@@ -18,7 +18,7 @@ function terraform_plan {
       colorFlag="-no-color"
     fi
 
-    echo "Running Terraforn plan..."
+    echo "Running Terraform plan..."
 
 
     echo "@calling terraform_plan -- ${gitops_terraform_backend_type}"
