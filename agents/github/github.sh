@@ -16,7 +16,7 @@ function finally()
   ./config.sh remove --token ${AGENT_TOKEN}
 }
 
-trap_with_arg finally 1 2 3 4 5 6 7 8 9 15
+trap_with_arg finally 0 1 2 3 4 5 6 7 8 9 15
 
 if [ -n "${RUNNER_NAME}" ]; then
   AGENT_NAME="${RUNNER_NAME}"
@@ -96,3 +96,6 @@ echo "running command:" && echo $command_logs
 eval $command
 
 ./run.sh
+
+# Un-register on termination - ephemeral
+finally
