@@ -45,7 +45,7 @@ else
   exit 1
 fi
 
-LABELS+=",$(cat /tf/rover/version.txt)"
+LABELS+=",rover,$(cat /tf/rover/version.txt)"
 
 if [ -n "${GITHUB_URL}" ]; then
   FULL_URL=${GITHUB_URL}${RUNNER_REPO}
