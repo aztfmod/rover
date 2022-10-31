@@ -7,7 +7,7 @@ function tfstate_cleanup {
     rm -rf -- "${landingzone_name}/backend.hcl" || true
     rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
     rm -rf -- "${TF_DATA_DIR}/terraform.tfstate" || true
-    
+
 }
 
 function tfstate_configure {
@@ -334,7 +334,7 @@ function plan {
       colorFlag="-no-color"
     fi
 
-    echo "Running Terraforn plan..."
+    echo "Running Terraform plan..."
 
     case "${gitops_terraform_backend_type}" in
         azurerm)

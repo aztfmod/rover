@@ -10,7 +10,7 @@ versionVault="1.11.4"
 
 # Agents versions
 USERNAME="vscode"
-versionAzdo="2.211.0"
-versionGithubRunner="2.297.0"
+versionAzdo="2.211.1"
+versionGithubRunner="2.298.2"
 versionGitlab="15.2.2"
 versionTfc="1.3.1"
