@@ -3,7 +3,8 @@
 trap_with_arg() {
     func="$1" ; shift
     for sig; do
-        trap "$func $sig" "$sig"
+      echo "setup trap for $sig"
+      trap "$func $sig" "$sig"
     done
 }
 
@@ -15,7 +16,7 @@ function finally()
   ./config.sh remove --token ${AGENT_TOKEN}
 }
 
-trap_with_arg finally 0 1 2 3 4 5 6 7 8 9 15
+trap_with_arg finally 1 2 3 4 5 6 7 8 9 15
 
 if [ -n "${RUNNER_NAME}" ]; then
   AGENT_NAME="${RUNNER_NAME}"
@@ -76,7 +77,20 @@ command="./config.sh \
     echo "--name ${AGENT_NAME}"
   fi)"
 
-echo "running command:" && echo $command
+command_logs="./config.sh \
+  --unattended \
+  --disableupdate \
+  --replace \
+  --url ${FULL_URL} \
+  --token 'xxxx' \
+  --labels ${LABELS} \
+  $(if [ "${EPHEMERAL}" = "true" ] || [ "${RUNNER_EPHEMERAL}" = "true" ]; then
+    echo "--ephemeral --name ${AGENT_NAME}"
+  else
+    echo "--name ${AGENT_NAME}"
+  fi)"
+
+echo "running command:" && echo $command_logs
 
 
 eval $command
