@@ -233,7 +233,7 @@ RUN apt-get update && \
     if [ ${TARGETARCH} == "amd64" ]; then \
         echo ACCEPT_EULA=Y apt-get install -y --no-install-recommends unixodbc mssql-tools; \
     else \
-        echo "mssql-tools skipped as not running on amd64"; \
+        echo "mssql-tools skipped as not running on amr64"; \
     fi \
     #
     && echo "Installing latest shellspec..." && \

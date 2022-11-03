@@ -78,6 +78,10 @@ function process_actions {
             ignite ${tf_command}
             exit 0
             ;;
+        init)
+            init
+            exit 0
+            ;;
         workspace)
             workspace ${tf_command}
             exit 0
@@ -683,7 +687,7 @@ function deploy {
 
     cd ${landingzone_name}
     if [ -f "$(git rev-parse --show-toplevel)/.gitmodules" ]; then
-        version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry") 
+        version=$(cd $(git rev-parse --show-toplevel)/aztfmod &>/dev/null || cd $(git rev-parse --show-toplevel) && git branch -a --contains $(git rev-parse --short HEAD) || echo "from Terraform registry")
         information "CAF module version ($(git rev-parse --show-toplevel)/.gitmodules): $version"
     fi
     # for migration and hybrid support from azurerm to tfe
@@ -870,7 +874,7 @@ function get_rover_version {
         echo "local build"
     fi
 
-} 
+}
 
 #
 # This function verifies the vscode container is running the version specified in the docker-compose
