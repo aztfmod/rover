@@ -62,6 +62,7 @@ storage_account() {
   location=${2}
 
   random_length=$((22 - ${#TF_VAR_environment}))
+  typeset -l name
   name="st${TF_VAR_environment}$(echo $RANDOM | md5sum | head -c ${random_length}; echo;)"
 
   if [ "$(az storage account list --resource-group ${rg_name})" == "[]" ]; then
@@ -106,6 +107,7 @@ keyvault() {
   location=${2}
 
   random_length=$((22 - ${#TF_VAR_environment}))
+  typeset -l name
   name="kv${TF_VAR_environment}$(echo $RANDOM | md5sum | head -c ${random_length}; echo;)"
 
   if [ "$(az keyvault list --resource-group ${rg_name})" == "[]" ]; then
