@@ -735,7 +735,7 @@ function checkout_module {
                 git config --global --add safe.directory "${base_folder}/aztfmod"
             fi
             git submodule init 2>&1
-            git submodule update --remote --checkout 2>&1
+            git submodule update --force --checkout 2>&1
         fi
     fi
 }
