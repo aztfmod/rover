@@ -276,6 +276,10 @@ parse_parameters() {
         export sub_security=${2}
         shift 2
         ;;
+      -sub-sandbox)
+        export sub_sandbox=${2}
+        shift 2
+        ;;
       -arm_use_oidc)
         export ARM_USE_OIDC=true
         shift 1
