@@ -734,8 +734,7 @@ function checkout_module {
             if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" 2>&1) ]; then
                 git config --global --add safe.directory "${base_folder}/aztfmod"
             fi
-            git submodule init 2>&1
-            git submodule update --force --checkout 2>&1
+            git submodule update --init --recursive --rebase --remote --checkout --force 2>&1
         fi
     fi
 }
