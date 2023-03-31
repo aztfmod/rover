@@ -1,0 +1,118 @@
+name: Update rover components
+
+on:
+  schedule:
+    - cron: '0 18 * * 0' # 6:00 PM UTC every Sunday (2:00 AM Singapore Time)
+  workflow_dispatch:
+
+jobs:
+  update-rover-components:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Get Latest Docker Compose
+        id: get-latest-docker-compose-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r '.tag_name' | cut -c 2-)
+          echo "versionDockerCompose=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Golang Version
+        id: get-latest-golang-version
+        run: |
+          version=$(curl -sSL https://golang.org/VERSION?m=text | cut -c 3-)
+          echo "versionGolang=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Kubectl Version
+        id: get-latest-versionKubectl-version
+        run: |
+          version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d 'v' -f 2)
+          echo "versionKubectl=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Packer Version
+        id: get-latest-packer-version
+        run: |
+          version=$(curl -s "https://api.github.com/repos/hashicorp/packer/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | sed 's/^v//')
+          echo "versionPacker=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest PowerShell Version
+        id: get-latest-powershell-version
+        run: |
+          version=$(curl -s "https://api.github.com/repos/PowerShell/PowerShell/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | sed 's/^v//')
+          echo "versionPowershell=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Vault Version
+        id: get-latest-vault-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name' | cut -c 2-)
+          echo "versionVault=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Azure DevOps Agent Version
+        id: get-latest-azdo-version
+        run: |
+          version=$(curl -s "https://api.github.com/repos/microsoft/azure-pipelines-agent/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
+          echo "versionAzdo=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest GitHub Runner Version
+        id: get-latest-github-runner-version
+        run: |
+          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
+          echo "versionGithubRunner=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Gitlab Runner Version
+        id: get-latest-gitlab-runner-version
+        run: |
+          version=$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-runner/releases" | jq -r '.[].tag_name | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$";""))' | sort -rV | head -n1 | sed 's/^v//')
+          echo "versionGitlab=$version" >> $GITHUB_OUTPUT
+
+      - name: Get Latest Terraform Cloud Agent Version
+        id: get-latest-tfc-agent-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/hashicorp/terraform-docs-agents/releases/latest | jq -r '.tag_name' | cut -c 2-)
+          echo "versionTfc=$version" >> $GITHUB_OUTPUT
+
+      - name: Update latest Terraform Versions
+        id: get-latest-terraform-versions
+        run: |
+          versionsTerraform=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases | jq -r '.[] | select(.draft == false) | .tag_name' | sort -rV | awk -F. '!a[$1"."$2]++{print substr($0,2)}')
+          echo "${versionsTerraform}" > .env.terraform
+          sed -i '$a\' .env.terraform
+
+      - name: Update other components
+        run: |
+          versionDockerCompose=${{ steps.get-latest-docker-compose-version.outputs.versionDockerCompose }}
+          versionGolang=${{ steps.get-latest-golang-version.outputs.versionGolang }}
+          versionKubectl=${{ steps.get-latest-versionKubectl-version.outputs.versionKubectl }}
+          versionPacker=${{ steps.get-latest-packer-version.outputs.versionPacker }}
+          versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
+          versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
+          versionAzdo=${{ steps.get-latest-azdo-version.outputs.versionAzdo }}
+          versionGithubRunner=${{ steps.get-latest-github-runner-version.outputs.versionGithubRunner }}
+          versionTfc=${{ steps.get-latest-tfc-agent-version.outputs.versionTfc }}
+          versionGitlab=${{ steps.get-latest-gitlab-runner-version.outputs.versionGitlab }}
+
+          sed -i "s/versionDockerCompose=\"[^\"]*\"/versionDockerCompose=\"$versionDockerCompose\"/g" docker-bake.override.hcl
+          sed -i "s/versionGolang=\"[^\"]*\"/versionGolang=\"$versionGolang\"/g" docker-bake.override.hcl
+          sed -i "s/versionKubectl=\"[^\"]*\"/versionKubectl=\"$versionKubectl\"/g" docker-bake.override.hcl
+          sed -i "s/versionPacker=\"[^\"]*\"/versionPacker=\"$versionPacker\"/g" docker-bake.override.hcl
+          sed -i "s/versionPowershell=\"[^\"]*\"/versionPowershell=\"$versionPowershell\"/g" docker-bake.override.hcl
+          sed -i "s/versionVault=\"[^\"]*\"/versionVault=\"$versionVault\"/g" docker-bake.override.hcl
+          sed -i "s/versionAzdo=\"[^\"]*\"/versionAzdo=\"$versionAzdo\"/g" docker-bake.override.hcl
+          sed -i "s/versionGithubRunner=\"[^\"]*\"/versionGithubRunner=\"$versionGithubRunner\"/g" docker-bake.override.hcl
+          sed -i "s/versionTfc=\"[^\"]*\"/versionTfc=\"$versionTfc\"/g" docker-bake.override.hcl
+          sed -i "s/versionGitlab=\"[^\"]*\"/versionGitlab=\"$versionGitlab\"/g" docker-bake.override.hcl
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update components versions
+          branch: components-update
+          title: Update rover components
+          body: This pull request updates the ```docker-bake.override.hcl``` and ```.env.terraform``` with latest available versions.
