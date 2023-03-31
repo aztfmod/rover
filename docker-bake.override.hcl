@@ -7,6 +7,7 @@ versionPacker="1.8.3"
 versionPowershell="7.2.7"
 versionTerraformDocs="0.16.0"
 versionVault="1.12.3"
+versionAnsible="2.14.4"
 
 # Agents versions
 USERNAME="vscode"
