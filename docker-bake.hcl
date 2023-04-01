@@ -19,6 +19,7 @@ target "rover_local" {
     versionDockerCompose = versionDockerCompose
     versionGolang        = versionGolang
     versionKubectl       = versionKubectl
+    versionKubelogin     = versionKubelogin
     versionPacker        = versionPacker
     versionPowershell    = versionPowershell
     versionRover         = versionRover

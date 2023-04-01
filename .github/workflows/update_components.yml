@@ -35,6 +35,12 @@ jobs:
           version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d 'v' -f 2)
           echo "versionKubectl=$version" >> $GITHUB_OUTPUT
 
+      - name: Get Latest Kubelogin Version
+        id: get-latest-kubelogin-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | jq -r '.tag_name' | cut -c 2-)
+          echo "versionKubelogin=$version" >> $GITHUB_OUTPUT
+
       - name: Get Latest Packer Version
         id: get-latest-packer-version
         run: |
@@ -88,7 +94,8 @@ jobs:
         run: |
           versionDockerCompose=${{ steps.get-latest-docker-compose-version.outputs.versionDockerCompose }}
           versionGolang=${{ steps.get-latest-golang-version.outputs.versionGolang }}
-          versionKubectl=${{ steps.get-latest-versionKubectl-version.outputs.versionKubectl }}
+          versionKubectl=${{ steps.get-latest-kubectl-version.outputs.versionKubectl }}
+          versionKubelogin=${{ steps.get-latest-kubelogin-version.outputs.versionKubelogin }}
           versionPacker=${{ steps.get-latest-packer-version.outputs.versionPacker }}
           versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
@@ -100,6 +107,7 @@ jobs:
           sed -i "s/versionDockerCompose=\"[^\"]*\"/versionDockerCompose=\"$versionDockerCompose\"/g" docker-bake.override.hcl
           sed -i "s/versionGolang=\"[^\"]*\"/versionGolang=\"$versionGolang\"/g" docker-bake.override.hcl
           sed -i "s/versionKubectl=\"[^\"]*\"/versionKubectl=\"$versionKubectl\"/g" docker-bake.override.hcl
+          sed -i "s/versionKubelogin=\"[^\"]*\"/versionKubelogin=\"$versionKubelogin\"/g" docker-bake.override.hcl
           sed -i "s/versionPacker=\"[^\"]*\"/versionPacker=\"$versionPacker\"/g" docker-bake.override.hcl
           sed -i "s/versionPowershell=\"[^\"]*\"/versionPowershell=\"$versionPowershell\"/g" docker-bake.override.hcl
           sed -i "s/versionVault=\"[^\"]*\"/versionVault=\"$versionVault\"/g" docker-bake.override.hcl
