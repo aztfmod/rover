@@ -68,7 +68,7 @@ jobs:
       - name: Get Latest GitHub Runner Version
         id: get-latest-github-runner-version
         run: |
-          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
+          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[0] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
           echo "versionGithubRunner=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Gitlab Runner Version
