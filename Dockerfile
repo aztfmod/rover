@@ -14,6 +14,7 @@ ARG versionVault \
     versionPacker \
     versionGolang \
     versionTerraformDocs \
+    versionAnsible \
     extensionsAzureCli \
     SSH_PASSWD \
     TARGETARCH \
@@ -32,6 +33,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionTerraformDocs=${versionTerraformDocs} \
     versionPacker=${versionPacker} \
     versionPowershell=${versionPowershell} \
+    versionAnsible=${versionAnsible} \
     extensionsAzureCli=${extensionsAzureCli} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
@@ -230,6 +232,12 @@ RUN apt-get update && \
     #
     echo "Installing latest pywinrm ..." && \
     pip3 install pywinrm && \
+    #
+    #
+    # Install Ansible
+    #
+    echo "Installing Ansible ${versionAnsible} ..." && \
+    pip3 install ansible-core==${versionAnsible} && \
     #
     #
     # ################ Install apt packages ##################
