@@ -1,3 +1,7 @@
+for script in ${script_path}/tfcloud/*.sh; do
+  source "$script"
+done
+
 error() {
     if [ "$LOG_TO_FILE" == "true" ];then
         local logFile=$CURRENT_LOG_FILE
@@ -9,17 +13,20 @@ error() {
     local message="$2"
     local code="${3:-1}"
     local line_message=""
+    local source="${3:-${BASH_SOURCE[1]}}"
     if [ "$parent_lineno" != "" ]; then
         line_message="on or near line ${parent_lineno}"
     fi
 
     if [[ -n "$message" ]]; then
-        echo >&2 -e "\e[41mError $line_message: ${message}; exiting with status ${code}\e[0m"
+        error_message="\e[41mError $source $line_message: ${message}; exiting with status ${code}\e[0m"
     else
-        echo >&2 -e "\e[41mError $line_message; exiting with status ${code}\e[0m"
+        error_message="\e[41mError $source $line_message; exiting with status ${code}\e[0m"
     fi
+    echo >&2 -e ${error_message}
     echo ""
 
+    tfcloud_runs_cancel ${error_message}
     clean_up_variables
 
     exit ${code}
@@ -230,6 +237,14 @@ function verify_azure_session {
             login_as_sp_from_keyvault_secrets
         else
 
+            if [ ! -z "$ARM_CLIENT_ID" ] && [ ! -z "$ARM_CLIENT_SECRET" ] && [ ! -z "$ARM_SUBSCRIPTION_ID" ] && [ ! -z "$ARM_TENANT_ID" ]; then
+                warning "ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID are set in the parent shell but the Azure cli is connected to a user instead of a service principal"
+                warning "Rover will therefore unset those environment variables to deploy with the current Azure cli context."
+                warning "logout and login with the service principal:"
+                warning 'az login --service-principal -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET -t $ARM_TENANT_ID'
+                warning
+            fi
+
             # Cleanup any service principal variables
             unset ARM_TENANT_ID
             unset ARM_SUBSCRIPTION_ID
@@ -397,7 +412,7 @@ function deploy_landingzone {
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
-    if [ "${gitops_execution_mode}" = "local" ]; then
+    if [ "${gitops_agent_pool_execution_mode}" = "local" ]; then
 
         case "${tf_action}" in
         "plan")

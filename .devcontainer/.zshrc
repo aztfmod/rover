@@ -103,3 +103,6 @@ alias rover=/tf/rover/rover.sh
 alias t=/usr/bin/terraform
 alias k=/usr/bin/kubectl
 cd /tf/caf || true
+[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases
+source /tf/rover/zsh-autosuggestions.zsh
+alias watch=\"watch \"

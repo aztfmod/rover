@@ -9,6 +9,10 @@ information() {
     printf "\e[36m$@\n\e[0m"
 }
 
+warning() {
+    printf "\e[33m$@\n\e[0m"
+}
+
 success() {
     printf "\e[32m$@\n\e[0m"
 }
@@ -23,15 +27,15 @@ __log_init__() {
 
     # Set Time zone to UTC / Comment out to use local time
     export TZ=UTC
-  
+
     # map log level strings (FATAL, ERROR, etc.) to numeric values
     # Note the '-g' option passed to declare - it is essential
-   
+
     unset _log_levels _loggers_level_map
     declare -gA _log_levels _loggers_level_map
     _log_levels=([FATAL]=0 [ERROR]=1 [WARN]=2 [INFO]=3 [DEBUG]=4 [VERBOSE]=5)
-  
-   
+
+
     # hash to map loggers to their log levels
     # the default logger "default" has INFO as its default log level
     _loggers_level_map["default"]=3  # the log level for the default logger is INFO
@@ -45,7 +49,7 @@ __log_init__() {
     fi
 
     __create_dir__ "$log_folder_path"
-   
+
 }
 
 __create_dir__()  {
@@ -60,7 +64,7 @@ __set_tf_log__() {
     if [ ! -d "$log_folder_path/$logDate" ]; then
       mkdir -p "$log_folder_path/$logDate"
     fi
-  
+
     export TF_LOG_PATH="$log_folder_path/$logDate/tf_raw_$name.log"
     __set_text_log__ "$name"
 }
@@ -121,7 +125,7 @@ __reset_log__() {
 export_tf_environment_variables() {
   local severity=$1
   export LOG_SEVERITY=$severity
-  
+
   local tfLog
   local isAutomation=false
   case $severity in
@@ -148,7 +152,7 @@ export_tf_environment_variables() {
     FATAL)
       tfLog="ERROR"
       isAutomation=true
-      ;;                  
+      ;;
     *)
       error 0 "Uknown serverity"
       ;;
@@ -169,16 +173,16 @@ export_tf_environment_variables() {
 set_log_severity() {
     local logger=default in_level l
     export_tf_environment_variables "$1"
-   
+
     [[ $1 = "-l" ]] && { logger=$2; shift 2 2>/dev/null; }
     in_level="${1:-INFO}"
-    
+
     if [[ $logger ]]; then
         l="${_log_levels[$in_level]}"
-      
+
         if [[ $l ]]; then
             _loggers_level_map[$logger]=$l
-   
+
         else
             printf '%(%Y-%m-%dT%H:%M:%S %Z)T %-7s %s ' -1 WARN \
                 "${BASH_SOURCE[2]}:${BASH_LINENO[1]} Unknown log level '$in_level' for logger '$logger'; setting to INFO"
@@ -195,7 +199,7 @@ _log() {
     local in_level=$1; shift
     local logger=default log_level_set log_level
    # [[ $1 = "-l" ]] && { logger=$2; shift 2; }
-        
+
     log_level="${_log_levels[$in_level]}"
     log_level_set="${_loggers_level_map[$logger]}"
 
@@ -224,7 +228,7 @@ log_if_exists() {
   local formatted=$2
    if [ ! -z "$raw" ]; then
     echo $formatted
-  fi 
+  fi
 }
 
 #------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ variable "versionRover" {
 }
 
 group "rover_agents" {
-  targets = ["github", "tfc", "gitlab"]
+  targets = ["github", "tfc", "azdo", "gitlab"]
 }
 
 target "github" {
@@ -44,7 +44,7 @@ target "azdo" {
   dockerfile = "./agents/azure_devops/Dockerfile"
   tags = ["${registry}rover-agent:${tag}-${tag_strategy}azdo"]
   args = {
-    versionAzdo = versionAzdo
+    versionAzdo  = versionAzdo
     versionRover = versionRover
     USERNAME     = USERNAME
   }
@@ -57,7 +57,7 @@ target "tfc" {
   dockerfile = "./agents/tfc/Dockerfile"
   tags = ["${registry}rover-agent:${tag}-${tag_strategy}tfc"]
   args = {
-    versionTfc = versionTfc
+    versionTfc   = versionTfc
     versionRover = versionRover
     USERNAME     = USERNAME
   }
