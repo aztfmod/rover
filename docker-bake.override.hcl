@@ -12,7 +12,7 @@ versionAnsible="2.14.4"
 # Agents versions
 USERNAME="vscode"
 versionAzdo="3.220.0"
-versionGithubRunner="2.302.1"
+versionGithubRunner="2.304.0"
 versionGitlab="15.9.1"
 versionTfc="1.8.0"
 
