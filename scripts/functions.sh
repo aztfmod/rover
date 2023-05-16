@@ -146,21 +146,28 @@ function display_login_instructions {
 
 function display_instructions {
     echo ""
-    echo "You can deploy a landingzone with the rover by running:"
-    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show']"
+    warning "You can deploy a landingzone with the rover by running:"
+    warning "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show']"
     echo ""
 
 }
 
 function display_launchpad_instructions {
     echo ""
-    echo "You need to deploy the launchpad from the rover by running:"
+    warning "You need to deploy the launchpad from the rover by running (for production):"
     if [ -z "${TF_VAR_environment}" ]; then
-        echo " rover -lz /tf/caf/public/landingzones/caf_launchpad -a apply -launchpad"
+        warning " rover -lz /tf/caf/landingzones/caf_launchpad -a apply -launchpad"
     else
-        echo " rover -lz /tf/caf/public/landingzones/caf_launchpad -a apply -launchpad -env ${TF_VAR_environment}"
+        warning " rover -lz /tf/caf/landingzones/caf_launchpad -a apply -launchpad -env ${TF_VAR_environment}"
     fi
     echo ""
+    echo "To create a simple remote state backend on Azure (for testing) [are optional]:"
+    warning "Make sure you are connected with your Azure AD user before you run the rover init command." 
+    echo " rover init [-env myEnvironment] [-location southeastasia]"
+    echo ""
+    echo "To cleanup the azurerm backend storage account and keyvault:"
+    echo " rover init --clean"
+    echo
 }
 
 function verify_parameters {
@@ -688,7 +695,7 @@ function get_logged_user_object_id {
                 # When connected with a service account the name contains the objectId
                 export TF_VAR_logged_aad_app_objectId=$(az ad sp show --id ${clientId} --query id -o tsv --only-show-errors 2>/dev/null) && echo " Logged in rover app object_id: ${TF_VAR_logged_aad_app_objectId}"
                 export TF_VAR_logged_user_objectId=${TF_VAR_logged_aad_app_objectId}
-                echo " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
+                warning " - logged in Azure AD application:  $(az ad sp show --id ${clientId} --query displayName -o tsv --only-show-errors 2>/dev/null)"
                 ;;
         esac
 
@@ -762,10 +769,10 @@ function deploy_azurerm {
 
     case ${id} in
         "")
-            echo "No launchpad found."
+            warning "No launchpad found."
             if [ "${caf_command}" == "launchpad" ]; then
                 if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                    echo "Recover from an un-finished previous execution - ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+                    warning "Recover from an un-finished previous execution - ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
                     if [ "${tf_action}" == "destroy" ]; then
                         destroy
                     else
@@ -774,9 +781,9 @@ function deploy_azurerm {
                 else
                     rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                     if [ "${tf_action}" == "destroy" ]; then
-                        echo "There is no launchpad in this subscription"
+                        warning "There is no launchpad in this subscription"
                     else
-                        echo "Deploying from scratch the launchpad"
+                        warning "Deploying from scratch the launchpad"
                         rm -rf "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
                         initialize_state
                     fi
@@ -798,11 +805,11 @@ function deploy_azurerm {
             # Get the launchpad version
             caf_launchpad=$(az storage account show --ids $id -o json | jq -r ".tags | .caf_launchpad,.launchpad | select( . != null )")
             echo ""
-            echo "${caf_launchpad} already installed"
+            warning "launchpad: ${caf_launchpad} already installed"
             echo ""
 
             if [ -e "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}" ]; then
-                echo "Recover from an un-finished previous execution"
+                warning "Recover from an un-finished previous execution"
                 if [ "${tf_action}" == "destroy" ]; then
                     if [ "${caf_command}" == "landingzone" ]; then
                         login_as_launchpad
@@ -898,13 +905,13 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image')
+        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' || true)
         running_version=$(cat ${script_path}/version.txt |  egrep -o '[^\/]+$')
 
         if [ "${required_version}" != "${TF_VAR_rover_version}" ]; then
             information "The running version \"${TF_VAR_rover_version}\" does not match the required version ${required_version} of your local devcontainer (/tf/caf/.devcontainer/docker-compose.yml)."
             echo "Click on the Dev Container buttom on the left bottom corner and select rebuild container from the options."
-            echo "or set the environment variable to skip the verification \"export ROVER_RUNNER=true\""
+            warning "or set the environment variable to skip the verification \"export ROVER_RUNNER=true\""
             exit
         fi
     fi
