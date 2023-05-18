@@ -1,7 +1,10 @@
 source ${script_path}/lib/aad_constants.sh
-source ${script_path}/lib/tfcloud.sh
 source ${script_path}/lib/github.com.sh
 source ${script_path}/lib/azure_ad.sh
+
+for script in ${script_path}/tfcloud/*.sh; do
+  source "$script"
+done
 
 bootstrap() {
   information "@calling bootstrap"
@@ -22,12 +25,12 @@ bootstrap() {
   fi
 
   if [ ! -z ${gitops_pipelines} ]; then
-    process_gitops_agent_pool ${gitops_agent_pool_type}
+    process_gitops_agent_pool ${gitops_agent_pool_execution_mode}
   fi
 
   if [ ! -z ${bootstrap_script} ]; then
     register_rover_context
-    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "gitops_agent=${gitops_agent_pool_type}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}" "TF_VAR_environment=${TF_VAR_environment}" "bootstrap_sp_object_id=${sp_object_id}"
+    ${bootstrap_script} "topology_file=${caf_ignite_playbook}" "GITOPS_SERVER_URL=${GITOPS_SERVER_URL}" "RUNNER_NUMBERS=${gitops_number_runners}" "gitops_agent=${gitops_agent_pool_execution_mode}" "ROVER_AGENT_DOCKER_IMAGE=${ROVER_AGENT_DOCKER_IMAGE}" "subscription_deployment_mode=${subscription_deployment_mode}" "sub_management=${sub_management}" "sub_connectivity=${sub_connectivity}" "sub_identity=${sub_identity}" "sub_security=${sub_security}" "gitops_pipelines=${gitops_pipelines}" "TF_VAR_environment=${TF_VAR_environment}" "bootstrap_sp_object_id=${sp_object_id}"
   fi
 
   information "Done."
@@ -76,7 +79,7 @@ process_gitops_agent_pool() {
     "github")
       debug "github"
       export docker_hub_suffix="github"
-      
+
       ;;
     "tfcloud")
       debug "tfcloud"
@@ -109,7 +112,7 @@ register_rover_context() {
   GIT_URL=$(git remote get-url origin)
 
 
-  if [ "${gitops_agent_pool_type}" != "local" ];then
+  if [ "${gitops_agent_pool_execution_mode}" != "local" ];then
     register_gitops_secret ${gitops_pipelines} "ROVER_AGENT_DOCKER_IMAGE" ${ROVER_AGENT_DOCKER_IMAGE}
     register_gitops_secret ${gitops_pipelines} "CAF_GITOPS_TERRAFORM_BACKEND_TYPE" ${gitops_terraform_backend_type}
     register_gitops_secret ${gitops_pipelines} "CAF_BACKEND_TYPE_HYBRID" ${backend_type_hybrid}

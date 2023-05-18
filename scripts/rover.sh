@@ -9,6 +9,8 @@ export script_path=$(dirname "$BASH_SOURCE")
 
 source ${script_path}/clone.sh
 source ${script_path}/functions.sh
+export TF_VAR_rover_version=$(get_rover_version)
+source ${script_path}/banner.sh
 source ${script_path}/lib/bootstrap.sh
 source ${script_path}/lib/init.sh
 source ${script_path}/lib/logger.sh
@@ -18,8 +20,6 @@ source ${script_path}/remote.sh
 source ${script_path}/tfstate.sh
 source ${script_path}/walkthrough.sh
 
-export TF_VAR_rover_version=$(get_rover_version)
-source ${script_path}/banner.sh
 
 # symphony
 source ${script_path}/ci.sh
@@ -47,12 +47,12 @@ export TF_VAR_tf_cloud_organization=${TF_CLOUD_ORGANIZATION}
 export TF_VAR_tf_cloud_hostname=${TF_CLOUD_HOSTNAME:="app.terraform.io"}
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
 export gitops_terraform_backend_type=${TF_VAR_backend_type:="azurerm"}
-export gitops_agent_pool_type=${GITOPS_AGENT_POOL_TYPE:="local"}
 export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
-export gitops_execution_mode="local"
 export gitops_number_runners=0  # 0 - auto-scale , or set the number of minimum runners
 export backend_type_hybrid=${BACKEND_type_hybrid:=true}
-export gitops_agent_pool_execution_mode=local
+export gitops_agent_pool_execution_mode=${GITOPS_AGENT_POOL_EXECUTION_MODE:="local"}
+export TF_VAR_tenant_id=${ARM_TENANT_ID:=}
+export TF_VAR_user_type=${TF_VAR_user_type:=ServicePrincipal} # assume Service Principal
 
 unset PARAMS
 
@@ -120,6 +120,7 @@ if [ "${caf_command}" != "walkthrough" ]; then
   information "tfstate subscription id       : '$(echo ${TF_VAR_tfstate_subscription_id})'"
   information "target subscription           : '$(echo ${target_subscription_name})'"
     fi
+  information "Tenant id                     : '$(echo ${TF_VAR_tenant_id})'"
   information "CI/CD enabled                 : '$(echo ${devops})'"
   information "Symphony Yaml file path       : '$(echo ${symphony_yaml_file})'"
   information "Run all tasks                 : '$(echo ${symphony_run_all_tasks})'"

@@ -16,6 +16,7 @@ ARG VSTS_AGENT_INPUT_SECRET
 ARG VSTS_AGENT_INPUT_TOKEN
 ARG VSTS_AGENT_INPUT_URL
 ARG VSTS_AGENT_KEYVAULT_NAME
+ARG versionNode="20"
 
 ENV AGENT_KEYVAULT_NAME=${AGENT_KEYVAULT_NAME} \
     DEBIAN_FRONTEND=noninteractive \
@@ -27,6 +28,7 @@ ENV AGENT_KEYVAULT_NAME=${AGENT_KEYVAULT_NAME} \
     TARGETOS=${TARGETOS} \
     USERNAME=${USERNAME} \
     versionAzdo=${versionAzdo} \
+    versionNode=${versionNode} \
     VSTS_AGENT_INPUT_AGENT=${VSTS_AGENT_INPUT_AGENT} \
     VSTS_AGENT_INPUT_AUTH=${VSTS_AGENT_INPUT_AUTH} \
     VSTS_AGENT_INPUT_POOL=${VSTS_AGENT_INPUT_POOL} \
@@ -34,7 +36,7 @@ ENV AGENT_KEYVAULT_NAME=${AGENT_KEYVAULT_NAME} \
     VSTS_AGENT_INPUT_TOKEN=${VSTS_AGENT_INPUT_TOKEN} \
     VSTS_AGENT_INPUT_URL=${VSTS_AGENT_INPUT_URL} \
     VSTS_AGENT_KEYVAULT_NAME=${VSTS_AGENT_KEYVAULT_NAME}
-
+    # https://github.com/microsoft/azure-pipelines-agent/issues/3599#issuecomment-1083564092
 
 RUN mkdir /home/${USERNAME}/agent
 
@@ -47,7 +49,7 @@ RUN echo "versionRover=${versionRover}" && \
     latestAzdo="$(curl -s https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest | grep -oP '"tag_name": "v\K(.*)(?=")')" && \
     echo "Info - Release "${latestAzdo}" appears to be latest" && \
     #
-    echo "Downloading Azure devops agent version ${versionAzdo}..." && \
+    echo "Downloading Azure devops agent version ${versionAzdo} for architecture ${TARGETARCH}..." && \
     #
     if [ ${TARGETARCH} == "amd64" ]; then \
         AGENTURL="https://vstsagentpackage.azureedge.net/agent/${versionAzdo}/vsts-agent-linux-x64-${versionAzdo}.tar.gz" ; \
@@ -56,20 +58,16 @@ RUN echo "versionRover=${versionRover}" && \
     fi \
     && curl -s ${AGENTURL} -o /tmp/agent_package.tar.gz && \
     tar zxvf /tmp/agent_package.tar.gz && \
-    sudo ./bin/installdependencies.sh && \
-    echo "dependencies installed" && \
     sudo chmod +x ./azdo.sh && \
     #
     # Cleanup
     #
-    rm -rf /home/vscode/agent/externals/node && \
-    rm -rf /home/vscode/agent/externals/node10 && \
-    rm -rf /tmp/*
+    rm -rf /tmp/* && \
     #
-    # install node 16
+    # install node # https://github.com/microsoft/azure-pipelines-agent/pull/4240
     #
-    curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    curl -sL https://deb.nodesource.com/setup_${versionNode}.x | sudo -E bash - && \
+    sudo apt-get install -y nodejs && \
     node --version
 
 CMD /bin/bash -c ./azdo.sh

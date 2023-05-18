@@ -75,14 +75,14 @@ storage_account() {
         --location ${location} \
         --allow-blob-public-access false \
         --sku Standard_LRS \
-        --tags caf_environment=${TF_VAR_environment} caf_tfstate=${TF_VAR_level} \
+        --tags caf_environment=${TF_VAR_environment} caf_tfstate=${TF_VAR_level} caf_launchpad="true" \
         --query id \
         -o tsv) && echo $id
 
       echo "stg created"
       az role assignment create \
         --role "Storage Blob Data Contributor" \
-        --assignee $(az ad signed-in-user show --query userPrincipalName -o tsv) \
+        --assignee $(az ad signed-in-user show --query userPrincipalName -o tsv --only-show-errors 2>/dev/null || az ad sp show --id $ARM_CLIENT_ID --query id -o tsv) \
         --scope $id \
         --query id
 
