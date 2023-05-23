@@ -1,4 +1,6 @@
-source ${script_path}/lib/tfcloud.sh
+for script in ${script_path}/tfcloud/*.sh; do
+  source "$script"
+done
 
 function deploy_remote {
     echo "@calling deploy_remote"
@@ -38,7 +40,7 @@ function terraform_init_remote {
     case "${tf_action}" in
         "migrate")
             migrate_command=$(purge_command migrate ${tf_command} $1)
-            create_workspace ${gitops_tfcloud_workspace_mode}
+            verify_create_workspace ${gitops_tfcloud_workspace_mode}
             cat ${landingzone_name}/backend.hcl
             echo "migrate command ${migrate_command}"
             terraform -chdir=${landingzone_name} \
@@ -49,16 +51,19 @@ function terraform_init_remote {
             ;;
         *)
             echo "gitops_agent_pool_execution_mode set to ${gitops_agent_pool_execution_mode}"
+
+            rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
+
             case "${gitops_agent_pool_execution_mode}" in
                 local)
-                    rm -f -- "${TF_DATA_DIR}/${TF_VAR_environment}/terraform.tfstate"
-                    create_workspace ${gitops_tfcloud_workspace_mode}
+
+                    verify_create_workspace ${gitops_tfcloud_workspace_mode}
                     terraform -chdir=${landingzone_name} \
                         init \
                         -upgrade \
                         -reconfigure  \
                         -backend-config=${landingzone_name}/backend.hcl | grep -P '^- (?=Downloading|Using|Finding|Installing)|^[^-]'
-                    
+
                     get_logged_user_object_id
                     case "${tf_action}" in
                         "plan")
@@ -80,16 +85,15 @@ function terraform_init_remote {
                             other
                             ;;
                     esac
-
                     ;;
                 agent)
-                    ${script_path}/terraform-enterprise-push.sh
+                    verify_create_workspace ${gitops_tfcloud_workspace_mode}
+                    tfcloud_trigger ${tf_action}
                     ;;
                 *)
                     error ${LINENO} "-gitops-agent-pool-execution-mode only local or agent supported. Got ${gitops_agent_pool_execution_mode}"
                     ;;
             esac
-            ;;
     esac
 
     RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
@@ -183,18 +187,23 @@ function destroy_remote {
     echo 'running terraform destroy remote'
     rm -f $STDERR_FILE
 
-    if [ -z ${tf_plan_file} ]; then
+    command="terraform -chdir=${landingzone_name} \\"
+
+    if [ -z ${tf_plan_file} ] && [ "${gitops_agent_pool_execution_mode}" != "local" ]; then
         echo "Plan not provided with -p or --plan so calling terraform plan"
         plan_remote "-destroy"
 
         local tf_plan_file="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+        command+="apply \
+            -refresh=false \
+            $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} \
+            ${tf_plan_file}"
+    else
+        command+="destroy \
+            -refresh=false ${tf_approve}"
     fi
 
-    terraform -chdir=${landingzone_name} \
-      apply \
-      -refresh=false \
-      $(parse_command_destroy_with_plan ${tf_command}) ${tf_approve} \
-      "${tf_plan_file}"
+    eval $command
 
     RETURN_CODE=$? && echo "Terraform apply return code: ${RETURN_CODE}"
 

@@ -26,6 +26,16 @@ cleanup() {
     docker rm --force registry_rover_tmp 2>/dev/null || true
 }
 
+get_arch() {
+    if [ "${1}" != "" ]; then
+        os=$(echo "${1}" | cut -d'/' -f1)
+        architecture=$(echo "${1}" | cut -d'/' -f2)
+    else
+        os=linux
+        architecture=$(echo $(uname -m))
+    fi
+}
+
 set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
@@ -36,6 +46,10 @@ build_date=date
 tag_date_preview=$(${build_date} +"%g%m.%d%H%M")
 tag_date_release=$(${build_date} +"%g%m.%d%H")
 export strategy=${1}
+
+get_arch ${arch}
+echo "OS: $os"
+echo "Architecture: $architecture"
 
 export DOCKER_CLIENT_TIMEOUT=600
 export COMPOSE_HTTP_TIMEOUT=600
@@ -98,7 +112,6 @@ function build_base_rover_image {
     case "${strategy}" in
         "local")
             echo "Building rover locally"
-            platform=$(uname -m)
 
             registry="${registry}" \
             versionRover="${rover_base}:${tag}" \
@@ -107,10 +120,22 @@ function build_base_rover_image {
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
-                --set *.platform=linux/${platform} \
+                --set *.platform=${os}/${architecture} \
                 --push rover_local
             # Pull from in-memory local registry to local docker images
-            docker pull ${rover}
+            docker pull --platform ${os}/${architecture} ${rover}
+            ;;
+        "dev")
+            echo "Building rover developer image and pushing to Docker Hub"
+            registry="${registry}" \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${rover}" \
+            docker buildx bake \
+                -f docker-bake.hcl \
+                -f docker-bake.override.hcl \
+                --set *.platform=${os}/${architecture} \
+                --push rover_registry
             ;;
         *)
             echo "Building rover image and pushing to Docker Hub"
@@ -143,13 +168,22 @@ function build_rover_agents {
     echo " - version Rover - ${rover_base}:${tag}"
     echo " - strategy      - ${strategy}"
     echo " - tag_strategy  - ${tag_strategy}"
+    echo " - agent          - ${agent}"
 
     tag=${versionTerraform}-${tag_date_preview}
 
     case "${strategy}" in
-        "local")
+        "local"|"dev")
+
+            if [[ ! -z $agent ]]; then
+                rover_agents=$agent
+            else
+                rover_agents="rover_agents"
+            fi
+
             echo " - tag           - ${tag}"
-            platform=$(uname -m)
+            platform="${architecture}"
+            rover_agents="${rover_agents}"
 
             registry="" \
             tag_strategy=${tag_strategy} \
@@ -159,8 +193,10 @@ function build_rover_agents {
             docker buildx bake \
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
-                --set *.platform=linux/${platform} \
-                --load rover_agents
+                --set *.platform=${os}/${platform} \
+                --load ${rover_agents}
+
+            echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}${rover_agents} for registry '${registry}'"
             ;;
         "github")
             tag=${versionTerraform}-${tag_date_release}
@@ -175,6 +211,8 @@ function build_rover_agents {
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
                 --push rover_agents
+
+            echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}* for registry '${registry}'"
             ;;
         "ci")
             echo " - tag           - ${tag}"
@@ -187,6 +225,8 @@ function build_rover_agents {
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
                 --push gitlab
+
+            echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}* for registry '${registry}'"
             ;;
         *)
             echo " - tag           - ${tag}"
@@ -199,10 +239,10 @@ function build_rover_agents {
                 -f docker-bake-agents.hcl \
                 -f docker-bake.override.hcl \
                 --push rover_agents
+
+            echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}* for registry '${registry}'"
             ;;
     esac
-
-    echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}github for registry '${registry}'"
 
 }
 
@@ -224,9 +264,11 @@ else
         build_base_rover_image ${versionTerraform} ${strategy}
     done <./.env.terraform
 
-    while read versionTerraform; do
-        build_rover_agents "${rover}" "${tag}" "${registry}"
-    done <./.env.terraform
+    if [ "${agent}" != "0" ]; then
+        while read versionTerraform; do
+            build_rover_agents "${rover}" "${tag}" "${registry}"
+        done <./.env.terraform
+    fi
 fi
 
 

@@ -15,6 +15,7 @@ ARG versionVault \
     versionPacker \
     versionGolang \
     versionTerraformDocs \
+    versionAnsible \
     extensionsAzureCli \
     SSH_PASSWD \
     TARGETARCH \
@@ -34,10 +35,11 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionTerraformDocs=${versionTerraformDocs} \
     versionPacker=${versionPacker} \
     versionPowershell=${versionPowershell} \
+    versionAnsible=${versionAnsible} \
     extensionsAzureCli=${extensionsAzureCli} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
-    TF_PLUGIN_CACHE_DIR="/home/${USERNAME}/.terraform.cache/plugin-cache" \
+    TF_PLUGIN_CACHE_DIR="/tf/cache" \
     TF_REGISTRY_DISCOVERY_RETRY=5 \
     TF_REGISTRY_CLIENT_TIMEOUT=15 \
     ARM_USE_MSGRAPH=true \
@@ -71,12 +73,16 @@ RUN apt-get update && \
     locales \
     make \
     openssh-server \
-    dnsutils \
+    # Networking tools
+    dnsutils net-tools iputils-ping traceroute \
     python3-dev \
     python3-pip \
+    rsync \
+    # openvpn client and ipsec tools to generate certificates
+    openvpn network-manager-openvpn strongswan strongswan-pki libstrongswan-extra-plugins libtss2-tcti-tabrmd0 \
+    #
     software-properties-common \
     sudo \
-    openvpn \
     unzip \
     vim \
     wget \
@@ -236,6 +242,12 @@ RUN apt-get update && \
     pip3 install pywinrm && \
     #
     #
+    # Install Ansible
+    #
+    echo "Installing Ansible ${versionAnsible} ..." && \
+    pip3 install ansible-core==${versionAnsible} && \
+    #
+    #
     # ################ Install apt packages ##################
     # For amd64 only - as no arm64 version packages available per:  https://packages.microsoft.com/ubuntu/20.04/prod/pool/main/m/mssql-tools/
     if [ ${TARGETARCH} == "amd64" ]; then \
@@ -266,6 +278,10 @@ RUN apt-get update && \
     echo "    enabled = true" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     echo "}" >> /home/${USERNAME}/.tflint.d/config/.tflint.hcl && \
     unzip -d /home/${USERNAME}/.tflint.d/plugins /tmp/tflint-ruleset-azurerm.zip && \
+    #
+    # Change ownership on the plugin cache directory
+    mkdir /tf/cache && \
+    chown -R ${USERNAME}:${USERNAME} ${TF_PLUGIN_CACHE_DIR} && \
     #
     # Create USERNAME home folder structure
     #
@@ -369,6 +385,7 @@ RUN echo  "Set rover version to ${versionRover}..." && echo "Installing Terrafor
     echo "${versionRover}" > /tf/rover/version.txt
 
 
-COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/terraform-enterprise-push.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
+COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 COPY ./scripts/lib/* ./lib/
+COPY ./scripts/tfcloud/* ./tfcloud/

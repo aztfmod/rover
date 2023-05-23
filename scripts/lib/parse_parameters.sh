@@ -16,6 +16,7 @@ parse_parameters() {
         export caf_command="landingzone"
         export landingzone_name=$(parameter_value --landingzone ${2})
         export TF_VAR_tf_name=${TF_VAR_tf_name:="$(basename ${landingzone_name}).tfstate"}
+        export lz_folder=${2}
         shift 2
         ;;
       -lp|--log-path)
@@ -140,6 +141,10 @@ parse_parameters() {
         export gitops_terraform_backend_type="remote"
         shift 2
         ;;
+      -tf_cloud_force_run)
+        export tf_cloud_force_run=true
+        shift 1
+        ;;
       -t|--tenant)
         export tenant=$(parameter_value --tenant ${2})
         shift 2
@@ -237,13 +242,13 @@ parse_parameters() {
         export gitops_pipelines_compute=${2}
         shift 2
         ;;
-      -gitops-agent-pool-type)
-        export gitops_agent_pool_type=${2}
-        if [ ${gitops_agent_pool_type} = "tfcloud" ]; then
-          export gitops_execution_mode="agent"
-        fi
-        shift 2
-        ;;
+      # -gitops-agent-pool-type)
+      #   export gitops_agent_pool_execution_mode=${2}
+      #   if [ ${gitops_agent_pool_execution_mode} = "tfcloud" ]; then
+      #     export gitops_agent_pool_execution_mode="agent"
+      #   fi
+      #   shift 2
+      #   ;;
       -gitops-agent-pool-execution-mode)
         export gitops_agent_pool_execution_mode=${2}
         shift 2

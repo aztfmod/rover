@@ -53,6 +53,12 @@ jobs:
           version=$(curl -s "https://api.github.com/repos/PowerShell/PowerShell/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | sed 's/^v//')
           echo "versionPowershell=$version" >> $GITHUB_OUTPUT
 
+      - name: Get Latest Ansible Version
+        id: get-latest-ansible-version
+        run: |
+          version=$(curl --silent "https://api.github.com/repos/ansible/ansible/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | cut -c 2-)
+          echo "versionAnsible=$version" >> $GITHUB_OUTPUT
+
       - name: Get Latest Vault Version
         id: get-latest-vault-version
         run: |
@@ -68,7 +74,7 @@ jobs:
       - name: Get Latest GitHub Runner Version
         id: get-latest-github-runner-version
         run: |
-          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
+          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[0] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
           echo "versionGithubRunner=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Gitlab Runner Version
@@ -99,6 +105,7 @@ jobs:
           versionPacker=${{ steps.get-latest-packer-version.outputs.versionPacker }}
           versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
+          versionAnsible=${{ steps.get-latest-ansible-version.outputs.versionAnsible }}
           versionAzdo=${{ steps.get-latest-azdo-version.outputs.versionAzdo }}
           versionGithubRunner=${{ steps.get-latest-github-runner-version.outputs.versionGithubRunner }}
           versionTfc=${{ steps.get-latest-tfc-agent-version.outputs.versionTfc }}
@@ -111,13 +118,14 @@ jobs:
           sed -i "s/versionPacker=\"[^\"]*\"/versionPacker=\"$versionPacker\"/g" docker-bake.override.hcl
           sed -i "s/versionPowershell=\"[^\"]*\"/versionPowershell=\"$versionPowershell\"/g" docker-bake.override.hcl
           sed -i "s/versionVault=\"[^\"]*\"/versionVault=\"$versionVault\"/g" docker-bake.override.hcl
+          sed -i "s/versionAnsible=\"[^\"]*\"/versionAnsible=\"$versionAnsible\"/g" docker-bake.override.hcl
           sed -i "s/versionAzdo=\"[^\"]*\"/versionAzdo=\"$versionAzdo\"/g" docker-bake.override.hcl
           sed -i "s/versionGithubRunner=\"[^\"]*\"/versionGithubRunner=\"$versionGithubRunner\"/g" docker-bake.override.hcl
           sed -i "s/versionTfc=\"[^\"]*\"/versionTfc=\"$versionTfc\"/g" docker-bake.override.hcl
           sed -i "s/versionGitlab=\"[^\"]*\"/versionGitlab=\"$versionGitlab\"/g" docker-bake.override.hcl
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3.12.0
+        uses: peter-evans/create-pull-request@v5.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update components versions
