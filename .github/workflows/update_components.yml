@@ -59,6 +59,12 @@ jobs:
           version=$(curl -s https://api.github.com/repos/hashicorp/vault/releases/latest | jq -r '.tag_name' | cut -c 2-)
           echo "versionVault=$version" >> $GITHUB_OUTPUT
 
+      - name: Get Latest Terrascan Version
+        id: get-latest-terrascan-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | jq -r '.tag_name' | cut -c 2-)
+          echo "versionTerrascan=$version" >> $GITHUB_OUTPUT
+
       - name: Get Latest Azure DevOps Agent Version
         id: get-latest-azdo-version
         run: |
@@ -99,6 +105,7 @@ jobs:
           versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
           versionAnsible=${{ steps.get-latest-ansible-version.outputs.versionAnsible }}
+          versionTerrascan=${{ steps.get-latest-terrascan-version.outputs.versionTerrascan }}
           versionAzdo=${{ steps.get-latest-azdo-version.outputs.versionAzdo }}
           versionGithubRunner=${{ steps.get-latest-github-runner-version.outputs.versionGithubRunner }}
           versionTfc=${{ steps.get-latest-tfc-agent-version.outputs.versionTfc }}
@@ -115,6 +122,7 @@ jobs:
           sed -i "s/versionGithubRunner=\"[^\"]*\"/versionGithubRunner=\"$versionGithubRunner\"/g" docker-bake.override.hcl
           sed -i "s/versionTfc=\"[^\"]*\"/versionTfc=\"$versionTfc\"/g" docker-bake.override.hcl
           sed -i "s/versionGitlab=\"[^\"]*\"/versionGitlab=\"$versionGitlab\"/g" docker-bake.override.hcl
+          sed -i "s/versionTerrascan=\"[^\"]*\"/versionTerrascan=\"$versionTerrascan\"/g" docker-bake.override.hcl
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5.0.1
