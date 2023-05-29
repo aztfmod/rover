@@ -141,7 +141,7 @@ parse_parameters() {
         export gitops_terraform_backend_type="remote"
         shift 2
         ;;
-      -tf_cloud_force_run)
+      -tf_cloud_force_run)    # Force to cancel a pending plan
         export tf_cloud_force_run=true
         shift 1
         ;;

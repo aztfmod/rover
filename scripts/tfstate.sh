@@ -465,7 +465,7 @@ function destroy {
             local tf_plan_file="${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
         fi
 
-        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+        RETURN_CODE=$? && echo "Line ${LINENO} - Terraform destroy return code ${RETURN_CODE}"
 
         case ${terraform_version} in
             *"15"* | *"1."*)

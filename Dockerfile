@@ -110,22 +110,21 @@ RUN apt-get update && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
     echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
     #
-    # Kubernetes repo
-    #
-    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
-    #
     # Github shell
     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
     apt-get update && \
     apt-get install -y --no-install-recommends \
     docker-ce-cli \
-    gh \
-    kubectl && \
+    gh && \
     #
     # ################# Install binary clients ###################
     #
+    #
+    # Install kubeclt
+    #
+    curl -L -o /tmp/kubectl https://dl.k8s.io/release/v${versionKubectl}/bin/linux/${TARGETOS}/kubectl && \
+    sudo install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl && \
     #
     # Install Docker Compose - required to rebuild the rover and dynamic terminal in VSCode
     #
