@@ -201,7 +201,7 @@ RUN apt-get update && \
     #
     echo "Installing Kubelogin ${versionKubelogin}..." && \
     curl -sSL -o /tmp/kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v${versionKubelogin}/kubelogin-${TARGETOS}-${TARGETARCH}.zip 2>&1 && \
-    unzip -d /usr/bin /tmp/kubelogin.zip && \
+    unzip -d /usr/ /tmp/kubelogin.zip && \
     chmod +x /usr/bin/kubelogin && \
     # Hashicorp Vault
     #
