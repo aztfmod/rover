@@ -125,6 +125,10 @@ function initialize_state {
         echo "calling validate"
         validate
         ;;
+    "show")
+        echo "calling show"
+        show
+        ;;
     "destroy")
         echo "No more tfstate file"
         exit
@@ -419,6 +423,30 @@ function validate {
         error ${LINENO} "Error running terraform validate" $RETURN_CODE
     fi
 
+}
+
+function show {
+    echo "@calling show"
+
+    show_command=$(purge_command show ${tf_command})
+    echo "running terraform ${tf_action} with ${show_command}"
+
+    echo " -TF_VAR_workspace: ${TF_VAR_workspace}"
+    echo " -state: ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
+    echo " -plan:  ${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_plan}"
+    rm -f $STDERR_FILE
+
+    cd ${landingzone_name}
+    terraform init -upgrade
+    terraform show ${show_command} | tee ${tf_output_file}
+
+    warning "terraform show output file: ${tf_output_file}"
+
+    RETURN_CODE=${PIPESTATUS[0]} && echo "Terraform ${tf_action} return code: ${RETURN_CODE}"
+
+    if [ $RETURN_CODE != 0 ]; then
+        error ${LINENO} "Error running terraform ${tf_action}" $RETURN_CODE
+    fi
 }
 
 function graph {

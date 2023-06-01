@@ -32,7 +32,7 @@ function parse_command_destroy_with_plan {
 function purge_command {
   PARAMS=''
   case "${1}" in
-    graph)
+    graph|show)
       shift 1
       purge_command_graph $@
       ;;
