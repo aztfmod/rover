@@ -73,12 +73,13 @@ def extract_tfstates(landingzone_str: str, current_level: str) -> Dict[str, Dict
     for tfstate in re.finditer(TFSTATE_REGEX, tfstates_map, flags=re.DOTALL):
         name = tfstate.group(1)
         level = extract_value(LEVEL_REGEX, tfstate.group(2), default='current')
-        tfstate_file = extract_value(TFSTATE_FILE_REGEX, tfstate.group(2))
-        tfstates_dict[name] = {
-          "level": level,
-          "tfstate": tfstate_file,
-          "tfcloud_workspace_name": "{}_{}_{}".format(args.env, calculate_level(current_level, level), tfstate_file.split('.tfstate')[0])
-        }
+        tfstate_file = extract_value(TFSTATE_FILE_REGEX, tfstate.group(2), default='')
+        if tfstate_file != "":
+          tfstates_dict[name] = {
+            "level": level,
+            "tfstate": tfstate_file,
+            "tfcloud_workspace_name": "{}_{}_{}".format(args.env, calculate_level(current_level, level), tfstate_file.split('.tfstate')[0])
+          }
 
     return tfstates_dict
 
@@ -107,7 +108,7 @@ if __name__ == '__main__':
 
 # This script processes an input landingzone variable and convert it to json
 #
-# python3 ./.devcontainer/hcl2json.py -input /tf/caf/landingzones/caf_launchpad/scenario/300-private-endpoints-with-bootstrap-azdo/level1/azdo_agent_levels/landingzone.tfvars -env vip -tfstate vip_launchpad | jq
+# python3 /tf/rover/tfcloud/hcl2json.py -input /tf/caf/landingzones/caf_launchpad/scenario/300-private-endpoints-with-bootstrap-azdo/level1/azdo_agent_levels/landingzone.tfvars -env vip -tfstate vip_launchpad | jq
 #
 
 # landingzone = {

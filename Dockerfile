@@ -123,11 +123,8 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
     docker-ce-cli \
-    gh \
     kubectl && \
-    #
-    # ################# Install binary clients ###################
-    #
+    gh && \
     #
     # Install Docker Compose - required to rebuild the rover and dynamic terminal in VSCode
     #

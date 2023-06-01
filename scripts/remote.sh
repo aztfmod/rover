@@ -86,7 +86,7 @@ function terraform_init_remote {
                             ;;
                     esac
                     ;;
-                agent)
+                agent|remote)
                     verify_create_workspace ${gitops_tfcloud_workspace_mode}
                     tfcloud_trigger ${tf_action}
                     ;;
@@ -96,7 +96,7 @@ function terraform_init_remote {
             esac
     esac
 
-    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform init return code ${RETURN_CODE}"
+    RETURN_CODE=$? && echo "Line ${LINENO} - Terraform ${tf_action} return code ${RETURN_CODE}"
 
 
 }

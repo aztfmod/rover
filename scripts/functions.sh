@@ -26,7 +26,9 @@ error() {
     echo >&2 -e ${error_message}
     echo ""
 
-    tfcloud_runs_cancel ${error_message}
+    if [[ "${backend_type_hybrid}" == "remote" ]]; then
+        tfcloud_runs_cancel ${error_message}
+    fi
     clean_up_variables
 
     exit ${code}
@@ -162,7 +164,7 @@ function display_launchpad_instructions {
     fi
     echo ""
     echo "To create a simple remote state backend on Azure (for testing) [are optional]:"
-    warning "Make sure you are connected with your Azure AD user before you run the rover init command." 
+    warning "Make sure you are connected with your Azure AD user before you run the rover init command."
     echo " rover init [-env myEnvironment] [-location southeastasia]"
     echo ""
     echo "To cleanup the azurerm backend storage account and keyvault:"

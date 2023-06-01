@@ -1,4 +1,3 @@
-#!/bin/bash
 
 tfcloud_trigger_run_init(){
   # Complete script for API-driven runs.
@@ -15,9 +14,12 @@ tfcloud_trigger_run_init(){
   CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
   # 2. Create the File for Upload
+  cd ${TF_var_folder}
+  debug "$(tar -cvf ${CONFIG_PATH}/configuration.tar --recursive --exclude "**/*.tfvars" --exclude "**/*.md" .)"
 
-  UPLOAD_FILE_NAME="${CONFIG_PATH}/caf-landingzones-$(date +%s).tar.gz"
-  tar -zcvf "$UPLOAD_FILE_NAME" \
+  cd ${landingzone_name}
+  UPLOAD_FILE_NAME="${CONFIG_PATH}/caf-landingzones-$(date +%s).tar"
+  debug "$(tar -cvf "${CONFIG_PATH}/code.tar" \
     --exclude "**/_pictures" \
     --exclude "**/examples" \
     --exclude "**/.*" \
@@ -27,8 +29,15 @@ tfcloud_trigger_run_init(){
     --exclude "**/scenario" \
     --exclude "**/*.md" \
     --exclude "**/*.log" \
-    . ./.terraform.lock.hcl
+    --exclude "**/add-ons"\
+    . ./.terraform.lock.hcl)"
     # 1>/dev/null
+
+  # concatenate
+  tar -A --file=${UPLOAD_FILE_NAME} ${CONFIG_PATH}/configuration.tar
+  gzip -k ${UPLOAD_FILE_NAME}
+  tar -tzf "${UPLOAD_FILE_NAME}.gz"
+  UPLOAD_FILE_NAME="${UPLOAD_FILE_NAME}.gz"
 
   # 3. Look Up the Workspace ID
   get_remote_token
@@ -87,120 +96,51 @@ tfcloud_trigger_run_init(){
   # Inject variables
 
   # Rover variables
+  # Structure:
+  # key,varname,description,sensitive,allowempty,var_category
+  vars_rover=("ARM_CLIENT_ID,ARM_CLIENT_ID,Service Principal client_id,false,false,env",
+    "ARM_TENANT_ID,ARM_TENANT_ID,Tenant ID,false,false,env",
+    "TF_VAR_rover_version,TF_VAR_rover_version,Version of the CAF Rover docker image,false,false,env",
+    "ARM_STORAGE_USE_AZUREAD,ARM_STORAGE_USE_AZUREAD,Should the AzureRM Provider use AzureAD to connect to the Storage Blob & Queue API rather than the SharedKey from the Storage Account?,false,false,env",
+    "TF_VAR_user_type,TF_VAR_user_type,Principal type (user or service principal),false,false,env",
+    "TF_VAR_tfstate_organization,TF_VAR_tfstate_organization,Organization name,false,false,env",
+    "TF_VAR_tfstate_hostname,TF_VAR_tfstate_hostname,URL of the endpoint,false,false,env",
+    "TF_VAR_environment,TF_VAR_environment,CAF environment,false,false,env",
+    "TF_VAR_tenant_id,ARM_TENANT_ID,Tenant ID,false,false,env",
+    "ARM_SUBSCRIPTION_ID,ARM_SUBSCRIPTION_ID,Target subscription id to deploy the resources,false,false,env",
+    "ARM_CLIENT_SECRET,ARM_CLIENT_SECRET,Client secret of the service principal.,true,false,env")
 
-  vars_rover=("ARM_CLIENT_ID,ARM_CLIENT_ID,Service Principal client_id,false,false",
-    "ARM_TENANT_ID,ARM_TENANT_ID,Tenant ID,false,false",
-    "TF_VAR_rover_version,TF_VAR_rover_version,Version of the CAF Rover docker image,false,false",
-    "ARM_STORAGE_USE_AZUREAD,ARM_STORAGE_USE_AZUREAD,Should the AzureRM Provider use AzureAD to connect to the Storage Blob & Queue API rather than the SharedKey from the Storage Account?,false,false",
-    "TF_VAR_user_type,TF_VAR_user_type,Principal type (user or service principal),false,false",
-    "TF_VAR_tfstate_organization,TF_VAR_tfstate_organization,Organization name,false,false",
-    "TF_VAR_tfstate_hostname,TF_VAR_tfstate_hostname,URL of the endpoint,false,false",
-    "TF_VAR_environment,TF_VAR_environment,CAF environment,false,false",
-    "TF_VAR_tenant_id,ARM_TENANT_ID,Tenant ID,false,false",
-    "ARM_SUBSCRIPTION_ID,ARM_SUBSCRIPTION_ID,Target subscripiton id to deploy the resources,false,false",
-    "ARM_CLIENT_SECRET,ARM_CLIENT_SECRET,Client secret of the service principal.,true,false")
+  tf_vars_prefixes=("TF_CLOUD_WORKSPACE_TF_SEC_VAR_,,,true,false,terraform",
+    "TF_CLOUD_WORKSPACE_TF_VAR_,,,false,false,terraform",
+    "TF_CLOUD_WORKSPACE_TF_SEC_ENV_,,,true,false,env",
+    "TF_CLOUD_WORKSPACE_TF_ENV_,,,false,false,env"
+  )
 
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/vars?filter%5Borganization%5D%5Bname%5D=${TF_VAR_tf_cloud_organization}&filter%5Bworkspace%5D%5Bname%5D=${TF_VAR_workspace}"
-    debug $url
-    vars=$(make_curl_request -url "$url")
-    debug $vars
+  # Store all the variables added to the workspace
+  vars_workspace=()
 
-  for var_obj in "${vars_rover[@]}"
-  do
-    IFS=',' read -r key varname description sensitive allowempty <<< "$var_obj"
-    value=$(env | grep $varname | cut -d= -f2)
+  url="https://${TF_VAR_tf_cloud_hostname}/api/v2/vars?filter%5Borganization%5D%5Bname%5D=${TF_VAR_tf_cloud_organization}&filter%5Bworkspace%5D%5Bname%5D=${TF_VAR_workspace}"
+  debug $url
+  vars=$(make_curl_request -url "$url")
+  debug $vars
 
-    var_id=$(echo $vars | jq -r ".data[] | select(.attributes.key == \"$key\") | .id")
-
-    if [[ "$allowempty" == "false" && -z "$value" ]];then
-      error "$var environment variable has not been set."
-    else
-
-      if [[ -z "$var_id" ]]; then
-        action="Adding"
-
-        BODY=$(jq -c -n \
-            --arg type "vars" \
-            --arg key "$key" \
-            --arg value "$value" \
-            --arg description "$description" \
-            --arg workspace_id "${workspace_id}" \
-            --arg sensitive "$sensitive" \
-            '
-              {
-                "data": {
-                  "attributes": {
-                    "key": $key,
-                    "value": $value,
-                    "description": $description,
-                    "category": "env",
-                    "sensitive": $sensitive
-                  },
-                  "type": $type,
-                  "relationships": {
-                    "workspace": {
-                      "data": {
-                        "type": "workspaces",
-                        "id": $workspace_id
-                      }
-                    }
-                  }
-                }
-              }
-            '
-          ) && debug " - body: $BODY"
-
-        url="https://${TF_VAR_tf_cloud_hostname}/api/v2/vars"
-        method="POST"
-
-      else
-        action="Updating"
-
-        BODY=$(jq -c -n \
-            --arg id $var_id \
-            --arg type "vars" \
-            --arg key "$key" \
-            --arg value "$value" \
-            --arg description "$description" \
-            --arg sensitive "$sensitive" \
-            '
-              {
-                "data": {
-                  "id": $id,
-                  "attributes": {
-                    "key": $key,
-                    "value": $value,
-                    "description": $description,
-                    "category": "env",
-                    "sensitive": $sensitive
-                  },
-                  "type": $type
-                }
-              }
-            '
-          ) && debug " - body: $BODY"
-
-        url="https://${TF_VAR_tf_cloud_hostname}/api/v2/vars/${var_id}"
-        method="PATCH"
-
-      fi
-
-      if [[ "$sensitive" == "true" ]]; then
-        warning "${action} variable $key: *********** [$description]"
-      else
-        warning "${action} variable $key: $value [$description]"
-      fi
-
-      result=$(make_curl_request -url "$url" -options "--request ${method}" -data "${BODY}")
-    fi
-
+  for var_obj_rover in "${vars_rover[@]}"; do
+    workspace_process_variable_rover "$var_obj_rover"
   done
+
+  # Process tf_vars_prefixes
+  for var_obj_prefix in "${tf_vars_prefixes[@]}"; do
+    workspace_process_variable_prefixes $var_obj_prefix
+  done
+
+  # Remove variables not set by the rover
+  workspace_variable_delete
 
   # 6. Grant workspace permissions
   #
   # Each tfstates defined in the var.landingzone.tfstates or var.landingzone.remote_tfstates
   #
-  conf_lz=$(grep -rl "landingzone = {" ${TF_var_folder}/*.tfvars)
+  conf_lz=$(grep -rl "^landingzone = {" ${TF_var_folder}/*.tfvars)
   if [ ! -z "$conf_lz" ]; then
     conf_lz_json=$(python3 ${script_path}/tfcloud/hcl_parser.py -input ${conf_lz} -env ${TF_VAR_environment})
     warning $conf_lz_json
@@ -225,7 +165,8 @@ tfcloud_trigger_run_init(){
   fi
 
   # List Sentinel Policy Sets
-  url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/policy-sets" && sentinel_list_result=$(make_curl_request -url "$url")
+  url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/policy-sets"
+  sentinel_list_result=$(make_curl_request -url "$url")
   sentinel_policy_set_count=$(echo $sentinel_list_result | tr '\r\n' ' ' | jq -r '.meta.pagination."total-count"')
   echo ""
   echo "Number of Sentinel policy sets: " $sentinel_policy_set_count

@@ -152,18 +152,20 @@ create_agent_token() {
 }
 
 tfcloud_trigger() {
+  echo "@calling tfcloud_trigger with ${1}"
+
   # Do a run
   sleep_duration=20
   override="no"
 
   rund_id="null"
-  case "${1}" in
+  case "${tf_action}" in
       "plan")
-          echo "trigger an API call for plan"
-          plan_command=$(purge_command plan ${tf_command} $1)
-          echo "running terraform plan with ${plan_command}"
+          echo "trigger an API call for plan '${tf_command}'"
+          plan_command=$(purge_command plan ${tf_command})
+          echo "running terraform plan with '${plan_command}'"
           tfcloud_trigger_run_init
-          tfcloud_trigger_plan ${plan_command}
+          tfcloud_trigger_plan "${plan_command}"
           tfcloud_monitor_run
           ;;
       "apply")
@@ -215,9 +217,9 @@ tfcloud_get_current_runid() {
 }
 
 tfcloud_trigger_plan() {
-  information "@calling tfcloud_trigger_plan $1" >&2
+  information "@calling tfcloud_trigger_plan" >&2
 
-  if [[ "$1" =~ ^(destroy|-destroy)$ ]]; then
+  if [[ "$1" =~ (destroy|-destroy)$ ]]; then
     is_destroy=true
   else
     is_destroy=false
@@ -308,14 +310,14 @@ tfcloud_monitor_run() {
     applied="false"
 
     # Run is planning - get the plan
-    sentinel_policy_set_count="** Not implemented yet **"
+    # sentinel_policy_set_count="** Not implemented yet **"
 
     # planned means plan finished and no Sentinel policy sets
     # exist or are applicable to the workspace
     if [[ "$run_status" == "planned" ]] && [[ "$is_confirmable" == "true" ]] && [[ "$override" == "no" ]]; then
       continue=0
       echo ""
-      echo "There are " $sentinel_policy_set_count "policy sets, but none of them are applicable to this workspace."
+      echo "There are ${sentinel_policy_set_count} policy sets, but none of them are applicable to this workspace."
       echo "Check the run in Terraform Enterprise UI and apply there if desired."
       save_plan="true"
     # cost_estimated means plan finished and costs were estimated
@@ -323,13 +325,13 @@ tfcloud_monitor_run() {
     elif [[ "$run_status" == "cost_estimated" ]] && [[ "$is_confirmable" == "true" ]] && [[ "$override" == "no" ]]; then
       continue=0
       echo ""
-      echo "There are " $sentinel_policy_set_count "policy sets, but none of them are applicable to this workspace."
+      echo "There are ${sentinel_policy_set_count} policy sets, but none of them are applicable to this workspace."
       echo "Check the run in Terraform Enterprise UI and apply there if desired."
       save_plan="true"
     elif [[ "$run_status" == "planned" ]] && [[ "$is_confirmable" == "true" ]] && [[ "$override" == "yes" ]]; then
       continue=0
       echo ""
-      echo "There are " $sentinel_policy_set_count "policy sets, but none of them are applicable to this workspace."
+      echo "There are ${sentinel_policy_set_count} policy sets, but none of them are applicable to this workspace."
       echo "Since override was set to \"yes\", we are applying."
       # Do the apply
       echo "Doing Apply"
@@ -338,7 +340,7 @@ tfcloud_monitor_run() {
     elif [[ "$run_status" == "cost_estimated" ]] && [[ "$is_confirmable" == "true" ]] && [[ "$override" == "yes" ]]; then
       continue=0
       echo ""
-      echo "There are " $sentinel_policy_set_count "policy sets, but none of them are applicable to this workspace."
+      echo "There are ${sentinel_policy_set_count} policy sets, but none of them are applicable to this workspace."
       echo "Since override was set to \"yes\", we are applying."
       # Do the apply
       echo "Doing Apply"
@@ -422,20 +424,22 @@ tfcloud_monitor_run() {
   #
   # TODO: Display only plan. Do we need to save it as a job artifact?
   #
-  if [[ "$save_plan" == "true" ]]; then
+  if [[ "$save_plan" == "true" && ("${tf_action}" == "plan" || "${tf_action}" == "destroy") ]]; then
     echo ""
     echo "Getting the result of the Terraform Plan."
 
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/runs/${run_id}/plan/json-output" && plan_result=$(make_curl_request -url "$url")
-    echo "Plan changes:"
-    echo $plan_result | jq .resource_changes
+    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/runs/${run_id}/plan"
+    run_result=$(make_curl_request -url "$url")
+    debug $(echo $run_result | jq)
+    has_changes=$(echo $run_result | jq -r '.data.attributes."has-changes"')
+    log_url_plan=$(echo $run_result | jq -r '.data.attributes."log-read-url"')
+    curl -sS $log_url_plan
     echo ""
-    echo "Output changes:"
-    echo $plan_result | jq .output_changes
+    warning "Terraform has changes: $has_changes"
   fi
 
   # Get the apply log and state file if an apply was done
-  if [[ "$applied" == "true" ]]; then
+  if [[ "${tf_action}" == "apply" ]]; then
 
     echo ""
     echo "An apply was done."
@@ -480,59 +484,21 @@ tfcloud_monitor_run() {
       fi
     done
 
-    # Get apply log url
+    # Get apply log urldebug $(echo $run_result | jq)
+    has_changes=$(echo $check_result | jq -r '.data.attributes."has-changes"')
     apply_log_url=$(echo $check_result | jq -r '.data.attributes."log-read-url"')
     echo ""
-    echo $check_result | jq
-    echo "Apply Log url: ${apply_log_url}"
-    echo ""
+    debug "Apply Log url: ${apply_log_url}"
 
     # Retrieve Apply Log from the url
     # and output to shell and file
     echo "Downloading the logs..."
-    result=$(make_curl_request "$apply_log_url" "$REMOTE_ORG_TOKEN" "-o ${TF_DATA_DIR}/${apply_id}.log")
-
-    while read -r line; do
-        echo "$line" | jq -c .  >/dev/null 2>&1 | jq -c 'select(.["@level"] == "info")' | jq -r '.["@message"]'
-    done < "${TF_DATA_DIR}/${apply_id}.log"
-
-    # Get state version ID from after the apply
-    state_id=$(echo $check_result | jq -r '.data.relationships."state-versions".data[0].id')
+    curl -sS -o ${TF_DATA_DIR}/${apply_id}.log $apply_log_url && cat ${TF_DATA_DIR}/${apply_id}.log
     echo ""
-    echo "State ID:" ${state_id}
 
-    # Call API to get information about the state version including its url and outputs
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/state-versions/${state_id}?include=outputs" && state_file_url_result=$(make_curl_request -url "$url")
-
-    # Retrieve and echo outputs from state
-    # Note that we retrieved outputs in the last API call by
-    # adding `?include=outputs`
-    # Instead of doing that, we could have retrieved the state version output
-    # IDs from the relationships of the above API call and could have then
-    # called the State Version Output API to retrieve details for each output.
-    # That would have involved urls like
-    # "https://${TF_VAR_tf_cloud_hostname}/api/v2/state-version-outputs/${output_id}"
-    # See `https://www.terraform.io/docs/cloud/api/state-version-outputs.html#show-a-state-version-output`
-    num_outputs=$(echo $state_file_url_result | jq -r '.included | length')
-    echo ""
-    echo "Outputs from State:"
-    for ((output=0;output<$num_outputs;output++))
-    do
-      echo $state_file_url_result | jq -r --arg OUTPUT $output '.included[$OUTPUT|tonumber].attributes'
-    done
-
-    # Get state file url from the result
-    state_file_url=$(echo $state_file_url_result | jq -r '.data.attributes."hosted-state-download-url"')
-    echo ""
-    echo "url for state file after apply:"
-    echo ${state_file_url}
-
-    # Retrieve state file from the url
-    # and output to shell and file
-    echo ""
-    echo "State file after the apply:"
-    curl -s $state_file_url | tee ${apply_id}-after.tfstate
-
+    if [[ "${apply_status}" == "errored" ]]; then
+      error "Apply failed"
+    fi
   fi
 }
 
@@ -571,7 +537,7 @@ function make_curl_request() {
   done
 
   command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer xxxxxx' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee /dev/stderr)"
-  echo "Running command: $command" >&2
+  debug "$(echo "Running command: $command")" >&2
   command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer  "$REMOTE_ORG_TOKEN"' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee /dev/stderr)"
 
   response=$(eval $command)
@@ -582,7 +548,7 @@ function make_curl_request() {
   body=$(echo $response | head -c -4)
   process_curl_response -status "$return_code" -http_code "$http_code" -url "$url" -gracefully_continue $gracefully_continue
 
-  debug $body >&2
+  # Send the return value
   echo $body
 }
 
