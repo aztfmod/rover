@@ -15,11 +15,11 @@ tfcloud_trigger_run_init(){
 
   # 2. Create the File for Upload
   cd ${TF_var_folder}
-  debug "$(tar -cvf ${CONFIG_PATH}/configuration.tar --recursive --exclude "**/*.tfvars" --exclude "**/*.md" .)"
+  tar -cvf ${CONFIG_PATH}/configuration.tar --recursive --exclude "**/*.tfvars" --exclude "**/*.md" . 1>/dev/null
 
   cd ${landingzone_name}
   UPLOAD_FILE_NAME="${CONFIG_PATH}/caf-landingzones-$(date +%s).tar"
-  debug "$(tar -cvf "${CONFIG_PATH}/code.tar" \
+  tar -cvf "${UPLOAD_FILE_NAME}" \
     --exclude "**/_pictures" \
     --exclude "**/examples" \
     --exclude "**/.*" \
@@ -30,8 +30,7 @@ tfcloud_trigger_run_init(){
     --exclude "**/*.md" \
     --exclude "**/*.log" \
     --exclude "**/add-ons"\
-    . ./.terraform.lock.hcl)"
-    # 1>/dev/null
+    . 1>/dev/null
 
   # concatenate
   tar -A --file=${UPLOAD_FILE_NAME} ${CONFIG_PATH}/configuration.tar
