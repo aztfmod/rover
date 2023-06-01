@@ -14,9 +14,12 @@ tfcloud_trigger_run_init(){
   CONFIG_PATH="${TF_DATA_DIR}/${TF_VAR_environment}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}"
 
   # 2. Create the File for Upload
+  cd ${TF_var_folder}
+  debug "$(tar -cvf ${CONFIG_PATH}/configuration.tar --recursive --exclude "**/*.tfvars" --exclude "**/*.md" .)"
 
-  UPLOAD_FILE_NAME="${CONFIG_PATH}/caf-landingzones-$(date +%s).tar.gz"
-  debug "$(tar -zcvf "$UPLOAD_FILE_NAME" \
+  cd ${landingzone_name}
+  UPLOAD_FILE_NAME="${CONFIG_PATH}/caf-landingzones-$(date +%s).tar"
+  debug "$(tar -cvf "${CONFIG_PATH}/code.tar" \
     --exclude "**/_pictures" \
     --exclude "**/examples" \
     --exclude "**/.*" \
@@ -29,6 +32,12 @@ tfcloud_trigger_run_init(){
     --exclude "**/add-ons"\
     . ./.terraform.lock.hcl)"
     # 1>/dev/null
+
+  # concatenate
+  tar -A --file=${UPLOAD_FILE_NAME} ${CONFIG_PATH}/configuration.tar
+  gzip -k ${UPLOAD_FILE_NAME}
+  tar -tzf "${UPLOAD_FILE_NAME}.gz"
+  UPLOAD_FILE_NAME="${UPLOAD_FILE_NAME}.gz"
 
   # 3. Look Up the Workspace ID
   get_remote_token
@@ -102,7 +111,9 @@ tfcloud_trigger_run_init(){
     "ARM_CLIENT_SECRET,ARM_CLIENT_SECRET,Client secret of the service principal.,true,false,env")
 
   tf_vars_prefixes=("TF_CLOUD_WORKSPACE_TF_SEC_VAR_,,,true,false,terraform",
-    "TF_CLOUD_WORKSPACE_TF_VAR_,,,false,false,terraform"
+    "TF_CLOUD_WORKSPACE_TF_VAR_,,,false,false,terraform",
+    "TF_CLOUD_WORKSPACE_TF_SEC_ENV_,,,true,false,env",
+    "TF_CLOUD_WORKSPACE_TF_ENV_,,,false,false,env"
   )
 
   # Store all the variables added to the workspace
