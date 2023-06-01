@@ -148,8 +148,8 @@ function display_login_instructions {
 
 function display_instructions {
     echo ""
-    warning "You can deploy a landingzone with the rover by running:"
-    warning "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show']"
+    echo "You can deploy a landingzone with the rover by running:"
+    echo "  rover -lz [landingzone_folder_name] -a [plan|apply|destroy|validate|refresh|graph|import|output|taint|untaint|'state list'|'state rm'|'state show'|'show']"
     echo ""
 
 }
@@ -421,38 +421,38 @@ function deploy_landingzone {
 
     RETURN_CODE=$? && echo "Terraform init return code ${RETURN_CODE}"
 
-    if [ "${gitops_agent_pool_execution_mode}" = "local" ]; then
-
-        case "${tf_action}" in
-        "plan")
-            echo "calling plan"
-            plan
-            ;;
-        "apply")
-            echo "calling apply"
-            apply
-            ;;
-        "validate")
-            echo "calling validate"
-            validate
-            ;;
-        "destroy")
-            echo "calling destroy"
-            destroy
-            ;;
-        "graph")
-            echo "calling graph"
-            graph
-            ;;
-        "init")
-            echo "init no-op"
-            ;;
-        *)
-            other
-            ;;
-        esac
-
-    fi
+    case "${tf_action}" in
+    "plan")
+        echo "calling plan"
+        plan
+        ;;
+    "apply")
+        echo "calling apply"
+        apply
+        ;;
+    "validate")
+        echo "calling validate"
+        validate
+        ;;
+    "show")
+        echo "calling show"
+        show
+        ;;
+    "destroy")
+        echo "calling destroy"
+        destroy
+        ;;
+    "graph")
+        echo "calling graph"
+        graph
+        ;;
+    "init")
+        echo "init no-op"
+        ;;
+    *)
+        other
+        ;;
+    esac
 
     rm -f "${TF_DATA_DIR}/tfstates/${TF_VAR_level}/${TF_VAR_workspace}/${TF_VAR_tf_name}"
 
@@ -826,7 +826,7 @@ function deploy_azurerm {
                 "destroy")
                     destroy_from_remote_state
                     ;;
-                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show")
+                "plan"|"apply"|"validate"|"refresh"|"graph"|"import"|"output"|"taint"|"untaint"|"state list"|"state rm"|"state show"|"show")
                     deploy_from_azurerm_state
                     ;;
                 "migrate")
