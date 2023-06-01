@@ -27,6 +27,7 @@ target "rover_local" {
     versionTerraformDocs = versionTerraformDocs
     versionVault         = versionVault
     versionAnsible       = versionAnsible
+    versionTerrascan     = versionTerrascan
   }
   platforms = ["linux/amd64","linux/arm64" ]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]

@@ -16,6 +16,7 @@ ARG versionVault \
     versionGolang \
     versionTerraformDocs \
     versionAnsible \
+    versionTerrascan \
     extensionsAzureCli \
     SSH_PASSWD \
     TARGETARCH \
@@ -37,6 +38,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionPowershell=${versionPowershell} \
     versionAnsible=${versionAnsible} \
     extensionsAzureCli=${extensionsAzureCli} \
+    versionTerrascan=${versionTerrascan} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/tf/cache" \
@@ -56,7 +58,6 @@ COPY ./scripts/zsh-autosuggestions.zsh .
     # installation common tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    ansible \
     apt-transport-https \
     apt-utils \
     bsdmainutils \
@@ -72,7 +73,6 @@ RUN apt-get update && \
     less \
     locales \
     make \
-    openssh-server \
     # Networking tools
     dnsutils net-tools iputils-ping traceroute \
     python3-dev \
@@ -112,21 +112,19 @@ RUN apt-get update && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
     echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
     #
+    # Kubernetes repo
+    #
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list && \
+    #
     # Github shell
     curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
     apt-get update && \
     apt-get install -y --no-install-recommends \
     docker-ce-cli \
+    kubectl && \
     gh && \
-    #
-    # ################# Install binary clients ###################
-    #
-    #
-    # Install kubeclt
-    #
-    curl -L -o /tmp/kubectl https://dl.k8s.io/release/v${versionKubectl}/bin/linux/${TARGETOS}/kubectl && \
-    sudo install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl && \
     #
     # Install Docker Compose - required to rebuild the rover and dynamic terminal in VSCode
     #
@@ -149,6 +147,18 @@ RUN apt-get update && \
     curl -sSL -o /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/latest/download/tflint_${TARGETOS}_${TARGETARCH}.zip && \
     unzip -d /usr/bin /tmp/tflint.zip && \
     chmod +x /usr/bin/tflint && \
+    #
+    # Install terrascan
+    #
+    echo "Installing terrascan v${versionTerrascan} ..." && \
+    if [ ${TARGETARCH} == "amd64" ]; then \
+        curl -sSL -o terrascan.tar.gz https://github.com/tenable/terrascan/releases/download/v${versionTerrascan}/terrascan_${versionTerrascan}_Linux_x86_64.tar.gz ; \
+    else \
+        curl -sSL -o terrascan.tar.gz https://github.com/tenable/terrascan/releases/download/v${versionTerrascan}/terrascan_${versionTerrascan}_Linux_${TARGETARCH}.tar.gz ; \
+    fi  \
+    && tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz && \
+    install terrascan /usr/local/bin && rm terrascan && \
+    #
     #
     # Install tfsec
     #
@@ -266,9 +276,6 @@ RUN apt-get update && \
     export PATH=$PATH:/usr/local/go/bin && \
     go version && \
     #
-    echo "Installing caflint..." && \
-    go install github.com/aztfmod/caflint@latest && \
-    #
     echo "Installing latest Tflint Ruleset for Azure" && \
     curl -sSL -o /tmp/tflint-ruleset-azurerm.zip https://github.com/terraform-linters/tflint-ruleset-azurerm/releases/latest/download/tflint-ruleset-azurerm_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     mkdir -p /home/${USERNAME}/.tflint.d/plugins  && \
@@ -339,8 +346,7 @@ COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 #
 # ssh server for Azure ACI
 #
-RUN ssh-keygen -q -N "" -t ecdsa -b 521 -f /home/${USERNAME}/.ssh/ssh_host_ecdsa_key && \
-    sudo apt-get update && \
+RUN sudo apt-get update && \
     sudo apt-get install -y \
     zsh && \
     #
