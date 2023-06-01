@@ -9,6 +9,7 @@ versionPowershell="7.2.7"
 versionTerraformDocs="0.16.0"
 versionVault="1.13.2"
 versionAnsible="2.15.0"
+versionTerrascan="1.18.1"
 
 # Agents versions
 USERNAME="vscode"
