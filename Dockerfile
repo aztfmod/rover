@@ -191,9 +191,9 @@ RUN apt-get update && \
     tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
     chmod +x /opt/microsoft/powershell/7/pwsh && \
     ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
-    echo "Installing PowerShell modules..." && \
-    pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
-    pwsh -Command Install-Module -name Az.Resources -Force && \
+    # echo "Installing PowerShell modules..." && \
+    # pwsh -Command Install-Module -name Az.DesktopVirtualization -Force && \
+    # pwsh -Command Install-Module -name Az.Resources -Force && \
     #
     # kubectl node shell
     #
@@ -212,7 +212,11 @@ RUN apt-get update && \
     echo "Installing Kubelogin ${versionKubelogin}..." && \
     curl -sSL -o /tmp/kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v${versionKubelogin}/kubelogin-${TARGETOS}-${TARGETARCH}.zip 2>&1 && \
     unzip -d /usr/ /tmp/kubelogin.zip && \
-    chmod +x /usr/bin/linux_arm64/kubelogin && \
+    if [ ${TARGETARCH} == "amd64" ]; then \
+        chmod +x /usr/bin/linux_amd64/kubelogin ; \
+    else \
+        chmod +x /usr/bin/linux_arm64/kubelogin ; \
+    fi  && \
     # Hashicorp Vault
     #
     echo "Installing Vault ${versionVault}..." && \
