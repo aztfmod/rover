@@ -79,7 +79,7 @@ RUN apt-get update && \
     python3-pip \
     rsync \
     # openvpn client and ipsec tools to generate certificates
-    openvpn network-manager-openvpn strongswan strongswan-pki libstrongswan-extra-plugins libtss2-tcti-tabrmd0 \
+    openvpn network-manager-openvpn strongswan strongswan-pki libstrongswan-extra-plugins libtss2-tcti-tabrmd0 openssh-client \
     #
     software-properties-common \
     sudo \
