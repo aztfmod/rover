@@ -139,7 +139,7 @@ tfcloud_trigger_run_init(){
   #
   # Each tfstates defined in the var.landingzone.tfstates or var.landingzone.remote_tfstates
   #
-  conf_lz=$(grep -rl "^landingzone = {" ${TF_var_folder}/*.tfvars)
+  conf_lz=$(grep -rl "^landingzone = {" ${TF_var_folder}/*.tfvars || true)
   if [ ! -z "$conf_lz" ]; then
     conf_lz_json=$(python3 ${script_path}/tfcloud/hcl_parser.py -input ${conf_lz} -env ${TF_VAR_environment})
     warning $conf_lz_json
