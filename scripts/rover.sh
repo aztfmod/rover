@@ -63,7 +63,7 @@ __log_init__
 set_log_severity ERROR # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
 
 # Parse command line parameters
-parse_parameters $@
+parse_parameters "$@"
 
 checkout_module
 verify_rover_version
