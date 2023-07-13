@@ -14,7 +14,7 @@ versionTerrascan="1.18.1"
 # Agents versions
 USERNAME="vscode"
 versionAzdo="3.220.5"
-versionGithubRunner="2.305.0"
+versionGithubRunner="2.306.0"
 versionGitlab="16.1.0"
-versionTfc="1.10.0"
+versionTfc="1.10.1"
 
