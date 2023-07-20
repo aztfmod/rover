@@ -32,7 +32,7 @@ jobs:
       - name: Get Latest Kubectl Version
         id: get-latest-versionKubectl-version
         run: |
-          version=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -d 'v' -f 2)
+          version=$(curl -sL https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -c 2-)
           echo "versionKubectl=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Kubelogin Version
@@ -44,13 +44,13 @@ jobs:
       - name: Get Latest Packer Version
         id: get-latest-packer-version
         run: |
-          version=$(curl -s "https://api.github.com/repos/hashicorp/packer/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | sed 's/^v//')
+          version=$(curl -sL https://api.github.com/repos/hashicorp/packer/releases/latest | jq -r '.tag_name' | cut -c 2-)
           echo "versionPacker=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest PowerShell Version
         id: get-latest-powershell-version
         run: |
-          version=$(curl -s "https://api.github.com/repos/PowerShell/PowerShell/releases" | jq -r '.[1] | select(.prerelease == false) | .tag_name' | sed 's/^v//')
+          version=$(curl -sL https://api.github.com/repos/PowerShell/PowerShell/releases/latest | jq -r '.tag_name' | cut -c 2-)
           echo "versionPowershell=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Ansible Version
@@ -80,7 +80,7 @@ jobs:
       - name: Get Latest GitHub Runner Version
         id: get-latest-github-runner-version
         run: |
-          version=$(curl -s "https://api.github.com/repos/actions/runner/releases" | jq -r '.[0] | select(.prerelease == false) | .tag_name' | head -n1 | sed 's/^v//')
+          version=$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name' | cut -c 2-)
           echo "versionGithubRunner=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Gitlab Runner Version
