@@ -50,7 +50,7 @@ create_federated_identity() {
     manage_sp_to_role "Privileged Role Administrator" ${sp_object_id} "POST"
     manage_sp_to_role "Application Administrator" ${sp_object_id} "POST"
     manage_sp_to_role "Groups Administrator" ${sp_object_id} "POST"
-  
+
   else
     success " - application already created."
     success " - service principal already created."
@@ -130,7 +130,7 @@ function manage_sp_to_role() {
   export ROLE_AAD=$(az rest --method Get --uri ${microsoft_graph_endpoint}v1.0/directoryRoles -o json | jq -r '.value[] | select(.displayName == "'"$(echo ${AD_ROLE_NAME})"'") | .id')
 
   if [ "${ROLE_AAD}" == '' ]; then
-      enable_directory_role
+      enable_directory_role ${AD_ROLE_NAME}
       export ROLE_AAD=$(az rest --method Get --uri ${microsoft_graph_endpoint}v1.0/directoryRoles -o json | jq -r '.value[] | select(.displayName == "'"$(echo ${AD_ROLE_NAME})"'") | .id')
   fi
 
