@@ -758,7 +758,9 @@ function checkout_module {
             if [ ! $(git config --global --get safe.directory | grep "${base_folder}/aztfmod" 2>&1) ]; then
                 git config --global --add safe.directory "${base_folder}/aztfmod"
             fi
-            git submodule update --init --recursive --rebase --remote --checkout --force 2>&1
+            # Improved logic required
+            # Comment away for now: git submodule update --init procedure. This command enforce all rover deployments to use latest commit on caf repo. We need to be able to run rover with a spesific branch/tag of caf repo.
+            # git submodule update --init --recursive --rebase --remote --checkout --force 2>&1
         fi
     fi
 }
