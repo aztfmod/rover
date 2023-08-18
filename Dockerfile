@@ -17,6 +17,7 @@ ARG versionVault \
     versionTerraformDocs \
     versionAnsible \
     versionTerrascan \
+    versionTfupdate \
     extensionsAzureCli \
     SSH_PASSWD \
     TARGETARCH \
@@ -39,6 +40,7 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
     versionAnsible=${versionAnsible} \
     extensionsAzureCli=${extensionsAzureCli} \
     versionTerrascan=${versionTerrascan} \
+    versionTfupdate=${versionTfupdate} \
     PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
     TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
     TF_PLUGIN_CACHE_DIR="/tf/cache" \
@@ -160,6 +162,16 @@ RUN apt-get update && \
     && tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz && \
     install terrascan /usr/local/bin && rm terrascan && \
     #
+    # Install tfupdate
+    #
+    echo "Installing tfupdate v${versionTfupdate} ..." && \
+    if [ ${TARGETARCH} == "amd64" ]; then \
+        curl -sSL -o tfupdate.tar.gz https://github.com/minamijoyo/tfupdate/releases/download/v${versionTfupdate}/tfupdate_${versionTfupdate}_linux_amd64.tar.gz ; \
+    else \
+        curl -sSL -o tfupdate.tar.gz https://github.com/minamijoyo/tfupdate/releases/download/v${versionTfupdate}/tfupdate_${versionTfupdate}_linux_${TARGETARCH}.tar.gz ; \
+    fi  \
+    && tar -xf tfupdate.tar.gz tfupdate && rm tfupdate.tar.gz && \
+    install tfupdate /usr/local/bin && rm tfupdate && \
     #
     # Install tfsec
     #
