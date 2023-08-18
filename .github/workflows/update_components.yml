@@ -83,12 +83,6 @@ jobs:
           version=$(curl -sL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name' | cut -c 2-)
           echo "versionGithubRunner=$version" >> $GITHUB_OUTPUT
 
-      - name: Get Latest tfupdate Version
-        id: get-latest-tfupdate-version
-        run: |
-          version=$(curl -s https://api.github.com/repos/minamijoyo/tfupdate/releases/latest  | jq -r '.tag_name' | cut -c 2-)
-          echo "versionTfupdate=$version" >> $GITHUB_OUTPUT
-
       - name: Get Latest Terraform Cloud Agent Version
         id: get-latest-tfc-agent-version
         run: |
