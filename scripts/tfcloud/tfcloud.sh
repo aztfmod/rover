@@ -44,12 +44,12 @@ check_terraform_cloud_agent_exist() {
     body=$(make_curl_request -url "$url" -gracefully_continue)
     result=$(echo $body | jq -r ".data[] | select (.attributes.name == \"${gitops_agent_pool_name}\") | .id")
 
-  elif [[ -n ${gitops_agent_pool_id} ]]; then
+  elif [[ -n ${TF_CLOUD_AGENT_POOL_ID} ]]; then
 
     # Checking the agent pool exists
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools/${gitops_agent_pool_id}"
+    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools/${TF_CLOUD_AGENT_POOL_ID}"
     body=$(make_curl_request -url "$url" -gracefully_continue)
-    result="$gitops_agent_pool_id"
+    result="$TF_CLOUD_AGENT_POOL_ID"
 
   else
     error "You must set -gitops-agent-pool-id or -gitops-agent-pool-name when -gitops-agent-pool-execution-mode is set to agent."

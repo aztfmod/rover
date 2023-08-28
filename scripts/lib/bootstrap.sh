@@ -87,7 +87,7 @@ process_gitops_agent_pool() {
 
       if [ ! -z ${gitops_agent_pool_name} ]; then
         process_terraform_cloud_agent_pool ${gitops_agent_pool_name}
-      elif [ ! -z ${gitops_agent_pool_id} ]; then
+      elif [ ! -z ${TF_CLOUD_AGENT_POOL_ID} ]; then
         error ${LINENO} "Support of the attribute coming soon."
       else
         error ${LINENO} "You must specify the agent pool name to create (-gitops-agent-pool-name) or to re-use (-gitops-agent-pool-id)"

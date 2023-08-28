@@ -258,7 +258,7 @@ parse_parameters() {
         shift 2
         ;;
       -gitops-agent-pool-id)
-        export gitops_agent_pool_id=${2}
+        export TF_CLOUD_AGENT_POOL_ID=${2}
         shift 2
         ;;
       -subscription-deployment-mode)
