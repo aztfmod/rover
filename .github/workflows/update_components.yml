@@ -89,6 +89,12 @@ jobs:
           version=$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fgitlab-runner/releases" | jq -r '.[].tag_name | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$";""))' | sort -rV | head -n1 | sed 's/^v//')
           echo "versionGitlab=$version" >> $GITHUB_OUTPUT
 
+      - name: Get Latest tfupdate Version
+        id: get-latest-tfupdate-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/minamijoyo/tfupdate/releases/latest  | jq -r '.tag_name' | cut -c 2-)
+          echo "versionTfupdate=$version" >> $GITHUB_OUTPUT
+
       - name: Get Latest Terraform Cloud Agent Version
         id: get-latest-tfc-agent-version
         run: |
@@ -113,6 +119,7 @@ jobs:
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
           versionAnsible=${{ steps.get-latest-ansible-version.outputs.versionAnsible }}
           versionTerrascan=${{ steps.get-latest-terrascan-version.outputs.versionTerrascan }}
+          versionTfupdate=${{ steps.get-latest-tfupdate-version.outputs.versionTfupdate }}
           versionAzdo=${{ steps.get-latest-azdo-version.outputs.versionAzdo }}
           versionGithubRunner=${{ steps.get-latest-github-runner-version.outputs.versionGithubRunner }}
           versionTfc=${{ steps.get-latest-tfc-agent-version.outputs.versionTfc }}
@@ -131,6 +138,7 @@ jobs:
           sed -i "s/versionTfc=\"[^\"]*\"/versionTfc=\"$versionTfc\"/g" docker-bake.override.hcl
           sed -i "s/versionGitlab=\"[^\"]*\"/versionGitlab=\"$versionGitlab\"/g" docker-bake.override.hcl
           sed -i "s/versionTerrascan=\"[^\"]*\"/versionTerrascan=\"$versionTerrascan\"/g" docker-bake.override.hcl
+          sed -i "s/versionTfupdate=\"[^\"]*\"/versionTfupdate=\"$versionTfupdate\"/g" docker-bake.override.hcl
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5.0.2

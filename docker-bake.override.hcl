@@ -10,6 +10,7 @@ versionTerraformDocs="0.16.0"
 versionVault="1.14.2"
 versionAnsible="2.15.3"
 versionTerrascan="1.18.3"
+versionTfupdate="0.7.2"
 
 # Agents versions
 USERNAME="vscode"
