@@ -12,18 +12,3 @@ declare -A apiPermissions=(
   ['Group.ReadWrite.All']='62a82d76-70ea-41e2-9197-370581804d09=Role'
   ['DelegatedPermissionGrant.ReadWrite.All']='8e8e4742-1d95-4f68-9d56-6ee75648c72a=Role'
 )
-
-for roleName in "${!roleTemplate[@]}"; do
-  roleTemplateId="${roleTemplate[$roleName]}"
-
-  # Check if the role is already enabled
-  enabled_role=$(az rest --method Get --uri ${microsoft_graph_endpoint}v1.0/directoryRoles -o json | jq -r ".value[] | select(.roleTemplateId == \"$roleTemplateId\")")
-
-  # If the role is not enabled, enable it
-  if [ -z "$enabled_role" ]; then
-    echo "Enabling role $roleName..."
-    az rest --method POST --uri https://graph.microsoft.com/v1.0/directoryRoles --body "{\"roleTemplateId\": \"$roleTemplateId\"}" --headers "Content-Type=application/json"
-  else
-    echo "Role $roleName is already enabled."
-  fi
-done
