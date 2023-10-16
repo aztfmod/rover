@@ -587,7 +587,7 @@ function get_resource_from_assignedIdentityInfo {
         msiResource=${msi//MSIResource-/}
         ;;
     *"MSIClient"*)
-        msiResource=$(az identity list --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv --only-show-errors)
+        msiResource=$(az identity list --subscription ${TF_VAR_tfstate_subscription_id} --query "[?clientId=='${msi//MSIClient-/}'].{id:id}" -o tsv --only-show-errors)
         ;;
     *)
         echo "Warning: MSI identifier unknown."
