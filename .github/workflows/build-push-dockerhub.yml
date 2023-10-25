@@ -1,0 +1,36 @@
+name: Build Rover release images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: docker-hub-push
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Source config
+      run: |
+        $GITHUB_WORKSPACE/.github/workflows/scripts/persist-env.sh $GITHUB_WORKSPACE/.github/workflows/config.cfg
+    - name: Docker Hub Login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.dockerhub_username }}
+        password: ${{ secrets.DOCKER_HUB_PAT }}
+
+    - name: Build the rover
+      run: |
+        docker build -f agents/github/Dockerfile . \
+            --build-arg versionGithubRunner=${version_github_runner} \
+            --build-arg versionRover="${rover_repo}:${version_rover}" \
+            --build-arg TARGETARCH=amd64 \
+            --build-arg TARGETOS=linux \
+            -t hafslundecoas/rover-agent:${version_rover}-github-${version_github_runner}
+            -t hafslundecoas/rover-agent:latest
+            
+    - name: Push the rover
+      run: |
+        docker push -a hafslundecoas/rover-agent
