@@ -106,6 +106,12 @@ tfcloud_trigger_run_init(){
     "TF_VAR_tfstate_hostname,TF_VAR_tfstate_hostname,URL of the endpoint,false,false,env",
     "TF_VAR_environment,TF_VAR_environment,CAF environment,false,false,env",
     "TF_VAR_tenant_id,ARM_TENANT_ID,Tenant ID,false,false,env",
+    "lower_storage_account_name,lower_storage_account_name,AzureRM lower storage account name,false,false,terraform",
+    "lower_container_name,lower_container_name,AzureRM lower storage account container name,false,false,terraform",
+    "lower_resource_group_name,lower_resource_group_name,AzureRM lower resource group name,false,false,terraform",
+    "tfstate_storage_account_name,tfstate_storage_account_name,AzureRM current storage account name,false,false,terraform",
+    "tfstate_container_name,tfstate_container_name,AzureRM current storage container name,false,false,terraform",
+    "tfstate_resource_group_name,tfstate_resource_group_name,AzureRM current resource group name,false,false,terraform",
     "ARM_SUBSCRIPTION_ID,ARM_SUBSCRIPTION_ID,Target subscription id to deploy the resources,false,false,env",
     "ARM_CLIENT_SECRET,ARM_CLIENT_SECRET,Client secret of the service principal.,true,false,env")
 
