@@ -40,14 +40,14 @@ check_terraform_cloud_agent_exist() {
 
   if [[ -n ${gitops_agent_pool_name} ]]; then
 
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools"
+    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/agent-pools"
     body=$(make_curl_request -url "$url" -gracefully_continue)
     result=$(echo $body | jq -r ".data[] | select (.attributes.name == \"${gitops_agent_pool_name}\") | .id")
 
   elif [[ -n ${gitops_agent_pool_id} ]]; then
 
     # Checking the agent pool exists
-    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/organizations/${TF_VAR_tf_cloud_organization}/agent-pools/${gitops_agent_pool_id}"
+    url="https://${TF_VAR_tf_cloud_hostname}/api/v2/agent-pools/${gitops_agent_pool_id}"
     body=$(make_curl_request -url "$url" -gracefully_continue)
     result="$gitops_agent_pool_id"
 
@@ -536,9 +536,9 @@ function make_curl_request() {
     esac
   done
 
-  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer xxxxxx' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee /dev/stderr)"
+  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer xxxxxx' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee -a >&2)"
   debug "$(echo "Running command: $command")" >&2
-  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer  "$REMOTE_ORG_TOKEN"' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee /dev/stderr)"
+  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer  "$REMOTE_ORG_TOKEN"' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee -a >&2)"
 
   response=$(eval $command)
   return_code=$?
