@@ -294,8 +294,13 @@ function verify_azure_session {
     if [ "$session" == '' ]; then
         display_login_instructions
         error ${LINENO} "you must login to an Azure subscription first or 'rover login' again" 2
+    else
+        # If the session is a OIDC service principal we need to export the ARM variables
+        if [ "${ARM_USE_OIDC}" == "true" ]; then
+            export ARM_CLIENT_ID=$(echo $session | jq -r '.user.name')
+            export ARM_TENANT_ID=$(echo $session | jq -r '.tenantId')
+        fi
     fi
-
 }
 
 function login_as_sp_from_keyvault_secrets {
