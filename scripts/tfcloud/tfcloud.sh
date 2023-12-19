@@ -536,9 +536,9 @@ function make_curl_request() {
     esac
   done
 
-  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer xxxxxx' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"'"
+  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer xxxxxx' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee -a >&2)"
   debug "$(echo "Running command: $command")" >&2
-  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer  "$REMOTE_ORG_TOKEN"' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"'"
+  command="curl -sS -L -w '%{http_code}' --header 'Authorization: Bearer  "$REMOTE_ORG_TOKEN"' --header 'Content-Type: application/vnd.api+json' $options -- '"${url}"' 2> >(tee -a >&2)"
 
   response=$(eval $command)
   return_code=$?
