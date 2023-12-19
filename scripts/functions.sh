@@ -250,7 +250,7 @@ function verify_azure_session {
                 warning "ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID are set in the parent shell but the Azure cli is connected to a user instead of a service principal"
                 warning "Rover will therefore unset those environment variables to deploy with the current Azure cli context."
                 warning "logout and login with the service principal:"
-                warning 'az login --service-principal -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET -t $ARM_TENANT_ID'
+                warning 'az login --service-principal -u $ARM_CLIENT_ID -p="$ARM_CLIENT_SECRET" -t $ARM_TENANT_ID'
                 warning
             fi
 
@@ -328,7 +328,7 @@ function login_as_sp_from_keyvault_secrets {
     export ARM_CLIENT_SECRET=$(az keyvault secret show --id ${sp_keyvault_url}/secrets/sp-client-secret --query 'value' -o tsv --only-show-errors)
 
     information "Login with service principal"
-    az login --service-principal -u ${ARM_CLIENT_ID} -p ${ARM_CLIENT_SECRET} -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
+    az login --service-principal -u ${ARM_CLIENT_ID} -p="${ARM_CLIENT_SECRET}" -t ${ARM_TENANT_ID}  --only-show-errors 1> /dev/null
 
     set +e
     trap - ERR
