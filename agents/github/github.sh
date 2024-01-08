@@ -29,6 +29,17 @@ if [ -n "${RUNNER_LABELS}" ]; then
   LABELS="${RUNNER_LABELS}"
 fi
 
+if [ -n "${GITHUB_APP_KEYVAULT_URL}" || -n "${GITHUB_APP_ID}" ]; then
+  # Call the github_app.sh script and capture the registration token
+  source ./github_app.sh
+  reg_token_exit_status=$?
+  if [ $reg_token_exit_status -ne 0 ]; then
+    echo "Error: Failed to get registration token from github_app.sh"
+    exit $reg_token_exit_status
+  fi
+  AGENT_TOKEN=$registration_token
+fi
+
 if [ -n "${AGENT_TOKEN}" ]; then
   echo "Connect to GitHub using AGENT_TOKEN environment variable."
 elif [ -n "${GH_TOKEN}" ]; then
