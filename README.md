@@ -2,7 +2,7 @@
 ![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
 [![Gitter](https://badges.gitter.im/aztfmod/community.svg)](https://gitter.im/aztfmod/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# Cloud Adoption Framework for Azure - Landing zones on Terraform - Rover
+# Azure Terraform SRE - Landing zones on Terraform - Rover
 
 > :warning: This solution, offered by the Open-Source community, will no longer receive contributions from Microsoft. Customers are encouraged to transition to [Microsoft Azure Verified Modules](https://aka.ms/avm) for Microsoft support and updates.
 
