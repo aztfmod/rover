@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - blinq-main
+      - main
 
 jobs:
   build:
@@ -29,9 +29,9 @@ jobs:
             --build-arg versionRover="${rover_repo}:${version_rover}" \
             --build-arg TARGETARCH=amd64 \
             --build-arg TARGETOS=linux \
-            -t blinqas/rover-agent:${version_rover}-github-${version_github_runner} \
-            -t blinqas/rover-agent:latest
+            -t hafslundecoas/rover-agent:${version_rover}-github-${version_github_runner} \
+            -t hafslundecoas/rover-agent:latest
             
     - name: Push the rover
       run: |
-        docker push -a blinqas/rover-agent
+        docker push -a hafslundecoas/rover-agent
