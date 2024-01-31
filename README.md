@@ -2,9 +2,11 @@
 ![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
 [![Gitter](https://badges.gitter.im/aztfmod/community.svg)](https://gitter.im/aztfmod/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# Cloud Adoption Framework for Azure - Landing zones on Terraform - Rover
+# Azure Terraform SRE - Landing zones on Terraform - Rover
 
-Microsoft Cloud Adoption Framework for Azure provides you with guidance and best practices to adopt Azure.
+> :warning: This solution, offered by the Open-Source community, will no longer receive contributions from Microsoft. Customers are encouraged to transition to [Microsoft Azure Verified Modules](https://aka.ms/avm) for Microsoft support and updates.
+
+Azure Terraform SRE provides you with guidance and best practices to adopt Azure.
 
 The CAF **rover** is helping you managing your enterprise Terraform deployments on Microsoft Azure and is composed of two parts:
 
