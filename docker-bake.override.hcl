@@ -1,6 +1,6 @@
 # Base image tools version
 extensionsAzureCli="resource-graph"
-versionDockerCompose="2.24.5"
+versionDockerCompose="2.24.6"
 versionGolang="1.22.0"
 versionKubectl=""
 versionKubelogin="0.1.0"
@@ -16,6 +16,6 @@ versionTfupdate="0.8.1"
 USERNAME="vscode"
 versionAzdo="3.232.3"
 versionGithubRunner="2.313.0"
-versionGitlab="16.8.0"
-versionTfc="1.14.3"
+versionGitlab="16.9.0"
+versionTfc="1.14.4"
 
