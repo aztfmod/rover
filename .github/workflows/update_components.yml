@@ -32,7 +32,7 @@ jobs:
       - name: Get Latest Kubectl Version
         id: get-latest-versionKubectl-version
         run: |
-          version=$(curl -sL https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -c 2-)
+          version=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r '.tag_name' | cut -d'.' -f1,2)
           echo "versionKubectl=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Kubelogin Version
