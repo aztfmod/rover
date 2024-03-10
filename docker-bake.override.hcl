@@ -1,15 +1,15 @@
 # Base image tools version
 extensionsAzureCli="resource-graph"
-versionDockerCompose="2.24.6"
-versionGolang="1.22.0"
+versionDockerCompose="2.24.7"
+versionGolang="1.22.1"
 versionKubectl=""
 versionKubelogin="0.1.1"
-versionPacker="1.10.1"
+versionPacker="1.10.2"
 versionPowershell="7.4.1"
 versionTerraformDocs="0.16.0"
 versionVault="1.15.6"
 versionAnsible="2.16.4"
-versionTerrascan="1.18.12"
+versionTerrascan="1.19.1"
 versionTfupdate="0.8.1"
 
 # Agents versions
