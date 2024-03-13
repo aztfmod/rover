@@ -2,7 +2,7 @@
 extensionsAzureCli="resource-graph"
 versionDockerCompose="2.24.7"
 versionGolang="1.22.1"
-versionKubectl=""
+versionKubectl="1.29"
 versionKubelogin="0.1.1"
 versionPacker="1.10.2"
 versionPowershell="7.4.1"
