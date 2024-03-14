@@ -32,7 +32,7 @@ jobs:
       - name: Get Latest Kubectl Version
         id: get-latest-versionKubectl-version
         run: |
-          version=$(curl -sL https://storage.googleapis.com/kubernetes-release/release/stable.txt | cut -c 2-)
+          version=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r '.tag_name' | cut -d'.' -f1,2)
           echo "versionKubectl=$version" >> $GITHUB_OUTPUT
 
       - name: Get Latest Kubelogin Version
@@ -104,7 +104,7 @@ jobs:
       - name: Update latest Terraform Versions
         id: get-latest-terraform-versions
         run: |
-          versionsTerraform=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases | jq -r '.[] | select(.draft == false) | .tag_name' | sort -rV | awk -F. '!a[$1"."$2]++{print substr($0,2)}')
+          versionsTerraform=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases | jq -r '.[] | select(.draft == false) | .tag_name' | sort -rV | awk -F. '!a[$1"."$2]++{print substr($0,2)}' | head -n 5)
           echo "${versionsTerraform}" > .env.terraform
           sed -i '$a\' .env.terraform
 
@@ -112,8 +112,8 @@ jobs:
         run: |
           versionDockerCompose=${{ steps.get-latest-docker-compose-version.outputs.versionDockerCompose }}
           versionGolang=${{ steps.get-latest-golang-version.outputs.versionGolang }}
-          versionKubectl=${{ steps.get-latest-kubectl-version.outputs.versionKubectl }}
           versionKubelogin=${{ steps.get-latest-kubelogin-version.outputs.versionKubelogin }}
+          versionKubectl=${{ steps.get-latest-versionKubectl-version.outputs.versionKubectl }}
           versionPacker=${{ steps.get-latest-packer-version.outputs.versionPacker }}
           versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
@@ -127,8 +127,8 @@ jobs:
 
           sed -i "s/versionDockerCompose=\"[^\"]*\"/versionDockerCompose=\"$versionDockerCompose\"/g" docker-bake.override.hcl
           sed -i "s/versionGolang=\"[^\"]*\"/versionGolang=\"$versionGolang\"/g" docker-bake.override.hcl
-          sed -i "s/versionKubectl=\"[^\"]*\"/versionKubectl=\"$versionKubectl\"/g" docker-bake.override.hcl
           sed -i "s/versionKubelogin=\"[^\"]*\"/versionKubelogin=\"$versionKubelogin\"/g" docker-bake.override.hcl
+          sed -i "s/versionKubectl=\"[^\"]*\"/versionKubectl=\"$versionKubectl\"/g" docker-bake.override.hcl
           sed -i "s/versionPacker=\"[^\"]*\"/versionPacker=\"$versionPacker\"/g" docker-bake.override.hcl
           sed -i "s/versionPowershell=\"[^\"]*\"/versionPowershell=\"$versionPowershell\"/g" docker-bake.override.hcl
           sed -i "s/versionVault=\"[^\"]*\"/versionVault=\"$versionVault\"/g" docker-bake.override.hcl
