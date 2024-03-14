@@ -29,6 +29,12 @@ jobs:
           version=$(curl -sSL https://golang.org/VERSION?m=text | grep go | cut -c 3-)
           echo "versionGolang=$version" >> $GITHUB_OUTPUT
 
+      - name: Get Latest Kubectl Version
+        id: get-latest-versionKubectl-version
+        run: |
+          version=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | jq -r '.tag_name' | cut -d'.' -f1,2)
+          echo "versionKubectl=$version" >> $GITHUB_OUTPUT
+
       - name: Get Latest Kubelogin Version
         id: get-latest-kubelogin-version
         run: |
@@ -107,6 +113,7 @@ jobs:
           versionDockerCompose=${{ steps.get-latest-docker-compose-version.outputs.versionDockerCompose }}
           versionGolang=${{ steps.get-latest-golang-version.outputs.versionGolang }}
           versionKubelogin=${{ steps.get-latest-kubelogin-version.outputs.versionKubelogin }}
+          versionKubectl=${{ steps.get-latest-versionKubectl-version.outputs.versionKubectl }}
           versionPacker=${{ steps.get-latest-packer-version.outputs.versionPacker }}
           versionPowershell=${{ steps.get-latest-powershell-version.outputs.versionPowershell }}
           versionVault=${{ steps.get-latest-vault-version.outputs.versionVault }}
@@ -121,6 +128,7 @@ jobs:
           sed -i "s/versionDockerCompose=\"[^\"]*\"/versionDockerCompose=\"$versionDockerCompose\"/g" docker-bake.override.hcl
           sed -i "s/versionGolang=\"[^\"]*\"/versionGolang=\"$versionGolang\"/g" docker-bake.override.hcl
           sed -i "s/versionKubelogin=\"[^\"]*\"/versionKubelogin=\"$versionKubelogin\"/g" docker-bake.override.hcl
+          sed -i "s/versionKubectl=\"[^\"]*\"/versionKubectl=\"$versionKubectl\"/g" docker-bake.override.hcl
           sed -i "s/versionPacker=\"[^\"]*\"/versionPacker=\"$versionPacker\"/g" docker-bake.override.hcl
           sed -i "s/versionPowershell=\"[^\"]*\"/versionPowershell=\"$versionPowershell\"/g" docker-bake.override.hcl
           sed -i "s/versionVault=\"[^\"]*\"/versionVault=\"$versionVault\"/g" docker-bake.override.hcl
