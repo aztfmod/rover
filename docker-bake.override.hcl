@@ -1,8 +1,8 @@
 # Base image tools version
 extensionsAzureCli="resource-graph"
-versionDockerCompose="2.24.7"
+versionDockerCompose="2.26.0"
 versionGolang="1.22.1"
-versionKubectl="1.29"
+versionKubectl="v1.29"
 versionKubelogin="0.1.1"
 versionPacker="1.10.2"
 versionPowershell="7.4.1"
@@ -14,8 +14,8 @@ versionTfupdate="0.8.1"
 
 # Agents versions
 USERNAME="vscode"
-versionAzdo="3.234.0"
+versionAzdo="3.236.1"
 versionGithubRunner="2.314.1"
-versionGitlab="16.9.1"
-versionTfc="1.14.5"
+versionGitlab="16.10.0"
+versionTfc="1.15.0"
 
