@@ -141,7 +141,7 @@ jobs:
           sed -i "s/versionTfupdate=\"[^\"]*\"/versionTfupdate=\"$versionTfupdate\"/g" docker-bake.override.hcl
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6.0.4
+        uses: peter-evans/create-pull-request@v6.0.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update components versions
