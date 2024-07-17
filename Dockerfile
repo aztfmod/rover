@@ -1,9 +1,10 @@
 ###########################################################
 # base tools and dependencies
 ###########################################################
-FROM --platform=${TARGETPLATFORM} ubuntu:22.04 as base
+FROM ubuntu:22.04 AS base
 
 SHELL ["/bin/bash", "-c"]
+
 
 # Arguments set during docker-compose build -b --build from .env file
 
@@ -56,7 +57,6 @@ ENV SSH_PASSWD=${SSH_PASSWD} \
 WORKDIR /tf/rover
 COPY ./scripts/.kubectl_aliases .
 COPY ./scripts/zsh-autosuggestions.zsh .
-
     # installation common tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -84,10 +84,12 @@ RUN apt-get update && \
     openvpn network-manager-openvpn strongswan strongswan-pki libstrongswan-extra-plugins libtss2-tcti-tabrmd0 openssh-client \
     #
     software-properties-common \
+    gosu \
     sudo \
     unzip \
     vim \
     wget \
+    zsh \
     zip && \
     #
     # Create USERNAME
@@ -107,7 +109,7 @@ RUN apt-get update && \
     #
     # Add Microsoft repository
     #
-    sudo apt-add-repository https://packages.microsoft.com/ubuntu/22.04/prod && \
+    gosu root apt-add-repository https://packages.microsoft.com/ubuntu/22.04/prod && \
     #
     # Add Docker repository
     #
@@ -117,10 +119,10 @@ RUN apt-get update && \
     # Kubernetes repo
     #
     curl -fsSL https://pkgs.k8s.io/core:/stable:/v${versionKubectl}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${versionKubectl}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list && \
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${versionKubectl}/deb/ /" | gosu root tee /etc/apt/sources.list.d/kubernetes.list && \
     #
     # Github shell
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gosu root dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
     #
     apt-get update && \
@@ -218,6 +220,7 @@ RUN apt-get update && \
     curl -sSL -o /tmp/packer.zip https://releases.hashicorp.com/packer/${versionPacker}/packer_${versionPacker}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
     unzip -d /usr/bin /tmp/packer.zip && \
     chmod +x /usr/bin/packer && \
+    rm /tmp/packer.zip && \
     #
     # Kubelogin
     #
@@ -233,9 +236,10 @@ RUN apt-get update && \
     #
     echo "Installing Vault ${versionVault}..." && \
     curl -sSL -o /tmp/vault.zip https://releases.hashicorp.com/vault/${versionVault}/vault_${versionVault}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
-    unzip -d /usr/bin /tmp/vault.zip && \
+    unzip -o -d /usr/bin /tmp/vault.zip && \
     chmod +x /usr/bin/vault && \
     setcap cap_ipc_lock=-ep /usr/bin/vault && \
+    rm /tmp/vault.zip && \
     #
     # ################# Install PIP clients ###################
     #
@@ -348,28 +352,20 @@ RUN apt-get update && \
     rm -rf /tmp/* && \
     rm -rf /var/lib/apt/lists/* && \
     find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
-
-
-
 #
 # Switch to non-root ${USERNAME} context
 #
 
 USER ${USERNAME}
 
-COPY .devcontainer/.zshrc $HOME
+COPY .devcontainer/.zshrc /home/${USERNAME}/
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
-#
-# ssh server for Azure ACI
-#
-RUN sudo apt-get update && \
-    sudo apt-get install -y \
-    zsh && \
+RUN echo "Setting up OMZ environment" && \
     #
     # Install Oh My Zsh
     #
-    sudo runuser -l ${USERNAME} -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' && \
+    curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | bash -s -- --unattended && \
     chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
     echo "DISABLE_UNTRACKED_FILES_DIRTY=\"true\"" >> /home/${USERNAME}/.zshrc && \
     echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
@@ -380,8 +376,8 @@ RUN sudo apt-get update && \
     echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
     echo "cd /tf/caf || true" >> /home/${USERNAME}/.bashrc && \
     echo "cd /tf/caf || true" >> /home/${USERNAME}/.zshrc && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
-    echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >> /home/${USERNAME}/.zshrc && \
+    echo "source /tf/rover/zsh-autosuggestions.zsh" >> /home/${USERNAME}/.zshrc && \
     echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
 
 FROM base
@@ -396,14 +392,15 @@ ENV versionRover=${versionRover} \
 # Install Terraform
 #
 # Keeping this method to support alpha build installations
-RUN echo  "Set rover version to ${versionRover}..." && echo "Installing Terraform ${versionTerraform}..." && \
-    curl -sSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip 2>&1 && \
-    sudo unzip -d /usr/bin /tmp/terraform.zip && \
+
+RUN echo "Set rover version to ${versionRover}..." && echo "Installing Terraform ${versionTerraform}..." && \
+    curl -sSL -o /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip" 2>&1 && \
+    sudo unzip -o -d /usr/bin /tmp/terraform.zip && \
     sudo chmod +x /usr/bin/terraform && \
-    mkdir -p /home/${USERNAME}/.terraform.cache/plugin-cache && \
+    mkdir -p "/home/${USERNAME}/.terraform.cache/plugin-cache" && \
     rm /tmp/terraform.zip && \
     #
-    echo  "Set rover version to ${versionRover}..." && \
+    echo "Set rover version to ${versionRover}..." && \
     echo "${versionRover}" > /tf/rover/version.txt
 
 
