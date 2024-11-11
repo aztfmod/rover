@@ -403,6 +403,7 @@ RUN echo "Set rover version to ${versionRover}..." && echo "Installing Terraform
     echo "Set rover version to ${versionRover}..." && \
     echo "${versionRover}" > /tf/rover/version.txt
 
+RUN az config set core.login_experience_v2=false
 
 COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
 COPY ./scripts/ci_tasks/* ./ci_tasks/
