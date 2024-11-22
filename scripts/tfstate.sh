@@ -26,7 +26,7 @@ function tfstate_configure {
 
             if [ ! -z ${TF_var_folder} ]; then
                 rm -rf -- "${landingzone_name}/caf.auto.tfvars" || true
-                for filename in ${TF_var_folder}/*.tfvars; do
+                find ${TF_var_folder} -name '*.tfvars' -type f | while read filename; do
                     command="cat ${filename} >> ${landingzone_name}/caf.auto.tfvars && printf '\n' >> ${landingzone_name}/caf.auto.tfvars"
                     debug ${command}
                     eval ${command}
