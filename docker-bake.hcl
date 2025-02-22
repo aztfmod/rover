@@ -8,12 +8,12 @@
 #
 
 group "default" {
-  targets = ["rover_local", "rover_agents"]
+  targets = ["rover_local", "roverlight"]
 }
 
 target "rover_local" {
   dockerfile = "./Dockerfile"
-  tags = ["${tag}"]
+  tags = ["rover_local:${tag}"]
   args = {
     extensionsAzureCli   = extensionsAzureCli
     versionDockerCompose = versionDockerCompose
@@ -30,7 +30,21 @@ target "rover_local" {
     versionTerrascan     = versionTerrascan
     versionTfupdate      = versionTfupdate
   }
-  platforms = ["linux/amd64","linux/arm64" ]
+  platforms = ["linux/arm64", "linux/amd64" ]
+  cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
+  cache-from = ["type=local,src=/tmp/.buildx-cache"]
+}
+
+target "roverlight" {
+  dockerfile = "./Dockerfile.roverlight"
+  tags = [
+    "ghcr.io/${registry}/roverlight:${tag}",
+    "ghcr.io/${registry}/roverlight:latest"
+  ]
+  args = {
+    versionRover = versionRover
+  }
+  platforms = ["linux/arm64", "linux/amd64" ]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
@@ -43,18 +57,22 @@ target "rover_registry" {
   }
 }
 
+
 variable "registry" {
-    default = ""
+  default = ""
 }
 
+# The tag variable is used to set the tag for the Docker image.
 variable "tag" {
-    default = "latest"
+  default = "latest"
 }
 
+# The versionRover variable is used to set the version of the Rover.
 variable "versionRover" {
-    default = ""
+  default = ""
 }
 
+# The versionTerraform variable is used to set the version of Terraform.
 variable "versionTerraform" {
-    default = ""
+  default = ""
 }
