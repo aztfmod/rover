@@ -1,0 +1,161 @@
+###########################################################
+# Builder stage for initial setup and build dependencies
+###########################################################
+FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/devcontainers/base:ubuntu as builder
+
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gpg \
+    gpg-agent \
+    locales \
+    unzip \
+    wget && \
+    locale-gen en_US.UTF-8 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+###########################################################
+# Base stage for common tools and configurations
+###########################################################
+FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/devcontainers/base:ubuntu as base
+
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG SSH_PASSWD TARGETARCH TARGETOS
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
+ENV SSH_PASSWD=${SSH_PASSWD} \
+    USERNAME=${USERNAME} \
+    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
+    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
+    TF_PLUGIN_CACHE_DIR="/tf/cache" \
+    TF_REGISTRY_DISCOVERY_RETRY=5 \
+    TF_REGISTRY_CLIENT_TIMEOUT=15 \
+    ARM_USE_MSGRAPH=true \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+WORKDIR /tf/rover
+COPY ./scripts/.kubectl_aliases .
+COPY ./scripts/zsh-autosuggestions.zsh .
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    apt-utils \
+    bsdmainutils \
+    ca-certificates \
+    curl \
+    fonts-powerline \
+    gettext \
+    git \
+    gpg \
+    gpg-agent \
+    jq \
+    less \
+    locales \
+    sudo \
+    unzip \
+    vim \
+    wget \
+    zsh \
+    zip && \
+    locale-gen en_US.UTF-8 && \
+    mkdir /tf/cache && \
+    chown -R ${USERNAME}:${USERNAME} ${TF_PLUGIN_CACHE_DIR} && \
+    mkdir -p /tf/caf \
+    /tf/rover \
+    /tf/logs \
+    /home/${USERNAME}/.ansible \
+    /home/${USERNAME}/.azure \
+    /home/${USERNAME}/.gnupg \
+    /home/${USERNAME}/.packer.d \
+    /home/${USERNAME}/.ssh \
+    /home/${USERNAME}/.ssh-localhost \
+    /home/${USERNAME}/.terraform.logs \
+    /home/${USERNAME}/.terraform.cache \
+    /home/${USERNAME}/.terraform.cache/tfstates \
+    /home/${USERNAME}/.vscode-server \
+    /home/${USERNAME}/.vscode-server-insiders && \
+    chown -R ${USER_UID}:${USER_GID} /home/${USERNAME} /tf/rover /tf/caf /tf/logs && \
+    chmod 777 -R /home/${USERNAME} /tf/caf /tf/rover && \
+    chmod 700 /home/${USERNAME}/.ssh && \
+    echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME} && \
+    mkdir /commandhistory && \
+    touch /commandhistory/.bash_history && \
+    chown -R ${USERNAME} /commandhistory && \
+    echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
+    echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
+    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc" && \
+    echo "alias watch=\"watch \"" >> "/home/${USERNAME}/.bashrc" && \
+    apt-get clean && \
+    rm -rf /tmp/* && \
+    rm -rf /var/lib/apt/lists/* && \
+    find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+
+USER ${USERNAME}
+
+COPY .devcontainer/.zshrc $HOME
+COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
+
+RUN echo "Customizing userenv" && \
+    echo "DISABLE_UNTRACKED_FILES_DIRTY=\"true\"" >> /home/${USERNAME}/.zshrc && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
+    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
+    echo "alias t=$HOME/.tfenv/tfenv-3.0.0/bin/terraform" >> /home/${USERNAME}/.bashrc && \
+    echo "alias t=$HOME/.tfenv/tfenv-3.0.0/bin/terraform" >> /home/${USERNAME}/.zshrc && \
+    echo "cd /tf/caf || true" >> /home/${USERNAME}/.bashrc && \
+    echo "cd /tf/caf || true" >> /home/${USERNAME}/.zshrc && \
+    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  /home/${USERNAME}/.zshrc && \
+    echo "source /tf/rover/zsh-autosuggestions.zsh" >>  /home/${USERNAME}/.zshrc && \
+    echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
+
+###########################################################
+# Final stage with minimal runtime dependencies
+###########################################################
+FROM --platform=${TARGETPLATFORM} base
+
+ARG USERNAME=vscode \
+    versionRover
+
+ENV versionRover=${versionRover}
+
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=base /home/${USERNAME} /home/${USERNAME}
+COPY --from=base /tf /tf
+COPY --from=base /etc/sudoers.d/${USERNAME} /etc/sudoers.d/${USERNAME}
+
+RUN echo "${versionRover}" > /tf/rover/version.txt
+
+COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/task.sh ./scripts/test_runner.sh ./
+COPY ./scripts/ci_tasks/* ./ci_tasks/
+COPY ./scripts/lib/* ./lib/
+COPY ./scripts/tfcloud/* ./tfcloud/
+
+USER ${USERNAME}
+
+RUN sudo apt-get update && \
+    sudo apt-get install -y --no-install-recommends \
+    ca-certificates \
+    git \
+    jq \
+    less \
+    sudo \
+    vim \
+    zsh && \
+    sudo apt-get clean && \
+    sudo rm -rf /var/lib/apt/lists/* && \
+    sudo find / -type f -name "*.pyc" -delete && \
+    sudo find / -type d -name "__pycache__" -exec rm -r {} + || true
