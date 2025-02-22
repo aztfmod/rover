@@ -38,8 +38,8 @@ target "rover_local" {
 target "roverlight" {
   dockerfile = "./Dockerfile.roverlight"
   tags = [
-    "ghcr.io/aztfmod/roverlight:${tag}",
-    "ghcr.io/aztfmod/roverlight:latest"
+    "${registry}/roverlight:${tag}",
+    "${registry}/roverlight:latest"
   ]
   args = {
     versionRover = versionRover
@@ -59,7 +59,7 @@ target "rover_registry" {
 
 
 variable "registry" {
-  default = ""
+  default = "ghcr.io/aztfmod"
 }
 
 # The tag variable is used to set the tag for the Docker image.
