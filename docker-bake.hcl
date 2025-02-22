@@ -45,8 +45,6 @@ target "roverlight" {
     TARGETARCH = "amd64"
   }
   platforms = ["${platform}"]
-  cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
-  cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
 
 target "rover_registry" {

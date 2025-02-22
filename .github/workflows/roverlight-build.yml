@@ -79,8 +79,8 @@ jobs:
           --set *.platform=${{ matrix.platform }} \
           --set *.args.versionRover=${{ steps.tag.outputs.date }} \
           --set *.args.TARGETARCH=$TARGETARCH \
-          --set *.cache-from=type=local,src=/tmp/.buildx-cache-${{ matrix.platform }} \
-          --set *.cache-to=type=local,dest=/tmp/.buildx-cache-${{ matrix.platform }}-new,mode=max \
+          --set *.cache-from=type=gha \
+          --set *.cache-to=type=gha,mode=max \
           --push \
           roverlight
 
