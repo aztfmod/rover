@@ -13,7 +13,7 @@ group "default" {
 
 target "rover_local" {
   dockerfile = "./Dockerfile"
-  tags = ["rover_local:${tag}"]
+  tags = ["rover_local:latest"]
   args = {
     extensionsAzureCli   = extensionsAzureCli
     versionDockerCompose = versionDockerCompose
@@ -37,14 +37,14 @@ target "rover_local" {
 
 target "roverlight" {
   dockerfile = "./Dockerfile.roverlight"
-  tags = [
-    "${registry}/roverlight:${tag}",
-    "${registry}/roverlight:latest"
-  ]
+  tags = ["ghcr.io/arnaudlh/roverlight:latest"]
   args = {
-    versionRover = versionRover
+    versionRover = "${versionRover}"
+    USERNAME = "vscode"
+    TARGETOS = "linux"
+    TARGETARCH = "amd64"
   }
-  platforms = ["linux/arm64", "linux/amd64" ]
+  platforms = ["${platform}"]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
 }
@@ -58,21 +58,37 @@ target "rover_registry" {
 }
 
 
+# Docker build configuration
 variable "registry" {
   default = "ghcr.io/aztfmod"
 }
 
-# The tag variable is used to set the tag for the Docker image.
-variable "tag" {
+variable "image_name" {
+  default = "roverlight"
+}
+
+variable "version" {
   default = "latest"
 }
 
-# The versionRover variable is used to set the version of the Rover.
+variable "platform" {
+  default = "linux/amd64"
+}
+
+# Version configuration
 variable "versionRover" {
   default = ""
 }
 
-# The versionTerraform variable is used to set the version of Terraform.
 variable "versionTerraform" {
   default = ""
+}
+
+# Build arguments
+variable "targetarch" {
+  default = "amd64"
+}
+
+variable "username" {
+  default = "vscode"
 }
