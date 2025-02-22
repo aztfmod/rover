@@ -7,9 +7,8 @@ on:
     types: [created]
   push:
     branches:
+      - 'main'
       - 'roverlight'
-      - 'devin/1738291242-modernize-github-actions'
-      - 'devin/1738295777-multi-stage-docker'
 
 env:
   REGISTRY: ghcr.io
