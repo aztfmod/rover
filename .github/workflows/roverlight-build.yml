@@ -67,24 +67,18 @@ jobs:
       id: build-start-time
       run: echo "build_start_time=$(date +%s)" >> $GITHUB_OUTPUT
           
-    - name: Building roverlight
+    - name: Building roverlight and agents
       id: push
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: Dockerfile.roverlight
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache
-        build-args: |
-          versionRover=${{ steps.tag.outputs.date }}
-        push: true
-        load: false
-        tags: |
-          ghcr.io/${{ github.repository }}/roverlight:latest
-          ghcr.io/${{ github.repository }}/roverlight:${{ steps.tag.outputs.date }}
-        labels: ${{ steps.meta.outputs.labels }}
-        platforms: ${{ matrix.platform }}
-        provenance: false
+      run: |
+        docker buildx bake \
+          -f docker-bake.hcl \
+          -f docker-bake-agents.hcl \
+          -f docker-bake.override.hcl \
+          --set *.platform=${{ matrix.platform }} \
+          --set *.args.versionRover=${{ steps.tag.outputs.date }} \
+          --set *.tags="ghcr.io/${{ github.repository }}/roverlight:latest,ghcr.io/${{ github.repository }}/roverlight:${{ steps.tag.outputs.date }}" \
+          --push \
+          roverlight rover_agents
 
     - name: Calculate build duration
       id: build-time
