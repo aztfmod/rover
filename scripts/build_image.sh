@@ -139,7 +139,7 @@ function build_base_rover_image {
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
-                --push rover_registry
+                --push rover_registry rover_agents
             ;;
     esac
 
