@@ -8,7 +8,7 @@
 #
 
 group "default" {
-  targets = ["rover_local", "roverlight"]
+  targets = ["rover_local", "roverlight", "rover_agents"]
 }
 
 target "rover_local" {
