@@ -207,6 +207,20 @@ function build_rover_agents {
 
             echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}* for registry '${registry}'"
             ;;
+        "ci")
+            echo " - tag           - ${tag}"
+            registry="${registry}" \
+            tag_strategy=${tag_strategy} \
+            versionRover="${rover_base}:${tag}" \
+            versionTerraform=${versionTerraform} \
+            tag="${tag}" \
+            docker buildx bake \
+                -f docker-bake-agents.hcl \
+                -f docker-bake.override.hcl \
+                --push gitlab
+
+            echo "Agents created under tag ${registry}rover-agent:${tag}-${tag_strategy}* for registry '${registry}'"
+            ;;
         *)
             echo " - tag           - ${tag}"
             registry="${registry}" \
