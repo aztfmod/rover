@@ -38,8 +38,8 @@ target "rover_local" {
 target "roverlight" {
   dockerfile = "./Dockerfile.roverlight"
   tags = [
-    "ghcr.io/${registry}/roverlight:${tag}",
-    "ghcr.io/${registry}/roverlight:latest"
+    "ghcr.io/aztfmod/roverlight:${tag}",
+    "ghcr.io/aztfmod/roverlight:latest"
   ]
   args = {
     versionRover = versionRover
