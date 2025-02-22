@@ -1,5 +1,5 @@
 name: Roverlight-Build-Release
-# Workflow for building and scanning roverlight images
+# Workflow for building and scanning roverlight image
 
 on:
   workflow_dispatch:
@@ -67,10 +67,10 @@ jobs:
       id: build-start-time
       run: echo "build_start_time=$(date +%s)" >> $GITHUB_OUTPUT
           
-    - name: Building roverlight and agents
+    - name: Building roverlight
       id: push
       run: |
-        # Build roverlight
+        # Build roverlight only
         docker buildx bake \
           -f docker-bake.hcl \
           -f docker-bake.override.hcl \
@@ -79,16 +79,6 @@ jobs:
           --set *.tags="ghcr.io/${{ github.repository }}/roverlight:latest,ghcr.io/${{ github.repository }}/roverlight:${{ steps.tag.outputs.date }}" \
           --push \
           roverlight
-
-        # Build agents
-        docker buildx bake \
-          -f docker-bake-agents.hcl \
-          -f docker-bake.override.hcl \
-          --set *.platform=${{ matrix.platform }} \
-          --set *.args.versionRover="ghcr.io/${{ github.repository }}/roverlight:${{ steps.tag.outputs.date }}" \
-          --set *.tags="ghcr.io/${{ github.repository }}/rover-agent:${{ steps.tag.outputs.date }}-${{ matrix.platform }}" \
-          --push \
-          rover_agents
 
     - name: Calculate build duration
       id: build-time
