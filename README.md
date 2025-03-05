@@ -1,5 +1,6 @@
 ![](https://github.com/aztfmod/rover/workflows/master/badge.svg)
-![](https://github.com/aztfmod/rover/workflows/.github/workflows/ci-branches.yml/badge.svg)
+![](https://github.com/aztfmod/rover/workflows/roverlight-build/badge.svg)
+![](https://github.com/aztfmod/rover/workflows/roverlight-security-scan/badge.svg)
 [![Gitter](https://badges.gitter.im/aztfmod/community.svg)](https://gitter.im/aztfmod/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Azure Terraform SRE - Landing zones on Terraform - Rover
@@ -10,7 +11,10 @@ Azure Terraform SRE provides you with guidance and best practices to adopt Azure
 
 The CAF **rover** is helping you managing your enterprise Terraform deployments on Microsoft Azure and is composed of two parts:
 
-- **A docker container**
+- **A docker container** (available in standard and light variants)
+  - Standard: Full featured development environment with all tools
+  - Light: Streamlined version focused on essential functionality
+  - Both variants available on GitHub Container Registry
   - Allows consistent developer experience on PC, Mac, Linux, including the right tools, git hooks and DevOps tools.
   - Native integration with [Visual Studio Code](https://code.visualstudio.com/docs/remote/containers), [GitHub Codespaces](https://github.com/features/codespaces).
   - Contains the versioned toolset you need to apply landing zones.

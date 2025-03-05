@@ -1,36 +1,64 @@
 {
-    "name": "Azure CAF rover",
-    // Update the 'dockerComposeFile' list if you have more compose files or use different names.
-    "dockerComposeFile": "docker-compose.yml",
+    "name": "Azure SRE rover",
+
     // Container user to use in VSCode Online and GitHub Codespaces
+    "image": "mcr.microsoft.com/devcontainers/base:jammy",
     "remoteUser": "vscode",
-    // The 'service' property is the name of the service for the container that VS Code should
-    // use. Update this value and .devcontainer/docker-compose.yml to the real service name.
-    "service": "rover",
-    // The optional 'workspaceFolder' property is the path VS Code should open by default when
-    // connected. This is typically a volume mount in .devcontainer/docker-compose.yml
-    "workspaceFolder": "/tf/caf",
-    // Use 'settings' to set *default* container specific settings.json values on container create.
-    // You can edit these settings after create using File > Preferences > Settings > Remote.
-    "settings": {
-        "files.eol": "\n",
-        "terminal.integrated.defaultProfile.linux": "zsh",
-        "editor.tabSize": 2,
-        "terminal.integrated.scrollback": 64000,
+
+    // Volume mounts for the container.
+    "mounts": [
+        "source=volume-caf-vscode,target=/home/vscode",
+        "source=volume-caf-vscode-bashhistory,target=/commandhistory",
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+    ],
+
+    // Run args for the container.
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        "--init",
+        "--network=host"
+      ],
+
+    // Adding features to the container.
+    "features": {
+        "ghcr.io/azure/azure-dev/azd:latest": {},
+        "ghcr.io/devcontainers/features/azure-cli:1": {},
+        "ghcr.io/devcontainers-contrib/features/act:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
+            "plugins": [
+                "aliases syntax-highlighting autosuggestions"
+            ],
+            "username": [
+                "vscode"
+            ]
+        }
     },
-    // Uncomment the next line if you want start specific services in your Docker Compose config.
-    // "runServices": [],
-    // Uncomment this like if you want to keep your containers running after VS Code shuts down.
-    // "shutdownAction": "none",
+
+    // Workspace mounts and environment variables can be added here.
+    "workspaceMount": "source=${localWorkspaceFolder},target=/tf/caf,type=bind",
+    "workspaceFolder": "/tf/caf",
+
+
     // Uncomment the next line to run commands after the container is created.
-    //"postCreateCommand": "cp -R /tmp/.ssh-localhost/* ~/.ssh && sudo chmod 600 ~/.ssh/* && sudo chown -R $(whoami) /tf/caf && git config --global core.editor vim && pre-commit install && pre-commit autoupdate",
+	// "postCreateCommand" : "sudo chmod 400 ~/.ssh/* && git config --global core.editor vi && echo 'export PATH=$HOME/.tfenv/tfenv-3.0.0/bin:$PATH' >> ~/.zshrc",
     "postCreateCommand": "sudo cp -R /tmp/.ssh-localhost/* ~/.ssh && sudo chown -R $(whoami):$(whoami) /tf/caf ~/.ssh && sudo chmod 400 ~/.ssh/* && git config --global core.editor vi && pre-commit install && pre-commit autoupdate",
     "postStartCommand": "sudo chmod 666 /var/run/docker.sock",
-    // Add the IDs of extensions you want installed when the container is created in the array below.
-    "extensions": [
-        "4ops.terraform",
-        "mutantdino.resourcemonitor",
-        "eamodio.gitlens",
-        "golang.go"
-    ]
+    // "postCreateCommand": "sudo cp -R /tmp/.ssh-localhost/* ~/.ssh && sudo chown -R $(whoami):$(whoami) /tf/caf ~/.ssh && sudo chmod 400 ~/.ssh/* && git config --global core.editor vi && pre-commit install && pre-commit autoupdate",
+
+
+    // Adding the extensions you in the container.
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "mutantdino.resourcemonitor",
+                "eamodio.gitlens",
+                "GitHub.copilot"
+			]
+        }
+    }
+
 }

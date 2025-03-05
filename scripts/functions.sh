@@ -115,7 +115,7 @@ function process_actions {
             verify_parameters
             deploy ${TF_VAR_workspace}
             ;;
-        ci)
+        *)
             register_ci_tasks
             verify_ci_parameters
             set_default_parameters
@@ -914,7 +914,11 @@ function verify_rover_version {
     user=$(whoami)
 
     if [ "${ROVER_RUNNER}" = false ]; then
-        required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' || true)
+        if [ -f "/tf/caf/.devcontainer/docker-compose.yml" ]; then
+            required_version=$(cat /tf/caf/.devcontainer/docker-compose.yml | yq | jq -r '.services | first(.[]).image' || true)
+        else
+            required_version=$(sed '/\/\//d' /tf/caf/.devcontainer/devcontainer.json | jq -r .image | awk -F ':' '{print $NF}' || true)
+        fi
         running_version=$(cat ${script_path}/version.txt |  egrep -o '[^\/]+$')
 
         if [ "${required_version}" != "${TF_VAR_rover_version}" ]; then

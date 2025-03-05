@@ -8,12 +8,12 @@
 #
 
 group "default" {
-  targets = ["rover_local", "rover_agents"]
+  targets = ["rover_local", "roverlight", "rover_agents"]
 }
 
 target "rover_local" {
   dockerfile = "./Dockerfile"
-  tags = ["${tag}"]
+  tags = ["rover_local:latest"]
   args = {
     extensionsAzureCli   = extensionsAzureCli
     versionDockerCompose = versionDockerCompose
@@ -30,9 +30,21 @@ target "rover_local" {
     versionTerrascan     = versionTerrascan
     versionTfupdate      = versionTfupdate
   }
-  platforms = ["linux/amd64","linux/arm64" ]
+  platforms = ["linux/arm64", "linux/amd64" ]
   cache-to = ["type=local,dest=/tmp/.buildx-cache,mode=max"]
   cache-from = ["type=local,src=/tmp/.buildx-cache"]
+}
+
+target "roverlight" {
+  dockerfile = "./Dockerfile.roverlight"
+  tags = ["ghcr.io/arnaudlh/roverlight:latest"]
+  args = {
+    versionRover = "${versionRover}"
+    USERNAME = "vscode"
+    TARGETOS = "linux"
+    TARGETARCH = "amd64"
+  }
+  platforms = ["${platform}"]
 }
 
 target "rover_registry" {
@@ -43,18 +55,38 @@ target "rover_registry" {
   }
 }
 
+
+# Docker build configuration
 variable "registry" {
-    default = ""
+  default = "ghcr.io/aztfmod"
 }
 
-variable "tag" {
-    default = "latest"
+variable "image_name" {
+  default = "roverlight"
 }
 
+variable "version" {
+  default = "latest"
+}
+
+variable "platform" {
+  default = "linux/amd64"
+}
+
+# Version configuration
 variable "versionRover" {
-    default = ""
+  default = ""
 }
 
 variable "versionTerraform" {
-    default = ""
+  default = ""
+}
+
+# Build arguments
+variable "targetarch" {
+  default = "amd64"
+}
+
+variable "username" {
+  default = "vscode"
 }
