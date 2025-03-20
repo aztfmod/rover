@@ -30,7 +30,7 @@ jobs:
         uses: anchore/scan-action@v3
         id: scan
         with:
-          image: ghcr.io/${{ github.repository }}/roverlight:latest
+          image: ghcr.io/${{ github.repository }}/roverlight:${{ github.event.workflow_run.head_commit.id }}
           severity-cutoff: critical
           fail-build: false
           output-format: sarif
