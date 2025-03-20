@@ -91,13 +91,6 @@ function build_base_rover_image {
             export rover="${rover_base}:${tag}"
             tag_strategy="preview-"
             ;;
-        "ci")
-            registry="symphonydev.azurecr.io/"
-            tag=${versionTerraform}-${tag_date_preview}
-            rover_base="${registry}rover-ci"
-            export rover="${rover_base}:${tag}"
-            tag_strategy="ci-"
-            ;;
         "local")
             registry="localhost:5000/"
             tag=${versionTerraform}-${tag_date_preview}
@@ -146,7 +139,7 @@ function build_base_rover_image {
             docker buildx bake \
                 -f docker-bake.hcl \
                 -f docker-bake.override.hcl \
-                --push rover_registry
+                --push rover_registry rover_agents
             ;;
     esac
 
@@ -257,9 +250,7 @@ case "${strategy}" in
 esac
 
 echo "Building rover images."
-if [ "$strategy" == "ci" ]; then
-    build_base_rover_image "1.0.0" ${strategy}
-else
+if [ true ]; then
     while read versionTerraform; do
         build_base_rover_image ${versionTerraform} ${strategy}
     done <./.env.terraform

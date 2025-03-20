@@ -19,3 +19,5 @@ versionGithubRunner="2.320.0"
 versionGitlab="17.5.3"
 versionTfc="1.17.0"
 
+# Build configuration is in docker-bake.hcl
+

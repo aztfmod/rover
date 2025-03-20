@@ -2,6 +2,10 @@
 
 The dev container in this repo uses docker compose and an image hosted on dockerhub (aztfmod/rover:tag).
 
+Two variants are available:
+- Standard: Full development environment (aztfmod/rover:tag)
+- Light: Streamlined version (ghcr.io/aztfmod/roverlight:tag)
+
 If you would like to make changes to the base image used by the dev container, you need to build the image then update the docker-compose.yml file to point to the newly created local image.
 
 ## 1) Build the local image

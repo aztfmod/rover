@@ -5,142 +5,148 @@ FROM ubuntu:22.04 AS base
 
 SHELL ["/bin/bash", "-c"]
 
-
-# Arguments set during docker-compose build -b --build from .env file
-
-ARG versionVault \
-    versionKubectl \
-    versionKubelogin \
-    versionDockerCompose \
-    versionPowershell \
-    versionPacker \
-    versionGolang \
-    versionTerraformDocs \
-    versionAnsible \
-    versionTerrascan \
-    versionTfupdate \
-    extensionsAzureCli \
-    SSH_PASSWD \
-    TARGETARCH \
-    TARGETOS
-
+# Build arguments
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 ARG USERNAME=vscode
 ARG USER_UID=1000
-ARG USER_GID=${USER_UID}
+ARG USER_GID=1000
+ARG TF_PLUGIN_CACHE_DIR=/tf/cache
 
-ENV SSH_PASSWD=${SSH_PASSWD} \
-    USERNAME=${USERNAME} \
-    versionVault=${versionVault} \
-    versionGolang=${versionGolang} \
-    versionKubectl=${versionKubectl} \
-    versionKubelogin=${versionKubelogin} \
-    versionDockerCompose=${versionDockerCompose} \
-    versionTerraformDocs=${versionTerraformDocs} \
-    versionPacker=${versionPacker} \
-    versionPowershell=${versionPowershell} \
-    versionAnsible=${versionAnsible} \
-    extensionsAzureCli=${extensionsAzureCli} \
-    versionTerrascan=${versionTerrascan} \
-    versionTfupdate=${versionTfupdate} \
-    PATH="${PATH}:/opt/mssql-tools/bin:/home/vscode/.local/lib/shellspec/bin:/home/vscode/go/bin:/usr/local/go/bin" \
-    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
-    TF_PLUGIN_CACHE_DIR="/tf/cache" \
-    TF_REGISTRY_DISCOVERY_RETRY=5 \
-    TF_REGISTRY_CLIENT_TIMEOUT=15 \
-    ARM_USE_MSGRAPH=true \
+# Version arguments
+ARG versionDockerCompose
+ARG versionGolang
+ARG versionKubectl
+ARG versionKubelogin
+ARG versionPacker
+ARG versionPowershell
+ARG versionTerraformDocs
+ARG versionVault
+ARG versionAnsible
+ARG versionTerrascan
+ARG versionTfupdate
+ARG extensionsAzureCli
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
-    LC_ALL=en_US.UTF-8 \
-    DEBIAN_FRONTEND=noninteractive \
-    DEBCONF_NONINTERACTIVE_SEEN=true
+    LC_ALL=en_US.UTF-8
+
+# Set user environment variables
+ENV USERNAME=${USERNAME} \
+    USER_UID=${USER_UID} \
+    USER_GID=${USER_GID} \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/opt/mssql-tools/bin:/home/${USERNAME}/.local/lib/shellspec/bin:/home/${USERNAME}/go/bin \
+    TF_DATA_DIR="/home/${USERNAME}/.terraform.cache" \
+    TF_PLUGIN_CACHE_DIR=/tf/cache \
+    TF_REGISTRY_DISCOVERY_RETRY=5 \
+    TF_REGISTRY_CLIENT_TIMEOUT=15 \
+    ARM_USE_MSGRAPH=true
+
+# Configure locales first
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends locales tzdata && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en
 
 WORKDIR /tf/rover
 COPY ./scripts/.kubectl_aliases .
 COPY ./scripts/zsh-autosuggestions.zsh .
-    # installation common tools
+
+# Install common tools
+# Remove duplicate ARG/ENV declarations
+
+# Install base packages
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    apt-utils \
-    bsdmainutils \
-    ca-certificates \
-    curl \
-    fonts-powerline \
-    gcc \
-    gettext \
-    git \
-    gpg \
-    gpg-agent \
-    jq \
-    less \
-    locales \
-    make \
-    # Networking tools
-    dnsutils net-tools iputils-ping traceroute \
-    python3-dev \
-    python3-pip \
-    rsync \
-    # openvpn client and ipsec tools to generate certificates
-    openvpn network-manager-openvpn strongswan strongswan-pki libstrongswan-extra-plugins libtss2-tcti-tabrmd0 openssh-client \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        apt-utils \
+        bsdmainutils \
+        ca-certificates \
+        curl \
+        gpg \
+        gpg-agent && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        fonts-powerline \
+        gcc \
+        gettext \
+        git \
+        gpg \
+        gpg-agent \
+        jq \
+        less \
+        locales \
+        make \
+        dnsutils \
+        net-tools \
+        iputils-ping \
+        traceroute \
+        python3-dev \
+        python3-pip \
+        rsync \
+        software-properties-common \
+        sudo \
+        unzip \
+        vim \
+        wget \
+        zsh \
+        zip && \
     #
-    software-properties-common \
-    gosu \
-    sudo \
-    unzip \
-    vim \
-    wget \
-    zsh \
-    zip && \
-    #
-    # Create USERNAME
-    #
-    echo "Creating ${USERNAME} user..." && \
+    # Create user and group
     groupadd docker && \
-    useradd --uid $USER_UID -m -G docker ${USERNAME}  && \
-    #
-    # Set the locale
-    locale-gen en_US.UTF-8 && \
+    useradd --uid 1000 -m -G docker vscode && \
     #
     # ############### APT Repositories ###################
     #
     # Add Microsoft key
     #
-    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg && \
     #
     # Add Microsoft repository
     #
-    gosu root apt-add-repository https://packages.microsoft.com/ubuntu/22.04/prod && \
+    echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" > /etc/apt/sources.list.d/microsoft.list && \
     #
     # Add Docker repository
     #
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /etc/apt/trusted.gpg.d/docker-archive-keyring.gpg && \
-    echo "deb [arch=${TARGETARCH}] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" > /etc/apt/sources.list.d/docker.list && \
     #
     # Kubernetes repo
     #
-    curl -fsSL https://pkgs.k8s.io/core:/stable:/v${versionKubectl}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${versionKubectl}/deb/ /" | gosu root tee /etc/apt/sources.list.d/kubernetes.list && \
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list > /dev/null &&\
     #
     # Github shell
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gosu root dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/trusted.gpg.d/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null &&\
     #
     apt-get update && \
-    apt-get install -y --no-install-recommends \
-    docker-ce-cli \
-    kubectl \
-    gh && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        docker-ce-cli \
+        kubectl \
+        gh \
+        gosu \
+        openvpn \
+        network-manager-openvpn \
+        strongswan \
+        strongswan-pki \
+        libstrongswan-extra-plugins \
+        libtss2-tcti-tabrmd0 \
+        openssh-client && \
     #
     # Install Docker Compose - required to rebuild the rover and dynamic terminal in VSCode
     #
     echo "Installing docker compose ${versionDockerCompose}..." && \
     mkdir -p /usr/libexec/docker/cli-plugins/ && \
-    if [ ${TARGETARCH} == "amd64" ]; then \
-        curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-x86_64 ; \
-    else  \
-        curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-aarch64 ; \
-    fi  \
-    && chmod +x /usr/libexec/docker/cli-plugins/docker-compose && \
+    ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
+    curl -L -o /usr/libexec/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v${versionDockerCompose}/docker-compose-${TARGETOS}-${ARCH} && \
+    chmod +x /usr/libexec/docker/cli-plugins/docker-compose && \
     #
     # Install Helm
     #
@@ -156,23 +162,16 @@ RUN apt-get update && \
     # Install terrascan
     #
     echo "Installing terrascan v${versionTerrascan} ..." && \
-    if [ ${TARGETARCH} == "amd64" ]; then \
-        curl -sSL -o terrascan.tar.gz https://github.com/tenable/terrascan/releases/download/v${versionTerrascan}/terrascan_${versionTerrascan}_Linux_x86_64.tar.gz ; \
-    else \
-        curl -sSL -o terrascan.tar.gz https://github.com/tenable/terrascan/releases/download/v${versionTerrascan}/terrascan_${versionTerrascan}_Linux_${TARGETARCH}.tar.gz ; \
-    fi  \
-    && tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz && \
+    ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x86_64" || echo "arm64") && \
+    curl -sSL -o terrascan.tar.gz https://github.com/tenable/terrascan/releases/download/v${versionTerrascan}/terrascan_${versionTerrascan}_Linux_${ARCH}.tar.gz && \
+    tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz && \
     install terrascan /usr/local/bin && rm terrascan && \
     #
     # Install tfupdate
     #
     echo "Installing tfupdate v${versionTfupdate} ..." && \
-    if [ ${TARGETARCH} == "amd64" ]; then \
-        curl -sSL -o tfupdate.tar.gz https://github.com/minamijoyo/tfupdate/releases/download/v${versionTfupdate}/tfupdate_${versionTfupdate}_linux_amd64.tar.gz ; \
-    else \
-        curl -sSL -o tfupdate.tar.gz https://github.com/minamijoyo/tfupdate/releases/download/v${versionTfupdate}/tfupdate_${versionTfupdate}_linux_${TARGETARCH}.tar.gz ; \
-    fi  \
-    && tar -xf tfupdate.tar.gz tfupdate && rm tfupdate.tar.gz && \
+    curl -sSL -o tfupdate.tar.gz https://github.com/minamijoyo/tfupdate/releases/download/v${versionTfupdate}/tfupdate_${versionTfupdate}_${TARGETOS}_${TARGETARCH}.tar.gz && \
+    tar -xf tfupdate.tar.gz tfupdate && rm tfupdate.tar.gz && \
     install tfupdate /usr/local/bin && rm tfupdate && \
     #
     # Install tfsec
@@ -198,10 +197,9 @@ RUN apt-get update && \
     # https://docs.microsoft.com/en-us/powershell/scripting/install/install-other-linux?view=powershell-7.2#binary-archives
     #
     echo "Installing PowerShell ${versionPowershell}..." && \
-    if [ ${TARGETARCH} == "amd64" ]; then curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-x64.tar.gz ; \
-    else curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-${TARGETARCH}.tar.gz ; \
-    fi \
-    && mkdir -p /opt/microsoft/powershell/7 && \
+    ARCH=$([ "${TARGETARCH}" = "amd64" ] && echo "x64" || echo "arm64") && \
+    curl -L -o /tmp/powershell.tar.gz https://github.com/PowerShell/PowerShell/releases/download/v${versionPowershell}/powershell-${versionPowershell}-${TARGETOS}-${ARCH}.tar.gz && \
+    mkdir -p /opt/microsoft/powershell/7 && \
     tar zxf /tmp/powershell.tar.gz -C /opt/microsoft/powershell/7 && \
     chmod +x /opt/microsoft/powershell/7/pwsh && \
     ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh && \
@@ -226,12 +224,10 @@ RUN apt-get update && \
     #
     echo "Installing Kubelogin ${versionKubelogin}..." && \
     curl -sSL -o /tmp/kubelogin.zip https://github.com/Azure/kubelogin/releases/download/v${versionKubelogin}/kubelogin-${TARGETOS}-${TARGETARCH}.zip 2>&1 && \
-    unzip -d /usr/ /tmp/kubelogin.zip && \
-    if [ ${TARGETARCH} == "amd64" ]; then \
-        chmod +x /usr/bin/linux_amd64/kubelogin ; \
-    else \
-        chmod +x /usr/bin/linux_arm64/kubelogin ; \
-    fi  && \
+    unzip -d /usr/bin /tmp/kubelogin.zip && \
+    mv /usr/bin/bin/linux_${TARGETARCH}/kubelogin /usr/bin/kubelogin && \
+    rm -rf /usr/bin/bin && \
+    chmod +x /usr/bin/kubelogin && \
     # Hashicorp Vault
     #
     echo "Installing Vault ${versionVault}..." && \
@@ -274,25 +270,24 @@ RUN apt-get update && \
     #
     # Install Ansible
     #
-    echo "Installing Ansible ${versionAnsible} ..." && \
-    pip3 install ansible-core==${versionAnsible} && \
+    echo "Installing Ansible 2.16.2 ..." && \
+    pip3 install ansible-core==2.16.2 && \
     #
     #
     # ################ Install apt packages ##################
     # For amd64 only - as no arm64 version packages available per:  https://packages.microsoft.com/ubuntu/20.04/prod/pool/main/m/mssql-tools/
-    if [ ${TARGETARCH} == "amd64" ]; then \
-        echo ACCEPT_EULA=Y apt-get install -y --no-install-recommends unixodbc mssql-tools; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        ACCEPT_EULA=Y apt-get install -y --no-install-recommends unixodbc mssql-tools; \
     else \
-        echo "mssql-tools skipped as not running on amr64"; \
-    fi \
-    #
-    && echo "Installing latest shellspec..." && \
+        echo "mssql-tools skipped as not running on arm64"; \
+    fi && \
+    echo "Installing latest shellspec..." && \
     curl -fsSL https://git.io/shellspec | sh -s -- --yes && \
     #
     # Golang
     #
     echo "Installing Golang ${versionGolang}..." && \
-    curl -sSL -o /tmp/golang.tar.gz https://go.dev/dl/go${versionGolang}.${TARGETOS}-${TARGETARCH}.tar.gz  2>&1 && \
+    curl -sSL -o /tmp/golang.tar.gz https://go.dev/dl/go${versionGolang}.${TARGETOS}-${TARGETARCH}.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.gz && \
     export PATH=$PATH:/usr/local/go/bin && \
     go version && \
@@ -337,50 +332,70 @@ RUN apt-get update && \
     chown -R ${USERNAME} /commandhistory && \
     echo "set -o history" >> "/home/${USERNAME}/.bashrc" && \
     echo "export HISTCONTROL=ignoredups:erasedups"  >> "/home/${USERNAME}/.bashrc" && \
-    echo "PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r\"" >> "/home/${USERNAME}/.bashrc" && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >>  "/home/${USERNAME}/.bashrc" && \
-    echo "alias watch=\"watch \"" >> "/home/${USERNAME}/.bashrc" && \
+    echo "PROMPT_COMMAND='history -a; history -c; history -r'" >> "/home/${USERNAME}/.bashrc" && \
+    echo '[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases' >>  "/home/${USERNAME}/.bashrc" && \
+    echo 'alias watch="watch "' >> "/home/${USERNAME}/.bashrc" && \
     #
     # Clean-up
     #
     apt-get remove -y \
         gcc \
-        python3-dev \
-        apt-utils && \
+        python3-dev && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /tmp/* && \
     rm -rf /var/lib/apt/lists/* && \
-    find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+    find / -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true && \
+    find / -type f -name '*.py[cod]' -delete 2>/dev/null || true
 #
 # Switch to non-root ${USERNAME} context
 #
 
-USER ${USERNAME}
-
 COPY .devcontainer/.zshrc /home/${USERNAME}/
 COPY ./scripts/sshd_config /home/${USERNAME}/.ssh/sshd_config
 
-RUN echo "Setting up OMZ environment" && \
-    #
-    # Install Oh My Zsh
-    #
-    curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | bash -s -- --unattended && \
-    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
-    echo "DISABLE_UNTRACKED_FILES_DIRTY=\"true\"" >> /home/${USERNAME}/.zshrc && \
-    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.bashrc && \
-    echo "alias rover=/tf/rover/rover.sh" >> /home/${USERNAME}/.zshrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.bashrc && \
-    echo "alias t=/usr/bin/terraform" >> /home/${USERNAME}/.zshrc && \
-    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.zshrc && \
-    echo "alias k=/usr/bin/kubectl" >> /home/${USERNAME}/.bashrc && \
-    echo "cd /tf/caf || true" >> /home/${USERNAME}/.bashrc && \
-    echo "cd /tf/caf || true" >> /home/${USERNAME}/.zshrc && \
-    echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases" >> /home/${USERNAME}/.zshrc && \
-    echo "source /tf/rover/zsh-autosuggestions.zsh" >> /home/${USERNAME}/.zshrc && \
-    echo "alias watch=\"watch \"" >> /home/${USERNAME}/.zshrc
+# Use a pre-built base image that includes essential packages
+FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04 AS config-base
 
-FROM base
+# Set up environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+# Set up user environment
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Configure shell files and aliases
+RUN mkdir -p /home/${USERNAME}/.ssh && \
+    touch /home/${USERNAME}/.ssh/sshd_config && \
+    touch /home/${USERNAME}/.zshrc && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssh && \
+    chmod 700 /home/${USERNAME}/.ssh && \
+    chmod 644 /home/${USERNAME}/.zshrc && \
+    chmod 600 /home/${USERNAME}/.ssh/sshd_config && \
+    chmod 700 -R /home/${USERNAME}/.oh-my-zsh && \
+    { \
+        echo "DISABLE_UNTRACKED_FILES_DIRTY=\"true\""; \
+        echo "alias rover=/tf/rover/rover.sh"; \
+        echo "alias t=/usr/bin/terraform"; \
+        echo "alias k=/usr/bin/kubectl"; \
+        echo "cd /tf/caf || true"; \
+        echo "[ -f /tf/rover/.kubectl_aliases ] && source /tf/rover/.kubectl_aliases"; \
+        echo "source /tf/rover/zsh-autosuggestions.zsh"; \
+        echo "alias watch=\"watch \""; \
+    } >> /home/${USERNAME}/.zshrc && \
+    { \
+        echo "alias rover=/tf/rover/rover.sh"; \
+        echo "alias t=/usr/bin/terraform"; \
+        echo "alias k=/usr/bin/kubectl"; \
+        echo "cd /tf/caf || true"; \
+    } >> /home/${USERNAME}/.bashrc
+
+FROM config-base
 
 ARG versionTerraform \
     USERNAME=vscode \
@@ -393,19 +408,56 @@ ENV versionRover=${versionRover} \
 #
 # Keeping this method to support alpha build installations
 
-RUN echo "Set rover version to ${versionRover}..." && echo "Installing Terraform ${versionTerraform}..." && \
-    curl -sSL -o /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip" 2>&1 && \
-    sudo unzip -o -d /usr/bin /tmp/terraform.zip && \
-    sudo chmod +x /usr/bin/terraform && \
+# Create required directories
+RUN mkdir -p /tf/rover && \
     mkdir -p "/home/${USERNAME}/.terraform.cache/plugin-cache" && \
+    chown -R ${USERNAME}:${USERNAME} /tf && \
+    chown -R ${USERNAME}:${USERNAME} "/home/${USERNAME}/.terraform.cache"
+
+# Install Terraform
+ARG TARGETOS
+ARG TARGETARCH
+ARG versionTerraform
+ARG versionRover
+
+RUN echo "Installing Terraform ${versionTerraform}..." && \
+    curl -sSL -o /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${versionTerraform}/terraform_${versionTerraform}_${TARGETOS}_${TARGETARCH}.zip" && \
+    unzip -o -d /usr/bin /tmp/terraform.zip && \
+    chmod +x /usr/bin/terraform && \
     rm /tmp/terraform.zip && \
-    #
-    echo "Set rover version to ${versionRover}..." && \
     echo "${versionRover}" > /tf/rover/version.txt
 
-RUN az config set core.login_experience_v2=false
+# Install Azure CLI and extensions (with architecture-specific handling)
+ARG extensionsAzureCli
+ARG TARGETARCH
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
+        curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \
+        az config set core.login_experience_v2=false && \
+        az extension add --name resource-graph --system; \
+    else \
+        echo "Skipping Azure CLI installation for ${TARGETARCH} due to QEMU limitations"; \
+    fi
 
-COPY ./scripts/rover.sh ./scripts/tfstate.sh ./scripts/functions.sh ./scripts/remote.sh ./scripts/parse_command.sh ./scripts/banner.sh ./scripts/clone.sh ./scripts/walkthrough.sh ./scripts/sshd.sh ./scripts/backend.hcl.tf ./scripts/backend.azurerm.tf ./scripts/ci.sh ./scripts/cd.sh ./scripts/task.sh ./scripts/symphony_yaml.sh ./scripts/test_runner.sh ./
+# Create script directories and set permissions
+RUN mkdir -p /tf/rover/scripts && \
+    chown -R ${USERNAME}:${USERNAME} /tf/rover
+
+# Copy rover scripts
+COPY --chown=${USERNAME}:${USERNAME} \
+    ./scripts/rover.sh \
+    ./scripts/tfstate.sh \
+    ./scripts/functions.sh \
+    ./scripts/remote.sh \
+    ./scripts/parse_command.sh \
+    ./scripts/banner.sh \
+    ./scripts/clone.sh \
+    ./scripts/walkthrough.sh \
+    ./scripts/sshd.sh \
+    ./scripts/backend.hcl.tf \
+    ./scripts/backend.azurerm.tf \
+    ./scripts/task.sh \
+    ./scripts/test_runner.sh \
+    /tf/rover/scripts/
 COPY ./scripts/ci_tasks/* ./ci_tasks/
 COPY ./scripts/lib/* ./lib/
 COPY ./scripts/tfcloud/* ./tfcloud/
