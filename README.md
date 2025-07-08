@@ -6,9 +6,13 @@
 
 > :warning: This solution, offered by the Open-Source community, will no longer receive contributions from Microsoft. Customers are encouraged to transition to [Microsoft Azure Verified Modules](https://aka.ms/avm) for Microsoft support and updates.
 
-Azure Terraform SRE provides you with guidance and best practices to adopt Azure.
+## Overview
 
-The CAF **rover** is helping you managing your enterprise Terraform deployments on Microsoft Azure and is composed of two parts:
+Azure Terraform SRE provides you with guidance and best practices to adopt Azure infrastructure-as-code using Terraform. The Cloud Adoption Framework (CAF) **rover** is a comprehensive toolset for managing enterprise-scale Terraform deployments on Microsoft Azure.
+
+## What is Rover?
+
+The CAF **rover** helps you manage your enterprise Terraform deployments on Microsoft Azure and is composed of two main components:
 
 - **A docker container**
   - Allows consistent developer experience on PC, Mac, Linux, including the right tools, git hooks and DevOps tools.
@@ -25,16 +29,59 @@ The CAF **rover** is helping you managing your enterprise Terraform deployments 
 The rover is available from the Docker Hub in form of:
 
 - [Standalone edition](https://hub.docker.com/r/aztfmod/rover/tags?page=1&ordering=last_updated): to be used for landing zones engineering or pipelines.
-- [Adding runner (agent) for the following platforms](https://hub.docker.com/r/aztfmod/rover-agent/tags?page=1&ordering=last_updated)
+- [Runner (agent) editions](https://hub.docker.com/r/aztfmod/rover-agent/tags?page=1&ordering=last_updated) for CI/CD platforms:
   - Azure DevOps
   - GitHub Actions
-  - Gitlab
+  - GitLab
   - Terraform Cloud/Terraform Enterprise
 
-### Getting starter with CAF Terraform landing zones
+## Quick Start
 
-If you are reading this, you are probably interested also in reading the doc as below:
-:books: Read our [centralized documentation page](https://aka.ms/caf/terraform)
+### Prerequisites
+
+- Docker installed on your system
+- Azure CLI (if running outside container)
+- Access to an Azure subscription
+
+### Running Rover
+
+```bash
+# Pull the latest rover image
+docker pull aztfmod/rover:latest
+
+# Run rover interactively
+docker run -it --rm aztfmod/rover:latest
+
+# Login to Azure
+rover login
+
+# Deploy a landing zone
+rover -lz /tf/caf/landingzones/launchpad -a plan -launchpad
+```
+
+## Key Features
+
+- **🚀 Enterprise-ready**: Production-tested Terraform patterns and best practices
+- **🐳 Containerized**: Consistent development environment across all platforms  
+- **🔄 CI/CD Ready**: Native integration with popular DevOps platforms
+- **📊 State Management**: Automated Terraform state file handling on Azure Storage
+- **🛡️ Security**: Built-in security scanning and policy enforcement
+- **📚 Comprehensive**: Complete toolchain including Terraform, Azure CLI, and supporting tools
+
+## Documentation
+
+- 📖 **[Installation Guide](docs/INSTALLATION.md)** - Detailed setup instructions
+- 🚀 **[Usage Guide](docs/USAGE.md)** - Command reference and examples  
+- 🏗️ **[Architecture](docs/ARCHITECTURE.md)** - System design and components
+- 🤝 **[Contributing](CONTRIBUTING.md)** - Developer guidelines and setup
+- 🔒 **[Security](docs/SECURITY.md)** - Security best practices
+- 🐛 **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- ❓ **[FAQ](docs/FAQ.md)** - Frequently asked questions
+
+### Getting Started with CAF Terraform Landing Zones
+
+For comprehensive documentation on Cloud Adoption Framework patterns:
+:books: **[Visit our centralized documentation](https://aka.ms/caf/terraform)**
 
 ## Community
 

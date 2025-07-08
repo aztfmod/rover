@@ -1,65 +1,132 @@
+#
+# Rover Core Functions Library
+# 
+# Description:
+#   This file contains core utility functions used throughout the rover system.
+#   It provides error handling, retry logic, file operations, Azure integration,
+#   and various helper functions for Terraform workflows.
+#
+# Functions included:
+#   - Error handling and logging
+#   - Retry logic with backoff
+#   - File and directory operations  
+#   - Azure authentication helpers
+#   - Terraform state management
+#   - Version management
+#   - CI/CD integration helpers
+#
+# Usage:
+#   This file is sourced by rover.sh and should not be executed directly.
+#   Functions are called throughout the rover workflow.
+#
+# Dependencies:
+#   - Azure CLI (az)
+#   - Terraform
+#   - jq (for JSON processing)
+#   - Various Linux utilities (grep, sed, awk, etc.)
+#
+
+# Source Terraform Cloud integration scripts
 for script in ${script_path}/tfcloud/*.sh; do
   source "$script"
 done
 
+#
+# Function: error
+# Description: Central error handling function that provides consistent error reporting,
+#              logging, and cleanup before exiting the script.
+# Parameters:
+#   $1 - Line number where error occurred
+#   $2 - Error message (optional)
+#   $3 - Exit code (optional, defaults to 1)
+# Returns: Exits script with specified code
+# Example: error ${LINENO} "Failed to initialize Terraform" 2
+#
 error() {
+    # If logging to file is enabled, create JUnit report and show log file location
     if [ "$LOG_TO_FILE" == "true" ];then
         local logFile=$CURRENT_LOG_FILE
         create_junit_report
         echo >&2 -e "\e[41mError: see log file $logFile\e[0m"
     fi
 
-    local parent_lineno="$1"
-    local message="$2"
-    local code="${3:-1}"
+    # Parse parameters with defaults
+    local parent_lineno="$1"         # Line number where error occurred
+    local message="$2"               # Error message
+    local code="${3:-1}"             # Exit code (default: 1)
     local line_message=""
-    local source="${3:-${BASH_SOURCE[1]}}"
+    local source="${3:-${BASH_SOURCE[1]}}"  # Source file where error occurred
+    
+    # Build line number context if available
     if [ "$parent_lineno" != "" ]; then
         line_message="on or near line ${parent_lineno}"
     fi
 
+    # Construct error message with color coding (red background)
     if [[ -n "$message" ]]; then
         error_message="\e[41mError $source $line_message: ${message}; exiting with status ${code}\e[0m"
     else
         error_message="\e[41mError $source $line_message; exiting with status ${code}\e[0m"
     fi
+    
+    # Output error message to stderr
     echo >&2 -e ${error_message}
     echo ""
 
+    # If using remote backend (Terraform Cloud), cancel any running operations
     if [[ "${backend_type_hybrid}" == "remote" ]]; then
         tfcloud_runs_cancel ${error_message}
     fi
+    
+    # Perform cleanup before exit
     clean_up_variables
 
+    # Exit with specified code
     exit ${code}
 }
 
-
 #
-# Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
+# Function: execute_with_backoff
+# Description: Execute a command with exponential backoff retry logic.
+#              Useful for handling throttling, network issues, or transient failures.
+# Parameters:
+#   $@ - Command and arguments to execute
+# Environment Variables:
+#   ATTEMPTS - Maximum retry attempts (default: 5)
+#   TIMEOUT - Timeout between retries in seconds (default: 20)
+# Returns: Exit code of the last command execution
+# Example: execute_with_backoff az account show
 #
 function execute_with_backoff {
-    local max_attempts=${ATTEMPTS-5}
-    local timeout=${TIMEOUT-20}
-    local attempt=0
-    local exitCode=0
+    # Configuration with defaults
+    local max_attempts=${ATTEMPTS-5}    # Maximum number of retry attempts
+    local timeout=${TIMEOUT-20}         # Initial timeout in seconds
+    local attempt=0                     # Current attempt counter
+    local exitCode=0                    # Exit code of command execution
 
+    # Retry loop with exponential backoff
     while [[ $attempt < $max_attempts ]]; do
+        # Temporarily disable exit on error for command execution
         set +e
-        "$@"
-        exitCode=$?
-        set -e
+        "$@"                           # Execute the command with all its arguments
+        exitCode=$?                    # Capture exit code
+        set -e                         # Re-enable exit on error
 
+        # If command succeeded, break out of retry loop
         if [[ $exitCode == 0 ]]; then
             break
         fi
 
+        # Log retry attempt with current timeout
         echo "Failure! Return code ${exitCode} - Retrying in $timeout.." 1>&2
-        sleep $timeout
+        sleep $timeout                 # Wait before retry
+        
+        # Increment attempt counter and double timeout for exponential backoff
         attempt=$((attempt + 1))
         timeout=$((timeout * 2))
     done
 
+    # If all retries failed, log final failure message
     if [[ $exitCode != 0 ]]; then
         echo "Hit the max retry count ($@)" 1>&2
     fi
@@ -67,7 +134,17 @@ function execute_with_backoff {
     return $exitCode
 }
 
+#
+# Function: parameter_value
+# Description: Validates and returns a parameter value, ensuring it's not a flag (starts with -)
+# Parameters:
+#   $1 - Parameter name (for error messages)
+#   $2 - Parameter value to validate
+# Returns: The validated parameter value
+# Example: value=$(parameter_value "environment" "$2")
+#
 function parameter_value {
+    # Check if the value starts with a dash (indicating it's likely a flag, not a value)
     if [[ ${2} = -* ]]; then
         error ${LINENO} "Value not set for paramater ${1}" 1
     fi
@@ -75,19 +152,34 @@ function parameter_value {
     echo ${2}
 }
 
+#
+# Function: process_actions
+# Description: Main action dispatcher that handles different rover commands and operations.
+#              Routes commands to appropriate handlers based on the caf_command variable.
+# Parameters: None (uses global variables)
+# Global Variables Used:
+#   - caf_command: The main command being executed
+#   - tf_command: Terraform-specific command parameters
+# Returns: Exits with appropriate code after command execution
+# Example: Called automatically by rover.sh based on parsed command line
+#
 function process_actions {
     echo "@calling process_actions"
 
+    # Route to appropriate handler based on the main command
     case "${caf_command}" in
         bootstrap)
+            # Initialize rover environment and dependencies
             bootstrap
             exit 0
             ;;
         ignite)
+            # Quick start workflow for new users
             ignite ${tf_command}
             exit 0
             ;;
         init)
+            # Initialize Terraform working directory
             init
             exit 0
             ;;

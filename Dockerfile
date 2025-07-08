@@ -1,32 +1,63 @@
+#
+# Azure Terraform SRE - Rover Container Image
+#
+# This Dockerfile builds the rover container image with all necessary tools
+# for managing Azure infrastructure using Terraform. The image includes:
+# - Azure CLI and authentication tools
+# - Terraform and related tools (tflint, terrascan, etc.)
+# - Kubernetes tools (kubectl, helm)
+# - Development tools and utilities
+# - Security scanning and compliance tools
+#
+# Build process uses multi-stage approach for optimization:
+# - base: Core Ubuntu system with essential packages
+# - tools: Development and infrastructure tools
+# - security: Security scanning and compliance tools  
+# - final: Complete rover image with user setup
+#
+# Usage:
+#   docker build -t rover .
+#   docker run -it rover bash
+#
+# Build arguments can be used to customize tool versions:
+#   docker build --build-arg versionKubectl=1.25.0 -t rover .
+#
+
 ###########################################################
-# base tools and dependencies
+# Stage 1: Base system with essential packages
 ###########################################################
 FROM ubuntu:22.04 AS base
 
+# Use bash as default shell for better scripting support
 SHELL ["/bin/bash", "-c"]
 
+#
+# Build Arguments
+# These arguments define versions of tools to install and can be overridden
+# during build time to customize the image for specific requirements
+#
 
-# Arguments set during docker-compose build -b --build from .env file
+# Tool version arguments - can be overridden during build
+ARG versionVault \          # HashiCorp Vault CLI version
+    versionKubectl \        # Kubernetes kubectl version
+    versionKubelogin \      # Azure Kubernetes login tool version
+    versionDockerCompose \  # Docker Compose version
+    versionPowershell \     # PowerShell Core version
+    versionPacker \         # HashiCorp Packer version
+    versionGolang \         # Go programming language version
+    versionTerraformDocs \  # Terraform documentation generator version
+    versionAnsible \        # Ansible automation tool version
+    versionTerrascan \      # Terrascan security scanner version
+    versionTfupdate \       # Terraform module updater version
+    extensionsAzureCli \    # Azure CLI extensions to install
+    SSH_PASSWD \            # SSH password for development access
+    TARGETARCH \            # Target architecture (amd64, arm64)
+    TARGETOS                # Target OS (linux, windows, darwin)
 
-ARG versionVault \
-    versionKubectl \
-    versionKubelogin \
-    versionDockerCompose \
-    versionPowershell \
-    versionPacker \
-    versionGolang \
-    versionTerraformDocs \
-    versionAnsible \
-    versionTerrascan \
-    versionTfupdate \
-    extensionsAzureCli \
-    SSH_PASSWD \
-    TARGETARCH \
-    TARGETOS
-
-ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=${USER_UID}
+# User configuration arguments
+ARG USERNAME=vscode         # Default username for the container user
+ARG USER_UID=1000          # User ID for the container user
+ARG USER_GID=${USER_UID}   # Group ID for the container user (defaults to USER_UID)
 
 ENV SSH_PASSWD=${SSH_PASSWD} \
     USERNAME=${USERNAME} \

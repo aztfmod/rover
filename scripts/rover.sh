@@ -1,84 +1,176 @@
 #!/bin/bash
 
-# Initialize the launchpad first with rover
-# deploy a landingzone with
-# rover -lz [landingzone_folder_name] -a [plan | apply | destroy] [parameters]
+#
+# Azure Terraform SRE - Rover
+# Main entry point and orchestration script for Terraform deployments on Azure
+#
+# Description:
+#   Rover is a comprehensive toolset for managing enterprise Terraform deployments
+#   on Microsoft Azure. It provides state management, CI/CD integration, and 
+#   enterprise-grade features for Azure infrastructure deployments.
+#
+# Usage:
+#   rover [COMMAND] [OPTIONS]
+#   
+#   Common commands:
+#     rover login                                     # Authenticate to Azure
+#     rover -lz <path> -a plan -env <env>            # Run Terraform plan
+#     rover -lz <path> -a apply -env <env>           # Deploy infrastructure
+#     rover -lz <path> -a destroy -env <env>         # Destroy infrastructure
+#     rover ci -sc <symphony.yml>                    # Run CI pipeline
+#
+# Examples:
+#   # Deploy a launchpad (foundation)
+#   rover -lz ./landingzones/launchpad -a apply -env production --launchpad
+#
+#   # Deploy application landing zone
+#   rover -lz ./landingzones/app -a apply -env production -level level2
+#
+#   # Run continuous integration
+#   rover ci -sc ./configs/symphony.yml -b ./
+#
+# Author: Azure CAF Team
+# Repository: https://github.com/aztfmod/rover
+# Documentation: https://github.com/aztfmod/rover/docs
+#
 
-
+# Get the directory path of this script for sourcing other components
 export script_path=$(dirname "$BASH_SOURCE")
 
-source ${script_path}/clone.sh
+# Source core functionality modules
+# Order matters - dependencies must be loaded first
+
+# Core utility functions and helpers
 source ${script_path}/functions.sh
+
+# Get rover version for telemetry and compatibility checks
 export TF_VAR_rover_version=$(get_rover_version)
-source ${script_path}/banner.sh
-source ${script_path}/lib/bootstrap.sh
-source ${script_path}/lib/init.sh
-source ${script_path}/lib/logger.sh
-source ${script_path}/lib/parse_parameters.sh
-source ${script_path}/parse_command.sh
-source ${script_path}/remote.sh
-source ${script_path}/tfstate.sh
-source ${script_path}/walkthrough.sh
 
+# Load foundational components
+source ${script_path}/clone.sh              # Repository cloning functionality
+source ${script_path}/banner.sh             # CLI banner and branding
+source ${script_path}/lib/bootstrap.sh      # Environment initialization
+source ${script_path}/lib/init.sh           # Terraform initialization helpers
+source ${script_path}/lib/logger.sh         # Logging and output management
+source ${script_path}/lib/parse_parameters.sh # Parameter validation and parsing
+source ${script_path}/parse_command.sh      # CLI command parsing
+source ${script_path}/remote.sh             # Remote backend configuration
+source ${script_path}/tfstate.sh            # Terraform state management
+source ${script_path}/walkthrough.sh        # Interactive setup workflows
 
-# symphony
-source ${script_path}/ci.sh
-source ${script_path}/cd.sh
-source ${script_path}/symphony_yaml.sh
-source ${script_path}/test_runner.sh
+# CI/CD and automation components
+source ${script_path}/ci.sh                 # Continuous integration workflows
+# CI/CD and automation components
+source ${script_path}/ci.sh                 # Continuous integration workflows
+source ${script_path}/cd.sh                 # Continuous deployment workflows
+source ${script_path}/symphony_yaml.sh      # Symphony configuration parsing
+source ${script_path}/test_runner.sh        # Test execution framework
 
-export ROVER_RUNNER=${ROVER_RUNNER:=false}
+# Load Terraform Cloud integration components
+for script in ${script_path}/tfcloud/*.sh; do
+  source "$script"
+done
 
-export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}
-export TF_VAR_environment=${TF_VAR_environment:="sandpit"}
-export TF_VAR_level=${TF_VAR_level:="level0"}
-export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}
-export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}
-export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}
-export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"}
-export ARM_USE_MSAL=${ARM_USE_MSAL:="false"}
-export skip_permission_check=${skip_permission_check:=false}
-export symphony_run_all_tasks=true
-export debug_mode=${debug_mode:="false"}
-export devops=${devops:="false"}
-export log_folder_path=${log_folderpath:=~/.terraform.logs}
-export TF_IN_AUTOMATION="true" #Overriden in logger if log-severity is passed in.
-export TF_VAR_tf_cloud_organization=${TF_CLOUD_ORGANIZATION}
-export TF_VAR_tf_cloud_hostname=${TF_CLOUD_HOSTNAME:="app.terraform.io"}
+#
+# Default Environment Configuration
+# These variables can be overridden via environment variables or command line parameters
+#
+
+# Rover runtime configuration
+export ROVER_RUNNER=${ROVER_RUNNER:=false}              # Flag to indicate if running in agent mode
+
+# Terraform workspace and environment defaults
+export TF_VAR_workspace=${TF_VAR_workspace:="tfstate"}   # Default Terraform workspace name
+export TF_VAR_environment=${TF_VAR_environment:="sandpit"} # Default environment (dev/staging/prod)
+export TF_VAR_level=${TF_VAR_level:="level0"}            # Landing zone level (0-4)
+
+# File system and caching configuration  
+export TF_CACHE_FOLDER=${TF_DATA_DIR:=$(echo ~)}         # Terraform cache directory
+export log_folder_path=${log_folderpath:=~/.terraform.logs} # Log file location
+
+# Azure Resource Manager configuration
+export ARM_SNAPSHOT=${ARM_SNAPSHOT:="true"}              # Enable ARM snapshots for state protection
+export ARM_USE_AZUREAD=${ARM_USE_AZUREAD:="true"}        # Use Azure AD authentication
+export ARM_STORAGE_USE_AZUREAD=${ARM_STORAGE_USE_AZUREAD:="true"} # Use Azure AD for storage
+export ARM_USE_MSAL=${ARM_USE_MSAL:="false"}            # Use Microsoft Authentication Library
+
+# Security and validation settings
+export skip_permission_check=${skip_permission_check:=false} # Skip Azure permission validation
+
+# CI/CD pipeline configuration
+export symphony_run_all_tasks=true                       # Run all symphony tasks by default
+export debug_mode=${debug_mode:="false"}                # Debug logging mode
+export devops=${devops:="false"}                        # DevOps integration mode
+export TF_IN_AUTOMATION="true"                          # Indicate automated execution (overridden by logger)
+
+# Terraform Cloud/Enterprise configuration
+export TF_VAR_tf_cloud_organization=${TF_CLOUD_ORGANIZATION}     # TFC organization name
+export TF_VAR_tf_cloud_hostname=${TF_CLOUD_HOSTNAME:="app.terraform.io"} # TFC hostname
 export REMOTE_credential_path_json=${REMOTE_credential_path_json:="$(echo ~)/.terraform.d/credentials.tfrc.json"}
-export gitops_terraform_backend_type=${TF_VAR_backend_type:="azurerm"}
-export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}
-export gitops_number_runners=0  # 0 - auto-scale , or set the number of minimum runners
-export backend_type_hybrid=${BACKEND_type_hybrid:=true}
-export gitops_agent_pool_execution_mode=${GITOPS_AGENT_POOL_EXECUTION_MODE:="local"}
-export TF_VAR_tenant_id=${ARM_TENANT_ID:=}
-export TF_VAR_user_type=${TF_VAR_user_type:=ServicePrincipal} # assume Service Principal
 
+# GitOps and agent configuration
+export gitops_terraform_backend_type=${TF_VAR_backend_type:="azurerm"}  # Backend type for GitOps
+export gitops_agent_pool_name=${GITOPS_AGENT_POOL_NAME}  # Agent pool name for GitOps
+export gitops_number_runners=0                           # Number of runners (0 = auto-scale)
+export backend_type_hybrid=${BACKEND_type_hybrid:=true}  # Enable hybrid backend support
+export gitops_agent_pool_execution_mode=${GITOPS_AGENT_POOL_EXECUTION_MODE:="local"} # Execution mode
+
+# Azure authentication context
+export TF_VAR_tenant_id=${ARM_TENANT_ID:=}              # Azure tenant ID
+export TF_VAR_user_type=${TF_VAR_user_type:=ServicePrincipal} # Authentication type (assume SP)
+
+# Clear parameter collection variable
 unset PARAMS
 
+# Store current working directory for context
 current_path=$(pwd)
 
-mkdir -p ${TF_PLUGIN_CACHE_DIR}
-__log_init__
-set_log_severity ERROR # Default Log Severity. This can be overriden via -log-severity or -d (shortcut for -log-severity DEBUG)
+#
+# Initialize Rover Environment
+#
 
-# Parse command line parameters
+# Create Terraform plugin cache directory
+mkdir -p ${TF_PLUGIN_CACHE_DIR}
+
+# Initialize logging subsystem
+__log_init__
+
+# Set default log severity (can be overridden by --log-severity or -d flags)
+set_log_severity ERROR
+
+#
+# Main Execution Flow
+#
+
+# Parse and validate command line parameters
 parse_parameters "$@"
 
+# Checkout and validate rover modules
 checkout_module
 verify_rover_version
 
+# Set error handling and trapping
+# -E: inherit ERR trap in functions, command substitutions, and subshells
+# -T: inherit DEBUG and RETURN traps 
+# -e: exit immediately on command failure
 set -ETe
 trap 'error ${LINENO}' ERR 1 2 3 6
 
+# Process the terraform command string from parsed parameters
 tf_command=$(echo $PARAMS | sed -e 's/^[ \t]*//')
 
+#
+# Setup Working Directory Based on Command Type
+#
 if [ "${caf_command}" == "landingzone" ]; then
+    # For landing zone deployments, create environment-specific directory
     TF_DATA_DIR=$(setup_rover_job "${TF_CACHE_FOLDER}/${TF_VAR_environment}")
 elif [ "${caf_command}" == "launchpad" ]; then
+    # For launchpad deployments, use environment subdirectory
     TF_DATA_DIR+="/${TF_VAR_environment}"
 fi
 
+# Verify Azure authentication is valid before proceeding
 verify_azure_session
 
 # Check command and parameters
