@@ -1,28 +1,99 @@
 #!/usr/bin/env bash
 
+#
+# Logger Module
+# Description: Provides logging functionality with multiple severity levels,
+#              file logging, colored console output, and JUnit report generation.
+# Log Levels: FATAL (0), ERROR (1), WARN (2), INFO (3), DEBUG (4), VERBOSE (5)
+#
+
+#
+# Function: error_message
+# Description: Prints an error message to stderr in red color
+# Parameters:
+#   $@ - Message to print
+# Returns:
+#   None (prints to stderr)
+# Example:
+#   error_message "Configuration file not found"
+#
 # Continual logging methods. These always print regardless of log level
 error_message() {
     printf >&2 "\e[91m$@\n\e[0m"
 }
 
+#
+# Function: information
+# Description: Prints an informational message in cyan color
+# Parameters:
+#   $@ - Message to print
+# Returns:
+#   None (prints to stdout)
+# Example:
+#   information "Starting deployment"
+#
 information() {
     printf "\e[36m$@\n\e[0m"
 }
 
+#
+# Function: warning
+# Description: Prints a warning message in yellow color
+# Parameters:
+#   $@ - Message to print
+# Returns:
+#   None (prints to stdout)
+# Example:
+#   warning "Deprecated parameter used"
+#
 warning() {
     printf "\e[33m$@\n\e[0m"
 }
 
+#
+# Function: success
+# Description: Prints a success message in green color
+# Parameters:
+#   $@ - Message to print
+# Returns:
+#   None (prints to stdout)
+# Example:
+#   success "Deployment completed successfully"
+#
 success() {
     printf "\e[32m$@\n\e[0m"
 }
 
+#
+# Function: debug
+# Description: Legacy shim for debug logging, calls log_debug
+# Parameters:
+#   $1 - Debug message
+# Returns:
+#   None (delegates to log_debug)
+# Example:
+#   debug "Variable value: ${my_var}"
+#
 # legacy shim
 debug() {
     local message=$1
     log_debug $message
 }
 
+#
+# Function: __log_init__
+# Description: Initializes the logging system with log levels and directory structure
+# Parameters:
+#   None (uses global variable log_folder_path)
+# Environment Variables:
+#   log_folder_path - Base directory for log files (required)
+#   TZ - Timezone (set to UTC by default)
+# Returns:
+#   Exits with error if log_folder_path is not set
+# Example:
+#   export log_folder_path=~/.terraform.logs
+#   __log_init__
+#
 __log_init__() {
 
     # Set Time zone to UTC / Comment out to use local time
@@ -52,11 +123,34 @@ __log_init__() {
 
 }
 
+#
+# Function: __create_dir__
+# Description: Creates a directory if it doesn't exist
+# Parameters:
+#   $1 - Path to create
+# Returns:
+#   None
+# Example:
+#   __create_dir__ "/path/to/logs"
+#
 __create_dir__()  {
     local path=$1
     mkdir -p $path
 }
 
+#
+# Function: __set_tf_log__
+# Description: Sets up Terraform logging to a file with date-organized folders
+# Parameters:
+#   $1 - Log name identifier
+# Environment Variables:
+#   log_folder_path - Base log directory
+#   TF_LOG_PATH - Set to the created log file path (output)
+# Returns:
+#   None (sets TF_LOG_PATH and calls __set_text_log__)
+# Example:
+#   __set_tf_log__ "networking-deployment"
+#
 __set_tf_log__() {
     local name=$1
     local logDate=$(date +%Y.%m.%d)
@@ -69,7 +163,18 @@ __set_tf_log__() {
     __set_text_log__ "$name"
 }
 
-
+#
+# Function: get_log_folder
+# Description: Gets or creates the current date-based log folder
+# Parameters:
+#   None
+# Environment Variables:
+#   log_folder_path - Base log directory
+# Returns:
+#   Echoes the path to the current log folder
+# Example:
+#   log_dir=$(get_log_folder)
+#
 get_log_folder(){
   local logDate=$(date +%Y.%m.%d)
   local current_log_folder="$log_folder_path/$logDate"
@@ -79,6 +184,20 @@ get_log_folder(){
   echo $current_log_folder
 }
 
+#
+# Function: __set_text_log__
+# Description: Redirects stdout and stderr to a log file while keeping copies
+# Parameters:
+#   $1 - Log file name
+# Environment Variables:
+#   log_folder_path - Base log directory
+#   LOG_TO_FILE - Set to true (output)
+#   CURRENT_LOG_FILE - Set to the log file path (output)
+# Returns:
+#   None (redirects file descriptors 1 and 2)
+# Example:
+#   __set_text_log__ "deployment"
+#
 __set_text_log__() {
     local name=$1
     local logDate=$(date +%Y.%m.%d)

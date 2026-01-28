@@ -88,6 +88,8 @@ The rover is available from the Docker Hub in form of:
 - [Terraform Cloud Commands](docs/TFC_COMMANDS.md) - TFC/TFE integration
 - [Dev Container Setup](docs/DEV_CONTAINER.md) - Development environment
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
+- [Troubleshooting Guide](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute to Rover
 
 ### Examples
 
