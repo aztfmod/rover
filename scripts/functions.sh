@@ -2,6 +2,19 @@ for script in ${script_path}/tfcloud/*.sh; do
   source "$script"
 done
 
+#
+# Function: error
+# Description: Handles errors by logging, generating reports, and exiting with an error code.
+#              If using remote backend, cancels any running Terraform Cloud operations.
+# Parameters:
+#   $1 - Line number where error occurred (typically ${LINENO})
+#   $2 - Error message (optional)
+#   $3 - Exit code (default: 1)
+# Returns:
+#   Exits the script with the specified error code
+# Example:
+#   error ${LINENO} "Configuration file not found" 2
+#
 error() {
     if [ "$LOG_TO_FILE" == "true" ];then
         local logFile=$CURRENT_LOG_FILE
@@ -36,7 +49,18 @@ error() {
 
 
 #
-# Execute a command and re-execute it with a backoff retry logic. This is mainly to handle throttling situations in CI
+# Function: execute_with_backoff
+# Description: Executes a command with exponential backoff retry logic.
+#              Mainly used to handle throttling situations in CI/CD pipelines.
+# Parameters:
+#   $@ - Command and arguments to execute
+# Environment Variables:
+#   ATTEMPTS - Maximum retry attempts (default: 5)
+#   TIMEOUT - Initial timeout in seconds (default: 20, doubles each retry)
+# Returns:
+#   0 on success, last exit code on failure after max retries
+# Example:
+#   execute_with_backoff az group create --name mygroup --location eastus
 #
 function execute_with_backoff {
     local max_attempts=${ATTEMPTS-5}
@@ -67,6 +91,18 @@ function execute_with_backoff {
     return $exitCode
 }
 
+#
+# Function: parameter_value
+# Description: Validates and returns a parameter value, ensuring it's not a flag.
+# Parameters:
+#   $1 - Parameter name (for error reporting)
+#   $2 - Parameter value to validate
+# Returns:
+#   Echoes the parameter value if valid
+#   Exits with error if value is a flag (starts with -)
+# Example:
+#   level=$(parameter_value "--level" "$2")
+#
 function parameter_value {
     if [[ ${2} = -* ]]; then
         error ${LINENO} "Value not set for paramater ${1}" 1
@@ -75,6 +111,20 @@ function parameter_value {
     echo ${2}
 }
 
+#
+# Function: process_actions
+# Description: Main command router that processes the user's command and executes
+#              the appropriate workflow (bootstrap, landingzone, ci, cd, etc.)
+# Parameters:
+#   None (reads from global variable: caf_command)
+# Environment Variables:
+#   caf_command - The command to execute (landingzone, launchpad, ci, cd, etc.)
+#   tf_command - Additional terraform commands/parameters
+# Returns:
+#   0 on success, exits with error on failure
+# Example:
+#   caf_command="landingzone" process_actions
+#
 function process_actions {
     echo "@calling process_actions"
 
@@ -134,6 +184,16 @@ function process_actions {
     esac
 }
 
+#
+# Function: display_login_instructions
+# Description: Displays usage instructions for Azure login/logout commands
+# Parameters:
+#   None
+# Returns:
+#   None (prints to stdout)
+# Example:
+#   display_login_instructions
+#
 function display_login_instructions {
     echo ""
     echo "To login the rover to azure:"

@@ -31,10 +31,87 @@ The rover is available from the Docker Hub in form of:
   - Gitlab
   - Terraform Cloud/Terraform Enterprise
 
-### Getting starter with CAF Terraform landing zones
+## Getting Started
 
-If you are reading this, you are probably interested also in reading the doc as below:
-:books: Read our [centralized documentation page](https://aka.ms/caf/terraform)
+### Prerequisites
+
+- Docker installed on your machine
+- Azure subscription
+- Basic understanding of Terraform and Azure
+
+### Quick Start
+
+1. **Pull the rover image:**
+   ```bash
+   docker pull aztfmod/rover:latest
+   ```
+
+2. **Run rover container:**
+   ```bash
+   docker run -it --rm \
+     -v ${HOME}/.azure:/home/vscode/.azure \
+     -v $(pwd):/tf/caf \
+     aztfmod/rover:latest
+   ```
+
+3. **Login to Azure:**
+   ```bash
+   rover login
+   ```
+
+4. **Deploy a landing zone:**
+   ```bash
+   rover -lz /tf/caf/landingzones/launchpad \
+     -a plan \
+     -launchpad \
+     --environment contoso
+   ```
+
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `rover login` | Authenticate with Azure |
+| `rover logout` | Clear Azure session |
+| `rover -lz <path> -a plan` | Plan infrastructure changes |
+| `rover -lz <path> -a apply` | Apply infrastructure changes |
+| `rover -lz <path> -a destroy` | Destroy infrastructure |
+| `rover ci` | Run continuous integration checks |
+| `rover cd` | Run continuous deployment workflow |
+| `rover workspace list` | List Terraform workspaces |
+
+### Documentation
+
+- :books: [Centralized CAF Terraform Documentation](https://aka.ms/caf/terraform)
+- [Usage Guide](docs/USAGE.md) - Detailed command reference
+- [Continuous Integration](docs/CONTINOUS_INTEGRATION.md) - CI workflow guide
+- [Terraform Cloud Commands](docs/TFC_COMMANDS.md) - TFC/TFE integration
+- [Dev Container Setup](docs/DEV_CONTAINER.md) - Development environment
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
+
+### Examples
+
+**Deploy with specific environment and level:**
+```bash
+rover -lz ./landingzones/networking \
+  -a apply \
+  --environment production \
+  -level level2
+```
+
+**Run CI checks:**
+```bash
+rover ci \
+  -sc ./symphony.yml \
+  -b /tf/caf \
+  --environment demo
+```
+
+**Use with Terraform Cloud:**
+```bash
+export TF_CLOUD_ORGANIZATION="myorg"
+rover -lz ./landingzones/compute -a plan -tfc
+```
 
 ## Community
 
