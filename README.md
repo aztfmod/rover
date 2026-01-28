@@ -84,7 +84,7 @@ The rover is available from the Docker Hub in form of:
 
 - :books: [Centralized CAF Terraform Documentation](https://aka.ms/caf/terraform)
 - [Usage Guide](docs/USAGE.md) - Detailed command reference
-- [Continuous Integration](docs/CONTINOUS_INTEGRATION.md) - CI workflow guide
+- [Continuous Integration](docs/CONTINUOUS_INTEGRATION.md) - CI workflow guide
 - [Terraform Cloud Commands](docs/TFC_COMMANDS.md) - TFC/TFE integration
 - [Dev Container Setup](docs/DEV_CONTAINER.md) - Development environment
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design and components

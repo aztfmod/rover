@@ -173,7 +173,7 @@ When adding or changing functionality:
 ### Required Documentation Updates
 
 - **New commands**: Update `docs/USAGE.md`
-- **CI/CD changes**: Update `docs/CONTINOUS_INTEGRATION.md`
+- **CI/CD changes**: Update `docs/CONTINUOUS_INTEGRATION.md`
 - **Architecture changes**: Update `docs/ARCHITECTURE.md`
 - **Breaking changes**: Update `changelog.md`
 

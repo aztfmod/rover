@@ -105,7 +105,7 @@ function execute_with_backoff {
 #
 function parameter_value {
     if [[ ${2} = -* ]]; then
-        error ${LINENO} "Value not set for paramater ${1}" 1
+        error ${LINENO} "Value not set for parameter ${1}" 1
     fi
 
     echo ${2}
