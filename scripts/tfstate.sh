@@ -1,5 +1,19 @@
 source ${script_path}/lib/terraform.sh
 
+#
+# Function: tfstate_cleanup
+# Description: Cleans up temporary backend configuration files and state files
+#              from the landing zone directory and TF_DATA_DIR
+# Parameters:
+#   None (uses global variables)
+# Environment Variables:
+#   landingzone_name - Path to the landing zone directory
+#   TF_DATA_DIR - Terraform data directory
+# Returns:
+#   None (always succeeds with || true)
+# Example:
+#   tfstate_cleanup
+#
 function tfstate_cleanup {
 
     find /tf/caf -name "backend.*.tf" -not -path '*/rover/scripts/*' -delete || true
@@ -10,6 +24,23 @@ function tfstate_cleanup {
 
 }
 
+#
+# Function: tfstate_configure
+# Description: Configures the Terraform backend based on the specified backend type.
+#              Supports Azure Storage (azurerm) and Terraform Cloud/Enterprise (remote).
+# Parameters:
+#   $1 - Backend type: "azurerm" or "remote"
+# Environment Variables:
+#   landingzone_name - Path to the landing zone
+#   TF_var_folder - Optional path to tfvars files (for remote backend)
+#   TF_VAR_environment, TF_VAR_level, TF_VAR_tf_name - Workspace naming
+#   TF_VAR_tf_cloud_organization, TF_VAR_tf_cloud_hostname - TFC/TFE config
+# Returns:
+#   Exits with error code 3001 if backend type is not supported
+# Example:
+#   tfstate_configure "azurerm"
+#   tfstate_configure "remote"
+#
 function tfstate_configure {
     echo "@tfstate_configure"
 
@@ -54,6 +85,19 @@ EOF
 
 }
 
+#
+# Function: terraform_init
+# Description: Initializes Terraform with the configured backend type.
+#              Routes to the appropriate initialization function based on backend.
+# Parameters:
+#   None (uses global variable gitops_terraform_backend_type)
+# Environment Variables:
+#   gitops_terraform_backend_type - Backend type: "azurerm" or "remote"
+# Returns:
+#   Exits with error code 3002 if backend type is not supported
+# Example:
+#   gitops_terraform_backend_type="azurerm" terraform_init
+#
 function terraform_init {
     echo "@calling terraform_init"
 
@@ -73,6 +117,28 @@ function terraform_init {
 
 }
 
+#
+# Function: initialize_state
+# Description: Initializes the Terraform state for a landing zone deployment.
+#              Checks permissions, sets up directories, runs terraform init,
+#              and executes the requested terraform action (plan/apply/destroy).
+# Parameters:
+#   None (uses global variables)
+# Environment Variables:
+#   skip_permission_check - If true, skips permission validation
+#   landingzone_name - Path to landing zone directory
+#   TF_VAR_tf_name - State file name
+#   TF_VAR_tf_plan - Plan file name
+#   TF_DATA_DIR - Terraform data directory
+#   TF_VAR_level - Deployment level
+#   TF_VAR_workspace - Workspace name
+#   terraform_version - Terraform version string
+#   tf_action - Action to perform: plan, apply, destroy, etc.
+# Returns:
+#   Exits on error via error() function
+# Example:
+#   tf_action="apply" initialize_state
+#
 function initialize_state {
     echo "@calling initialize_state"
 
